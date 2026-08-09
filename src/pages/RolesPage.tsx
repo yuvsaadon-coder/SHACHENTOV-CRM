@@ -20,14 +20,14 @@ const PRIORITY_STYLES: Record<string, string> = {
   'דחוף': 'text-red-600 font-bold',
 }
 
-const LEVEL_BG: Record<string, string> = {
-  'מטה': 'bg-brand-navy',
-  'סניף חוץ': 'bg-brand-navy2',
-  'סניף ירושלים': 'bg-brand-teal',
-  'בתי קפה נודדים': 'bg-[#147F84]',
-  'טוסטר': 'bg-[#0A6B2E]',
-  'סניפים עיתיים': 'bg-[#5F497A]',
-  'יריד': 'bg-[#7A5A00]',
+const LEVEL_BG_COLOR: Record<string, string> = {
+  'מטה':             '#141348',
+  'סניף חוץ':        '#3A3A6B',
+  'סניף ירושלים':    '#189A9F',
+  'בתי קפה נודדים':  '#147F84',
+  'טוסטר':           '#0A6B2E',
+  'סניפים עיתיים':   '#5F497A',
+  'יריד':            '#7A5A00',
 }
 
 function RoleStatusBadge({ status }: { status: RoleStatus }) {
@@ -39,7 +39,7 @@ function RoleStatusBadge({ status }: { status: RoleStatus }) {
 }
 
 export function RolesPage() {
-  const { roles, loading } = useRoles()
+  const { roles, loading, error } = useRoles()
   const { tasks } = useTasks()
   const [levelFilter, setLevelFilter] = useState<RoleLevel | ''>('')
   const [statusFilter, setStatusFilter] = useState<RoleStatus | ''>('')
@@ -85,6 +85,13 @@ export function RolesPage() {
   }, [tasks])
 
   if (loading) return <Spinner size="lg" />
+  if (error) return (
+    <div className="p-8 text-center">
+      <p className="text-red-600 font-medium mb-2">שגיאה בטעינת תפקידים</p>
+      <p className="text-sm text-gray-500">{error}</p>
+      <p className="text-xs text-gray-400 mt-2">ודא שכללי Firestore מאפשרים קריאה לאוסף roles</p>
+    </div>
+  )
 
   return (
     <div className="space-y-4">
@@ -93,7 +100,6 @@ export function RolesPage() {
         <span className="text-sm text-gray-500">{roles.length} תפקידים</span>
       </div>
 
-      {/* Stats chips */}
       <div className="flex flex-wrap gap-2">
         {ROLE_STATUS_LABELS.map((s) => (
           <button
@@ -106,7 +112,6 @@ export function RolesPage() {
         ))}
       </div>
 
-      {/* Filter bar */}
       <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 flex flex-wrap gap-2 items-center">
         <input
           type="text"
@@ -142,12 +147,14 @@ export function RolesPage() {
         <span className="text-xs text-gray-400 mr-auto">{filtered.length} תוצאות</span>
       </div>
 
-      {/* Grouped tables */}
       {grouped.map(({ level, roles: groupRoles }) => (
         <div key={level} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className={`px-4 py-2.5 flex items-center justify-between ${LEVEL_BG[level] || 'bg-brand-navy'}`}>
+          <div
+            className="px-4 py-2.5 flex items-center justify-between"
+            style={{ backgroundColor: LEVEL_BG_COLOR[level] || '#141348' }}
+          >
             <span className="text-white font-semibold text-sm">{level}</span>
-            <span className="text-white/60 text-xs">{groupRoles.length} תפקידים</span>
+            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>{groupRoles.length} תפקידים</span>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -162,7 +169,7 @@ export function RolesPage() {
             </thead>
             <tbody>
               {groupRoles.map((role) => {
-                const linkedTasks = role.linkedTaskIds
+                const linkedTasks = (role.linkedTaskIds || [])
                   .map((tid) => ({ id: tid, title: taskMap[tid] }))
                   .filter((t) => t.title)
                 return (

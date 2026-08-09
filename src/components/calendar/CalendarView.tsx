@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { HDate } from '@hebcal/core'
 import type { Task } from '../../types'
 import { DOMAIN_COLORS } from '../../types'
+import { getTextColor } from '../../utils/color'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 
 const locales = { he }
@@ -73,7 +74,7 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
       return { style: { backgroundColor: '#FDC857', color: '#141348', border: 'none', fontSize: '11px' } }
     }
     const color = event.resource ? (DOMAIN_COLORS[event.resource.domain] || '#189A9F') : '#189A9F'
-    return { style: { backgroundColor: color, border: 'none', fontSize: '11px', borderRadius: '4px' } }
+    return { style: { backgroundColor: color, color: getTextColor(color), border: 'none', fontSize: '11px', borderRadius: '4px' } }
   }
 
   return (
