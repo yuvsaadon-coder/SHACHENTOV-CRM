@@ -17,6 +17,27 @@ const STATUS_STYLE: Record<TaskStatus, React.CSSProperties> = {
 
 const MONTH_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
 
+function taskMatchesMonth(t: Task, year: number, month: number): boolean {
+  if (!t.endDate) return false
+  const end = t.endDate.toDate()
+  switch (t.frequency) {
+    case 'חד-פעמי':
+      return end.getFullYear() === year && end.getMonth() === month
+    case 'חודשי':
+    case 'שוטף':
+      return true
+    case 'רבעוני':
+      return [2, 5, 8, 11].includes(month)
+    case 'חצי-שנתי':
+      return [5, 11].includes(month)
+    case 'שנתי':
+    case 'לפי חג':
+      return end.getMonth() === month
+    default:
+      return end.getFullYear() === year && end.getMonth() === month
+  }
+}
+
 function TaskRow({ task }: { task: Task }) {
   const navigate = useNavigate()
   const domainColor = DOMAIN_COLORS[task.domain] || '#189A9F'
@@ -84,12 +105,13 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
 
   const monthTasks = useMemo(() => {
     return displayTasks
-      .filter(t => {
-        if (!t.endDate) return false
-        const d = t.endDate.toDate()
-        return d.getFullYear() === year && d.getMonth() === month
+      .filter(t => taskMatchesMonth(t, year, month))
+      .sort((a, b) => {
+        if (!a.endDate && !b.endDate) return 0
+        if (!a.endDate) return 1
+        if (!b.endDate) return -1
+        return a.endDate.toDate().getTime() - b.endDate.toDate().getTime()
       })
-      .sort((a, b) => a.endDate!.toDate().getTime() - b.endDate!.toDate().getTime())
   }, [displayTasks, year, month])
 
   const grouped = useMemo(() => {

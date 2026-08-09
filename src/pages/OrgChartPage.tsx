@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useRoles } from '../hooks/useRoles'
 import { OrgChartView } from '../components/orgchart/OrgChartView'
 import { RoleEditModal } from '../components/roles/RoleEditModal'
@@ -22,6 +23,8 @@ export function OrgChartPage() {
     </div>
   )
 
+  const allUnlinked = roles.length > 0 && roles.every(r => !r.reportsTo)
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -29,14 +32,38 @@ export function OrgChartPage() {
           <h1 className="text-2xl font-bold" style={{ color: '#141348' }}>מבנה ארגוני</h1>
           <p className="text-sm text-gray-500 mt-0.5">לחץ על תפקיד לעריכה ולהגדרת כפיפות</p>
         </div>
-        <button
-          onClick={openNew}
-          className="px-4 py-2 text-sm font-medium rounded-lg text-white hover:opacity-90 transition-opacity"
-          style={{ backgroundColor: '#141348' }}
-        >
-          + תפקיד חדש
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/admin/hierarchy"
+            className="px-4 py-2 text-sm font-medium rounded-lg border hover:bg-gray-50 transition-colors"
+            style={{ color: '#141348', borderColor: '#E5E7EB' }}
+          >
+            הגדר כפיפויות
+          </Link>
+          <button
+            onClick={openNew}
+            className="px-4 py-2 text-sm font-medium rounded-lg text-white hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: '#141348' }}
+          >
+            + תפקיד חדש
+          </button>
+        </div>
       </div>
+
+      {allUnlinked && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between gap-4">
+          <div className="text-sm text-amber-800">
+            <strong>עץ הכפיפויות טרם הוגדר.</strong> כל {roles.length} התפקידים מוצגים ללא קשרי כפיפות — לחץ על "הגדר כפיפויות" להפעלת האשף האוטומטי.
+          </div>
+          <Link
+            to="/admin/hierarchy"
+            className="px-4 py-2 text-sm font-medium rounded-lg text-white shrink-0 hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: '#189A9F' }}
+          >
+            הגדר כפיפויות ←
+          </Link>
+        </div>
+      )}
 
       <OrgChartView roles={roles} onEdit={openEdit} />
 
