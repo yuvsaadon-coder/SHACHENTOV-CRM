@@ -6,11 +6,14 @@ import type { OrgRole } from '../types'
 const JLM_FOOD = ['קרית יובל', 'רמות', 'גילה', 'נחלאות', 'בקעה', 'קטמון', 'נוה יעקב']
 const EXT_BRANCHES = ['תל אביב', 'בית שמש', 'טבריה', 'צפת', 'קדימה', 'באר שבע', 'קרית שמונה']
 const HOLIDAY_BRANCHES = ['מעלה אדומים', 'פתח תקווה']
+const CLUBS_LEVELS = new Set(['בתי קפה נודדים', 'מועדוני נוער', 'טוסטר', 'סניפים עיתיים', 'יריד'])
 
 function matchesList(role: OrgRole, list: string[]): boolean {
   const haystack = `${role.roleName} ${role.area}`.toLowerCase()
   return list.some(v => haystack.includes(v.toLowerCase()))
 }
+
+type Change = { role: OrgRole; reportsTo: string | null; area: string }
 
 function computeChanges(roles: OrgRole[]) {
   const ceo = roles.find(r =>
@@ -18,10 +21,21 @@ function computeChanges(roles: OrgRole[]) {
   )
   const jlm = roles.find(r =>
     r.holderName === 'כרמל קרופפלד' ||
-    (r.level === 'סניף ירושלים' && r.roleName.includes('רכז'))
+    (r.roleName.includes('ירושלים') && (r.roleName.includes('רכז') || r.roleName.includes('רכזת')))
+  )
+  const extCoord = roles.find(r =>
+    r.id !== ceo?.id && r.id !== jlm?.id &&
+    (r.roleName.includes('רכז סניפי חוץ') ||
+     r.roleName.includes('רכז חוץ') ||
+     (r.roleName.includes('חוץ') && (r.roleName.includes('רכז') || r.roleName.includes('רכזת'))))
+  )
+  const clubsCoord = roles.find(r =>
+    r.id !== ceo?.id && r.id !== jlm?.id && r.id !== extCoord?.id &&
+    (r.roleName.includes('מועדונים') ||
+     (r.roleName.includes('קפה') && (r.roleName.includes('רכז') || r.roleName.includes('רכזת'))))
   )
 
-  if (!ceo || !jlm) return { ceo, jlm, changes: [] as Change[] }
+  if (!ceo || !jlm) return { ceo, jlm, extCoord, clubsCoord, changes: [] as Change[] }
 
   const changes: Change[] = []
 
@@ -34,40 +48,46 @@ function computeChanges(roles: OrgRole[]) {
       changes.push({ role, reportsTo: ceo.id, area: role.area })
       continue
     }
+    if (extCoord && role.id === extCoord.id) {
+      changes.push({ role, reportsTo: ceo.id, area: role.area })
+      continue
+    }
+    if (clubsCoord && role.id === clubsCoord.id) {
+      changes.push({ role, reportsTo: ceo.id, area: role.area })
+      continue
+    }
 
-    // Jerusalem food branches
+    // Jerusalem food branches → JLM coordinator (כרמל)
     if (matchesList(role, JLM_FOOD)) {
       changes.push({ role, reportsTo: jlm.id, area: 'סניפי מזון ירושלים' })
       continue
     }
-    // Any other Jerusalem branch level → under JLM coordinator
+    // Any other Jerusalem branch level → JLM coordinator
     if (role.level === 'סניף ירושלים') {
       changes.push({ role, reportsTo: jlm.id, area: role.area })
       continue
     }
-    // External branches
+    // External branches → ext. coordinator (or CEO if role doesn't exist yet)
     if (matchesList(role, EXT_BRANCHES) || role.level === 'סניף חוץ') {
-      changes.push({ role, reportsTo: ceo.id, area: 'סניפי חוץ' })
+      changes.push({ role, reportsTo: extCoord ? extCoord.id : ceo.id, area: 'סניפי חוץ' })
       continue
     }
-    // Holiday branches
+    // Holiday branches → ext. coordinator
     if (matchesList(role, HOLIDAY_BRANCHES)) {
-      changes.push({ role, reportsTo: ceo.id, area: 'סניפי חגים' })
+      changes.push({ role, reportsTo: extCoord ? extCoord.id : ceo.id, area: 'סניפי חגים' })
       continue
     }
-    // Wandering cafes, youth clubs, fairs, toaster — all under CEO
-    if (['בתי קפה נודדים', 'טוסטר', 'סניפים עיתיים', 'יריד'].includes(role.level)) {
-      changes.push({ role, reportsTo: ceo.id, area: role.area })
+    // Clubs / wandering cafes → clubs coordinator
+    if (CLUBS_LEVELS.has(role.level)) {
+      changes.push({ role, reportsTo: clubsCoord ? clubsCoord.id : ceo.id, area: role.area })
       continue
     }
     // Headquarters roles — no parent (peers of CEO)
     changes.push({ role, reportsTo: null, area: role.area })
   }
 
-  return { ceo, jlm, changes }
+  return { ceo, jlm, extCoord, clubsCoord, changes }
 }
-
-type Change = { role: OrgRole; reportsTo: string | null; area: string }
 
 export function HierarchySetupPage() {
   const [roles, setRoles] = useState<OrgRole[]>([])
@@ -83,7 +103,7 @@ export function HierarchySetupPage() {
     }).catch(e => { setError(String(e)); setLoading(false) })
   }, [])
 
-  const { ceo, jlm, changes } = computeChanges(roles)
+  const { ceo, jlm, extCoord, clubsCoord, changes } = computeChanges(roles)
   const nameMap = Object.fromEntries(roles.map(r => [r.id, r.roleName]))
 
   const apply = async () => {
@@ -123,17 +143,26 @@ export function HierarchySetupPage() {
 
       {(!ceo || !jlm) && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
-          לא נמצא {!ceo ? 'תפקיד מנכ"ל' : ''} {!jlm ? 'רכז ירושלים (כרמל קרופפלד)' : ''}.
+          לא נמצא {!ceo ? 'תפקיד מנכ"ל' : ''} {!jlm ? 'רכזת ירושלים (כרמל קרופפלד)' : ''}.
           ודא שהתפקידים קיימים בFirestore עם השמות הנכונים.
         </div>
       )}
 
       {ceo && jlm && (
         <>
-          <div className="bg-brand-teal050 border border-brand-teal rounded-xl p-4 text-sm space-y-1">
+          {/* Structure summary */}
+          <div className="bg-brand-teal050 border border-brand-teal rounded-xl p-4 text-sm space-y-1.5">
             <div>🏗 שורש: <strong>{ceo.roleName}</strong> ({ceo.holderName})</div>
-            <div>🏙 רכז ירושלים: <strong>{jlm.roleName}</strong> ({jlm.holderName})</div>
-            <div className="text-gray-500 text-xs mt-2">תצוגה מקדימה של {changes.length} שינויים — בדוק לפני הפעלה</div>
+            <div>🏙 רכזת ירושלים: <strong>{jlm.roleName}</strong> ({jlm.holderName})</div>
+            {extCoord
+              ? <div>🚌 רכז סניפי חוץ: <strong>{extCoord.roleName}</strong> ({extCoord.holderName || 'חסר'})</div>
+              : <div className="text-amber-700">⚠️ לא נמצא רכז סניפי חוץ — סניפי החוץ ישויכו ישירות למנכ"ל</div>
+            }
+            {clubsCoord
+              ? <div>☕ רכז מועדונים ובתי קפה: <strong>{clubsCoord.roleName}</strong> ({clubsCoord.holderName || 'חסר'})</div>
+              : <div className="text-amber-700">⚠️ לא נמצא רכז מועדונים/בתי קפה — ישויכו ישירות למנכ"ל</div>
+            }
+            <div className="text-gray-500 text-xs mt-2 pt-2 border-t border-brand-teal/30">תצוגה מקדימה של {changes.length} שינויים — בדוק לפני הפעלה</div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
