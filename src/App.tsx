@@ -9,6 +9,7 @@ import { ContactsPage } from './pages/ContactsPage'
 import { RolesPage } from './pages/RolesPage'
 import { OrgChartPage } from './pages/OrgChartPage'
 import { CalendarView } from './components/calendar/CalendarView'
+import { HierarchySetupPage } from './pages/HierarchySetupPage'
 import { Spinner } from './components/ui/Spinner'
 import { useTasks } from './hooks/useTasks'
 
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="roles" element={<RolesPage />} />
             <Route path="orgchart" element={<OrgChartPage />} />
+            <Route path="admin/hierarchy" element={<HierarchySetupPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
