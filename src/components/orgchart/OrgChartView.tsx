@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { OrgRole, RoleStatus } from '../../types'
 
 type TreeNode = OrgRole & { children: TreeNode[] }
@@ -25,7 +26,13 @@ const STATUS_CHIP: Record<RoleStatus, { bg: string; text: string }> = {
   'אחר':   { bg: '#E4DFEC', text: '#5F497A' },
 }
 
-function OrgCard({ role, onClick }: { role: OrgRole; onClick: () => void }) {
+function OrgCard({ role, childCount, collapsed, onToggle, onClick }: {
+  role: OrgRole
+  childCount: number
+  collapsed: boolean
+  onToggle: () => void
+  onClick: () => void
+}) {
   const sc = STATUS_CHIP[role.status] ?? STATUS_CHIP['אחר']
   return (
     <div
@@ -34,11 +41,11 @@ function OrgCard({ role, onClick }: { role: OrgRole; onClick: () => void }) {
       style={{
         border: '1.5px solid #E5E7EB',
         borderRadius: 10,
-        padding: '10px 14px',
+        padding: '8px 12px',
         backgroundColor: 'white',
         cursor: 'pointer',
-        minWidth: 155,
-        maxWidth: 205,
+        minWidth: 138,
+        maxWidth: 172,
         boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
         direction: 'rtl',
         userSelect: 'none',
@@ -53,29 +60,39 @@ function OrgCard({ role, onClick }: { role: OrgRole; onClick: () => void }) {
         e.currentTarget.style.borderColor = '#E5E7EB'
       }}
     >
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#141348', marginBottom: 3, lineHeight: 1.3 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#141348', marginBottom: 2, lineHeight: 1.3 }}>
         {role.roleName}
       </div>
       {role.holderName
-        ? <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 6 }}>{role.holderName}</div>
-        : <div style={{ fontSize: 11, color: '#D1D5DB', marginBottom: 6, fontStyle: 'italic' }}>לא מאויש</div>
+        ? <div style={{ fontSize: 10, color: '#6B7280', marginBottom: 5 }}>{role.holderName}</div>
+        : <div style={{ fontSize: 10, color: '#D1D5DB', marginBottom: 5, fontStyle: 'italic' }}>לא מאויש</div>
       }
-      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 10, fontWeight: 500, backgroundColor: sc.bg, color: sc.text, padding: '1px 6px', borderRadius: 4 }}>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: 9, fontWeight: 500, backgroundColor: sc.bg, color: sc.text, padding: '1px 5px', borderRadius: 4 }}>
           {role.status}
         </span>
-        <span style={{ fontSize: 10, fontWeight: 500, backgroundColor: '#F3F4F6', color: '#374151', padding: '1px 6px', borderRadius: 4 }}>
+        <span style={{ fontSize: 9, fontWeight: 500, backgroundColor: '#F3F4F6', color: '#374151', padding: '1px 5px', borderRadius: 4 }}>
           {role.level}
         </span>
+        {childCount > 0 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggle() }}
+            style={{
+              fontSize: 9, marginRight: 'auto', color: '#189A9F',
+              background: 'none', border: 'none', cursor: 'pointer', padding: '1px 4px',
+            }}
+            title={collapsed ? 'הרחב' : 'כווץ'}
+          >
+            {collapsed ? `▶ ${childCount}` : `▼ ${childCount}`}
+          </button>
+        )}
       </div>
     </div>
   )
 }
 
 const LINE = '#D1D5DB'
-const LINE_H = 28
-
-// --- Area grouping ---
+const LINE_H = 18
 
 type ChildColumn =
   | { type: 'single'; key: string; node: TreeNode }
@@ -112,15 +129,21 @@ function computeColumns(children: TreeNode[]): ChildColumn[] {
   return result
 }
 
-function AreaGroupBox({ area, nodes, onEdit }: { area: string; nodes: TreeNode[]; onEdit: (r: OrgRole) => void }) {
+function AreaGroupBox({ area, nodes, onEdit, collapsedSet, onToggle }: {
+  area: string
+  nodes: TreeNode[]
+  onEdit: (r: OrgRole) => void
+  collapsedSet: Set<string>
+  onToggle: (id: string) => void
+}) {
   return (
     <div style={{
       border: '1.5px dashed #CBD5E1',
       borderRadius: 10,
-      padding: '18px 12px 12px',
+      padding: '16px 10px 10px',
       backgroundColor: '#F8FAFC',
       position: 'relative',
-      minWidth: 180,
+      minWidth: 152,
     }}>
       <div style={{
         position: 'absolute',
@@ -135,25 +158,37 @@ function AreaGroupBox({ area, nodes, onEdit }: { area: string; nodes: TreeNode[]
       }}>
         {area}
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, justifyContent: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
         {nodes.map(node => (
-          <OrgNode key={node.id} node={node} onEdit={onEdit} />
+          <OrgNode key={node.id} node={node} onEdit={onEdit} collapsedSet={collapsedSet} onToggle={onToggle} />
         ))}
       </div>
     </div>
   )
 }
 
-function OrgNode({ node, onEdit }: { node: TreeNode; onEdit: (r: OrgRole) => void }) {
+function OrgNode({ node, onEdit, collapsedSet, onToggle }: {
+  node: TreeNode
+  onEdit: (r: OrgRole) => void
+  collapsedSet: Set<string>
+  onToggle: (id: string) => void
+}) {
+  const isCollapsed = collapsedSet.has(node.id)
   const hasChildren = node.children.length > 0
   const columns = hasChildren ? computeColumns(node.children) : []
   const isOnly = columns.length === 1
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <OrgCard role={node} onClick={() => onEdit(node)} />
+      <OrgCard
+        role={node}
+        childCount={node.children.length}
+        collapsed={isCollapsed}
+        onToggle={() => onToggle(node.id)}
+        onClick={() => onEdit(node)}
+      />
 
-      {hasChildren && (
+      {hasChildren && !isCollapsed && (
         <>
           <div style={{ width: 1, height: LINE_H, backgroundColor: LINE, flexShrink: 0 }} />
 
@@ -168,8 +203,8 @@ function OrgNode({ node, onEdit }: { node: TreeNode; onEdit: (r: OrgRole) => voi
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    paddingLeft: 20,
-                    paddingRight: 20,
+                    paddingLeft: 10,
+                    paddingRight: 10,
                     paddingTop: LINE_H,
                     position: 'relative',
                   }}
@@ -183,8 +218,8 @@ function OrgNode({ node, onEdit }: { node: TreeNode; onEdit: (r: OrgRole) => voi
                   <div style={{ position: 'absolute', top: 0, left: '50%', width: 1, height: LINE_H, backgroundColor: LINE }} />
 
                   {col.type === 'single'
-                    ? <OrgNode node={col.node} onEdit={onEdit} />
-                    : <AreaGroupBox area={col.area} nodes={col.nodes} onEdit={onEdit} />
+                    ? <OrgNode node={col.node} onEdit={onEdit} collapsedSet={collapsedSet} onToggle={onToggle} />
+                    : <AreaGroupBox area={col.area} nodes={col.nodes} onEdit={onEdit} collapsedSet={collapsedSet} onToggle={onToggle} />
                   }
                 </div>
               )
@@ -202,8 +237,18 @@ interface Props {
 }
 
 export function OrgChartView({ roles, onEdit }: Props) {
+  const [collapsedSet, setCollapsedSet] = useState<Set<string>>(new Set())
   const roots = buildTree(roles)
   const allUnlinked = roles.every((r) => !r.reportsTo)
+
+  const toggleCollapse = (id: string) => {
+    setCollapsedSet(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-auto">
@@ -212,16 +257,16 @@ export function OrgChartView({ roles, onEdit }: Props) {
           💡 לחץ על כל תפקיד ובחר "כפוף ל-" כדי לבנות את עץ הכפיפויות. תפקידים עם אותו שדה "אזור" יקובצו אוטומטית תחת כותרת אחת.
         </div>
       )}
-      <div dir="ltr" style={{ padding: 32, minWidth: 'max-content' }}>
+      <div dir="ltr" style={{ padding: 24, minWidth: 'max-content' }}>
         {roots.length === 0 && (
           <div className="text-center py-12 text-gray-400 text-sm" dir="rtl">
             אין תפקידים להצגה
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 48, alignItems: 'flex-start', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 28, alignItems: 'flex-start', justifyContent: 'center', flexWrap: 'wrap' }}>
           {roots.map((root) => (
-            <OrgNode key={root.id} node={root} onEdit={onEdit} />
+            <OrgNode key={root.id} node={root} onEdit={onEdit} collapsedSet={collapsedSet} onToggle={toggleCollapse} />
           ))}
         </div>
       </div>

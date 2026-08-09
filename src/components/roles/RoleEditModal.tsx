@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { doc, updateDoc, addDoc, collection } from 'firebase/firestore'
+import { doc, updateDoc, addDoc, collection, deleteDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import type { OrgRole, RoleLevel, RoleStatus, RolePriority } from '../../types'
 import { ROLE_LEVELS, ROLE_STATUS_LABELS, ROLE_PRIORITY_LABELS } from '../../types'
@@ -29,11 +29,14 @@ const EMPTY: Omit<OrgRole, 'id'> = {
 export function RoleEditModal({ role, allRoles, onClose }: Props) {
   const [form, setForm] = useState<Omit<OrgRole, 'id'>>(role ? { ...EMPTY, ...role } : { ...EMPTY })
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setForm(role ? { ...EMPTY, ...role } : { ...EMPTY })
     setError(null)
+    setConfirmDelete(false)
   }, [role])
 
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
@@ -55,6 +58,20 @@ export function RoleEditModal({ role, allRoles, onClose }: Props) {
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'שגיאה בשמירה')
       setSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!role) return
+    if (!confirmDelete) { setConfirmDelete(true); return }
+    setDeleting(true)
+    setError(null)
+    try {
+      await deleteDoc(doc(db, 'roles', role.id))
+      onClose()
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'שגיאה במחיקה')
+      setDeleting(false)
     }
   }
 
@@ -222,10 +239,10 @@ export function RoleEditModal({ role, allRoles, onClose }: Props) {
           )}
         </div>
 
-        <div className="px-5 py-4 border-t border-gray-100 flex gap-3 justify-start">
+        <div className="px-5 py-4 border-t border-gray-100 flex gap-3 items-center">
           <button
             onClick={save}
-            disabled={saving}
+            disabled={saving || deleting}
             className="px-5 py-2 text-sm rounded-lg text-white font-medium transition-opacity disabled:opacity-50"
             style={{ backgroundColor: '#141348' }}
           >
@@ -237,6 +254,19 @@ export function RoleEditModal({ role, allRoles, onClose }: Props) {
           >
             ביטול
           </button>
+          {role && (
+            <button
+              onClick={handleDelete}
+              disabled={deleting || saving}
+              className={`mr-auto px-4 py-2 text-sm rounded-lg font-medium transition-colors disabled:opacity-50 ${
+                confirmDelete
+                  ? 'bg-red-600 text-white hover:bg-red-700'
+                  : 'border border-red-300 text-red-600 hover:bg-red-50'
+              }`}
+            >
+              {deleting ? 'מוחק...' : confirmDelete ? 'אשר מחיקה' : 'מחק תפקיד'}
+            </button>
+          )}
         </div>
       </div>
     </div>
