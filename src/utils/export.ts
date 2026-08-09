@@ -19,7 +19,7 @@ function download(filename: string, content: string) {
 }
 
 export function exportTasks(tasks: Task[]) {
-  const header = ['מזהה', 'כותרת', 'תחום', 'קטגוריה', 'סטטוס', 'אחראי', 'מעורבים', 'תדירות', 'תאריך התחלה', 'תאריך סיום', 'עוגן חג', 'מפעיל', 'הערות']
+  const header = ['מזהה', 'כותרת', 'תחום', 'קטגוריה', 'סטטוס', 'אחראי', 'מעורבים', 'תדירות', 'תאריך התחלה', 'תאריך סיום', 'נקודת ציון שנתית', 'מפעיל', 'הערות']
   const rows = tasks.map(t => [
     t.id,
     t.title,

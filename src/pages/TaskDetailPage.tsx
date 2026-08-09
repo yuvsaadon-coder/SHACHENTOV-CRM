@@ -267,7 +267,7 @@ export function TaskDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-navy mb-1">עוגן חג</label>
+                <label className="block text-sm font-medium text-brand-navy mb-1">נקודת ציון שנתית</label>
                 <input
                   value={form.holidayAnchor || ''}
                   onChange={(e) => setForm({ ...form, holidayAnchor: e.target.value || null })}
@@ -327,7 +327,7 @@ export function TaskDetailPage() {
               <Field label="תדירות" value={task?.frequency} />
               <Field label="תאריך התחלה" value={task?.startDate?.toDate().toLocaleDateString('he-IL')} />
               <Field label="תאריך סיום" value={task?.endDate?.toDate().toLocaleDateString('he-IL')} />
-              <Field label="עוגן חג" value={task?.holidayAnchor} />
+              <Field label="נקודת ציון שנתית" value={task?.holidayAnchor} />
               <Field label="מפעיל" value={task?.activator} />
               {task?.steps && (
                 <div className="md:col-span-2">

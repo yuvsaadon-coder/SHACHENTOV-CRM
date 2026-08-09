@@ -74,6 +74,30 @@ export interface HistoryEntry {
 export type RoleLevel = 'מטה' | 'סניף חוץ' | 'סניף ירושלים' | 'בתי קפה נודדים' | 'טוסטר' | 'סניפים עיתיים' | 'יריד'
 export type RoleStatus = 'מאויש' | 'חסר' | 'חלקי' | 'בסיכון' | 'אחר'
 export type RolePriority = 'רגיל' | 'בינוני' | 'דחוף'
+export type VolunteerStatus = 'יציב' | 'חוסר מתמשך' | 'חוסר קריטי'
+
+export const FOOD_BRANCH_LEVELS: RoleLevel[] = ['סניף חוץ', 'סניף ירושלים']
+export const VOLUNTEER_STATUS_OPTIONS: VolunteerStatus[] = ['יציב', 'חוסר מתמשך', 'חוסר קריטי']
+export const DIST_FREQ_OPTIONS = ['יומי', 'שבועי', 'שלוש בשבוע', 'דו-שבועי', 'חודשי']
+
+export interface SeasonalPeriod {
+  name: string
+  hasMoreVolunteers: boolean
+  description: string
+}
+
+export interface BranchVolunteerInfo {
+  packagingStatus?: VolunteerStatus
+  distributionStatus?: VolunteerStatus
+  collectionStatus?: VolunteerStatus
+  targetPackagingVolunteers?: number | null
+  targetDistributionVolunteers?: number | null
+  weeklyBaskets?: number | null
+  distributionFrequency?: string
+  acceptsGroups?: boolean
+  seasonalPeriods?: SeasonalPeriod[]
+  generalVolunteerStatus?: VolunteerStatus
+}
 
 export interface OrgRole {
   id: string
@@ -90,6 +114,7 @@ export interface OrgRole {
   delegatedTo: string | null
   notes: string
   reportsTo?: string
+  volunteerInfo?: BranchVolunteerInfo | null
 }
 
 export const ROLE_LEVELS: RoleLevel[] = ['מטה', 'סניף חוץ', 'סניף ירושלים', 'בתי קפה נודדים', 'טוסטר', 'סניפים עיתיים', 'יריד']

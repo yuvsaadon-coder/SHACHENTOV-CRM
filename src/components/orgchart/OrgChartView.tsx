@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { OrgRole, RoleStatus } from '../../types'
 
 type TreeNode = OrgRole & { children: TreeNode[] }
@@ -26,6 +26,8 @@ const STATUS_CHIP: Record<RoleStatus, { bg: string; text: string }> = {
   'אחר':   { bg: '#E4DFEC', text: '#5F497A' },
 }
 
+const HQ_LEVEL = 'מטה'
+
 function OrgCard({ role, childCount, collapsed, onToggle, onClick }: {
   role: OrgRole
   childCount: number
@@ -34,10 +36,11 @@ function OrgCard({ role, childCount, collapsed, onToggle, onClick }: {
   onClick: () => void
 }) {
   const sc = STATUS_CHIP[role.status] ?? STATUS_CHIP['אחר']
+  const isHQ = role.level === HQ_LEVEL
   return (
     <div
       onClick={onClick}
-      title="לחץ לעריכה"
+      title={isHQ ? 'לחץ לעריכה' : 'לחץ לצפייה בפרטי הסניף'}
       style={{
         border: '1.5px solid #E5E7EB',
         borderRadius: 10,
@@ -129,10 +132,11 @@ function computeColumns(children: TreeNode[]): ChildColumn[] {
   return result
 }
 
-function AreaGroupBox({ area, nodes, onEdit, collapsedSet, onToggle }: {
+function AreaGroupBox({ area, nodes, onEdit, onBranchDetails, collapsedSet, onToggle }: {
   area: string
   nodes: TreeNode[]
   onEdit: (r: OrgRole) => void
+  onBranchDetails: (r: OrgRole) => void
   collapsedSet: Set<string>
   onToggle: (id: string) => void
 }) {
@@ -160,16 +164,17 @@ function AreaGroupBox({ area, nodes, onEdit, collapsedSet, onToggle }: {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
         {nodes.map(node => (
-          <OrgNode key={node.id} node={node} onEdit={onEdit} collapsedSet={collapsedSet} onToggle={onToggle} />
+          <OrgNode key={node.id} node={node} onEdit={onEdit} onBranchDetails={onBranchDetails} collapsedSet={collapsedSet} onToggle={onToggle} />
         ))}
       </div>
     </div>
   )
 }
 
-function OrgNode({ node, onEdit, collapsedSet, onToggle }: {
+function OrgNode({ node, onEdit, onBranchDetails, collapsedSet, onToggle }: {
   node: TreeNode
   onEdit: (r: OrgRole) => void
+  onBranchDetails: (r: OrgRole) => void
   collapsedSet: Set<string>
   onToggle: (id: string) => void
 }) {
@@ -177,6 +182,7 @@ function OrgNode({ node, onEdit, collapsedSet, onToggle }: {
   const hasChildren = node.children.length > 0
   const columns = hasChildren ? computeColumns(node.children) : []
   const isOnly = columns.length === 1
+  const handleClick = node.level === HQ_LEVEL ? () => onEdit(node) : () => onBranchDetails(node)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -185,7 +191,7 @@ function OrgNode({ node, onEdit, collapsedSet, onToggle }: {
         childCount={node.children.length}
         collapsed={isCollapsed}
         onToggle={() => onToggle(node.id)}
-        onClick={() => onEdit(node)}
+        onClick={handleClick}
       />
 
       {hasChildren && !isCollapsed && (
@@ -218,8 +224,8 @@ function OrgNode({ node, onEdit, collapsedSet, onToggle }: {
                   <div style={{ position: 'absolute', top: 0, left: '50%', width: 1, height: LINE_H, backgroundColor: LINE }} />
 
                   {col.type === 'single'
-                    ? <OrgNode node={col.node} onEdit={onEdit} collapsedSet={collapsedSet} onToggle={onToggle} />
-                    : <AreaGroupBox area={col.area} nodes={col.nodes} onEdit={onEdit} collapsedSet={collapsedSet} onToggle={onToggle} />
+                    ? <OrgNode node={col.node} onEdit={onEdit} onBranchDetails={onBranchDetails} collapsedSet={collapsedSet} onToggle={onToggle} />
+                    : <AreaGroupBox area={col.area} nodes={col.nodes} onEdit={onEdit} onBranchDetails={onBranchDetails} collapsedSet={collapsedSet} onToggle={onToggle} />
                   }
                 </div>
               )
@@ -234,12 +240,30 @@ function OrgNode({ node, onEdit, collapsedSet, onToggle }: {
 interface Props {
   roles: OrgRole[]
   onEdit: (role: OrgRole) => void
+  onBranchDetails: (role: OrgRole) => void
 }
 
-export function OrgChartView({ roles, onEdit }: Props) {
+export function OrgChartView({ roles, onEdit, onBranchDetails }: Props) {
   const [collapsedSet, setCollapsedSet] = useState<Set<string>>(new Set())
+  const hasInitialized = useRef(false)
   const roots = buildTree(roles)
   const allUnlinked = roles.every((r) => !r.reportsTo)
+
+  useEffect(() => {
+    if (roles.length > 0 && !hasInitialized.current) {
+      hasInitialized.current = true
+      const tree = buildTree(roles)
+      const collapsed = new Set<string>()
+      const collectNonRoot = (nodes: TreeNode[], isRoot: boolean) => {
+        for (const node of nodes) {
+          if (!isRoot && node.children.length > 0) collapsed.add(node.id)
+          collectNonRoot(node.children, false)
+        }
+      }
+      collectNonRoot(tree, true)
+      setCollapsedSet(collapsed)
+    }
+  }, [roles])
 
   const toggleCollapse = (id: string) => {
     setCollapsedSet(prev => {
@@ -266,7 +290,7 @@ export function OrgChartView({ roles, onEdit }: Props) {
 
         <div style={{ display: 'flex', gap: 28, alignItems: 'flex-start', justifyContent: 'center', flexWrap: 'wrap' }}>
           {roots.map((root) => (
-            <OrgNode key={root.id} node={root} onEdit={onEdit} collapsedSet={collapsedSet} onToggle={toggleCollapse} />
+            <OrgNode key={root.id} node={root} onEdit={onEdit} onBranchDetails={onBranchDetails} collapsedSet={collapsedSet} onToggle={toggleCollapse} />
           ))}
         </div>
       </div>

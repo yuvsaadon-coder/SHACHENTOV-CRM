@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useRoles } from '../hooks/useRoles'
 import { OrgChartView } from '../components/orgchart/OrgChartView'
+import { BranchDetailsPanel } from '../components/orgchart/BranchDetailsPanel'
 import { RoleEditModal } from '../components/roles/RoleEditModal'
 import { Spinner } from '../components/ui/Spinner'
 import type { OrgRole } from '../types'
@@ -10,10 +11,13 @@ export function OrgChartPage() {
   const { roles, loading, error } = useRoles()
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedRole, setSelectedRole] = useState<OrgRole | null>(null)
+  const [detailsRole, setDetailsRole] = useState<OrgRole | null>(null)
 
   const openEdit = (role: OrgRole) => { setSelectedRole(role); setModalOpen(true) }
   const openNew = () => { setSelectedRole(null); setModalOpen(true) }
   const closeModal = () => { setModalOpen(false); setSelectedRole(null) }
+  const openDetails = (role: OrgRole) => setDetailsRole(role)
+  const closeDetails = () => setDetailsRole(null)
 
   if (loading) return <Spinner size="lg" />
   if (error) return (
@@ -30,7 +34,7 @@ export function OrgChartPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: '#141348' }}>מבנה ארגוני</h1>
-          <p className="text-sm text-gray-500 mt-0.5">לחץ על תפקיד לעריכה ולהגדרת כפיפות</p>
+          <p className="text-sm text-gray-500 mt-0.5">לחץ על סניף לפרטים · לחץ על תפקיד מטה לעריכה</p>
         </div>
         <div className="flex items-center gap-2">
           <Link
@@ -65,7 +69,15 @@ export function OrgChartPage() {
         </div>
       )}
 
-      <OrgChartView roles={roles} onEdit={openEdit} />
+      <OrgChartView roles={roles} onEdit={openEdit} onBranchDetails={openDetails} />
+
+      {detailsRole && (
+        <BranchDetailsPanel
+          role={detailsRole}
+          onClose={closeDetails}
+          onEditRole={(r) => { closeDetails(); openEdit(r) }}
+        />
+      )}
 
       {modalOpen && (
         <RoleEditModal

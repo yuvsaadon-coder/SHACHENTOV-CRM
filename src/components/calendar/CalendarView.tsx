@@ -336,7 +336,7 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
               <div>
                 {hasAnchorGroups && (
                   <SectionHeader
-                    label="ללא עוגן חג"
+                    label="ללא נקודת ציון שנתית"
                     count={grouped.noAnchor.length}
                     collapsed={collapsedSections.has('noAnchor')}
                     onToggle={() => toggleSection('noAnchor')}
