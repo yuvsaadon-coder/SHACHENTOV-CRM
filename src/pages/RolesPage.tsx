@@ -186,7 +186,8 @@ export function RolesPage() {
             <span className="text-white font-semibold text-sm">{level}</span>
             <span className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>{groupRoles.length} תפקידים</span>
           </div>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[600px]">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">תפקיד</th>
@@ -269,6 +270,7 @@ export function RolesPage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       ))}
 

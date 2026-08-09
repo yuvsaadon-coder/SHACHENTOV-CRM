@@ -70,10 +70,10 @@ export function DashboardPage() {
       </div>
 
       {/* Status matrix */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
         {STATUS_LABELS.map((s) => (
-          <div key={s} className="bg-white rounded-xl shadow-sm p-4 text-center border border-gray-100">
-            <div className="text-3xl font-bold text-brand-navy">{stats[s]}</div>
+          <div key={s} className="bg-white rounded-xl shadow-sm p-2 sm:p-4 text-center border border-gray-100">
+            <div className="text-xl sm:text-3xl font-bold text-brand-navy">{stats[s]}</div>
             <StatusBadge status={s} />
           </div>
         ))}

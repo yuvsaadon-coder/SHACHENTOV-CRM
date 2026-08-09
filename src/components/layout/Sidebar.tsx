@@ -11,7 +11,11 @@ const navItems = [
   { to: '/orgchart', label: 'מבנה ארגוני', icon: '🌳' },
 ]
 
-export function Sidebar() {
+interface Props {
+  onClose?: () => void
+}
+
+export function Sidebar({ onClose }: Props) {
   const { appUser, logOut } = useAuth()
   const navigate = useNavigate()
 
@@ -22,13 +26,22 @@ export function Sidebar() {
 
   return (
     <aside className="w-64 bg-brand-navy min-h-screen flex flex-col text-white shrink-0">
-      {/* Logo */}
+      {/* Logo + close button (mobile) */}
       <div className="p-4 border-b border-white/10 flex items-center gap-3">
         <img src="/logo_shachentov.png" alt="שכן טוב" className="h-10 w-10 rounded-full object-cover" />
-        <div>
+        <div className="flex-1">
           <div className="font-bold text-sm">שכן טוב</div>
           <div className="text-xs text-white/60">מערכת CRM</div>
         </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded hover:bg-white/10 text-white/70 hover:text-white text-xl leading-none"
+            aria-label="סגור"
+          >
+            ×
+          </button>
+        )}
       </div>
 
       {/* Main nav */}
@@ -38,6 +51,7 @@ export function Sidebar() {
             <li key={item.to}>
               <NavLink
                 to={item.to}
+                onClick={onClose}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                     isActive
@@ -61,6 +75,7 @@ export function Sidebar() {
               <li key={domain}>
                 <NavLink
                   to={`/tasks?domain=${domain}`}
+                  onClick={onClose}
                   className="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-white/70 hover:text-white hover:bg-white/10 transition-colors"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-brand-yellow" />

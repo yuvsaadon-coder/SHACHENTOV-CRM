@@ -92,7 +92,7 @@ export function TasksPage() {
             placeholder="חיפוש..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal w-48"
+            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal w-full sm:w-48"
           />
 
           <select
@@ -141,7 +141,7 @@ export function TasksPage() {
         </div>
 
         {/* View toggle */}
-        <div className="flex gap-1">
+        <div className="flex gap-1 overflow-x-auto pb-0.5">
           {(['list', 'kanban', 'calendar', 'gantt'] as ViewMode[]).map((v) => (
             <button
               key={v}
@@ -160,62 +160,97 @@ export function TasksPage() {
 
       {/* Views */}
       {view === 'list' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-brand-teal050 text-brand-navy border-b border-gray-100">
-              <tr>
-                <th className="px-4 py-3 text-right font-medium">משימה</th>
-                <th className="px-4 py-3 text-right font-medium">תחום</th>
-                <th className="px-4 py-3 text-right font-medium">קטגוריה</th>
-                <th className="px-4 py-3 text-right font-medium">אחראי</th>
-                <th className="px-4 py-3 text-right font-medium">תדירות</th>
-                <th className="px-4 py-3 text-right font-medium">סיום</th>
-                <th className="px-4 py-3 text-right font-medium">סטטוס</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((t, i) => (
-                <tr
-                  key={t.id}
-                  className={`border-b border-gray-50 hover:bg-brand-teal050 transition-colors ${i % 2 === 0 ? '' : 'bg-gray-50/30'}`}
-                >
-                  <td className="px-4 py-3">
-                    <Link to={`/tasks/${t.id}`} className="font-medium text-brand-navy hover:underline">
-                      {t.title}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <DomainBadge domain={t.domain} />
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{t.category}</td>
-                  <td className="px-4 py-3 text-gray-600">{t.responsible}</td>
-                  <td className="px-4 py-3 text-gray-500">{t.frequency}</td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {t.endDate ? t.endDate.toDate().toLocaleDateString('he-IL') : '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <select
-                      value={t.status}
-                      onChange={(e) => updateStatus(t.id, e.target.value as TaskStatus)}
-                      onClick={(e) => e.stopPropagation()}
-                      style={STATUS_STYLE[t.status]}
-                      className="text-xs font-medium px-2 py-0.5 rounded border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-teal"
-                    >
-                      {STATUS_LABELS.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-brand-teal050 text-brand-navy border-b border-gray-100">
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
-                    אין משימות להצגה
-                  </td>
+                  <th className="px-4 py-3 text-right font-medium">משימה</th>
+                  <th className="px-4 py-3 text-right font-medium">תחום</th>
+                  <th className="px-4 py-3 text-right font-medium">קטגוריה</th>
+                  <th className="px-4 py-3 text-right font-medium">אחראי</th>
+                  <th className="px-4 py-3 text-right font-medium">תדירות</th>
+                  <th className="px-4 py-3 text-right font-medium">סיום</th>
+                  <th className="px-4 py-3 text-right font-medium">סטטוס</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filtered.map((t, i) => (
+                  <tr
+                    key={t.id}
+                    className={`border-b border-gray-50 hover:bg-brand-teal050 transition-colors ${i % 2 === 0 ? '' : 'bg-gray-50/30'}`}
+                  >
+                    <td className="px-4 py-3">
+                      <Link to={`/tasks/${t.id}`} className="font-medium text-brand-navy hover:underline">
+                        {t.title}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <DomainBadge domain={t.domain} />
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{t.category}</td>
+                    <td className="px-4 py-3 text-gray-600">{t.responsible}</td>
+                    <td className="px-4 py-3 text-gray-500">{t.frequency}</td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {t.endDate ? t.endDate.toDate().toLocaleDateString('he-IL') : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <select
+                        value={t.status}
+                        onChange={(e) => updateStatus(t.id, e.target.value as TaskStatus)}
+                        onClick={(e) => e.stopPropagation()}
+                        style={STATUS_STYLE[t.status]}
+                        className="text-xs font-medium px-2 py-0.5 rounded border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-teal"
+                      >
+                        {STATUS_LABELS.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                      אין משימות להצגה
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-2">
+            {filtered.length === 0 && (
+              <div className="text-center py-8 text-gray-400 text-sm">אין משימות להצגה</div>
+            )}
+            {filtered.map((t) => (
+              <div key={t.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <Link to={`/tasks/${t.id}`} className="font-medium text-brand-navy hover:underline text-sm leading-snug">
+                    {t.title}
+                  </Link>
+                  <select
+                    value={t.status}
+                    onChange={(e) => updateStatus(t.id, e.target.value as TaskStatus)}
+                    onClick={(e) => e.stopPropagation()}
+                    style={STATUS_STYLE[t.status]}
+                    className="text-xs font-medium px-2 py-0.5 rounded border-0 cursor-pointer focus:outline-none shrink-0"
+                  >
+                    {STATUS_LABELS.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 mt-1">
+                  <DomainBadge domain={t.domain} />
+                  {t.category && <span>{t.category}</span>}
+                  <span>{t.responsible}</span>
+                  <span>{t.frequency}</span>
+                  {t.endDate && <span>סיום: {t.endDate.toDate().toLocaleDateString('he-IL')}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {view === 'kanban' && <KanbanView tasks={filtered} />}
