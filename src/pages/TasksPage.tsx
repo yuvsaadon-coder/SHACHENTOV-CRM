@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { db } from '../lib/firebase'
 import { useTasks } from '../hooks/useTasks'
 import { Spinner } from '../components/ui/Spinner'
-import { StatusBadge } from '../components/ui/StatusBadge'
 import { DomainBadge } from '../components/ui/DomainBadge'
 import { KanbanView } from '../components/kanban/KanbanView'
 import { CalendarView } from '../components/calendar/CalendarView'
@@ -12,7 +13,19 @@ import {
   type Domain, type TaskStatus, type TaskFrequency
 } from '../types'
 
+const STATUS_STYLE: Record<TaskStatus, React.CSSProperties> = {
+  'בוצע':    { backgroundColor: '#C6EFCE', color: '#0A6B2E' },
+  'בעבודה':  { backgroundColor: '#189A9F', color: '#ffffff' },
+  'בהמתנה':  { backgroundColor: '#FDC857', color: '#7A5A00' },
+  'לא בוצע': { backgroundColor: '#F3F4F6', color: '#4B5563' },
+  'אחר':     { backgroundColor: '#E4DFEC', color: '#5F497A' },
+}
+
 type ViewMode = 'list' | 'kanban' | 'calendar' | 'gantt'
+
+async function updateStatus(taskId: string, status: TaskStatus) {
+  await updateDoc(doc(db, 'tasks', taskId), { status, updatedAt: serverTimestamp() })
+}
 
 export function TasksPage() {
   const { tasks, loading } = useTasks()
@@ -172,7 +185,15 @@ export function TasksPage() {
                     {t.endDate ? t.endDate.toDate().toLocaleDateString('he-IL') : '—'}
                   </td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={t.status} />
+                    <select
+                      value={t.status}
+                      onChange={(e) => updateStatus(t.id, e.target.value as TaskStatus)}
+                      onClick={(e) => e.stopPropagation()}
+                      style={STATUS_STYLE[t.status]}
+                      className="text-xs font-medium px-2 py-0.5 rounded border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-teal"
+                    >
+                      {STATUS_LABELS.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
                   </td>
                 </tr>
               ))}

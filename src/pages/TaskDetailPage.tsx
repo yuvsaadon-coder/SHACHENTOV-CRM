@@ -71,10 +71,7 @@ export function TaskDetailPage() {
     return () => { u1(); u2(); u3() }
   }, [id, isNew])
 
-  const canEdit = appUser?.role === 'admin' ||
-    task?.responsible === appUser?.name ||
-    task?.involved.includes(appUser?.name || '') ||
-    isNew
+  const canEdit = !!appUser || isNew
 
   const save = async () => {
     if (!form.title) return
