@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { useAuth } from '../../context/AuthContext'
 import { db } from '../../lib/firebase'
-import type { Task, TaskStatus } from '../../types'
-import { STATUS_LABELS, DOMAIN_COLORS, DOMAIN_LABELS } from '../../types'
+import type { Task, TaskFrequency, TaskStatus } from '../../types'
+import { STATUS_LABELS, DOMAIN_COLORS, DOMAIN_LABELS, FREQUENCY_LABELS } from '../../types'
 import { getTextColor } from '../../utils/color'
 
 const STATUS_STYLE: Record<TaskStatus, React.CSSProperties> = {
@@ -13,6 +13,16 @@ const STATUS_STYLE: Record<TaskStatus, React.CSSProperties> = {
   'בהמתנה':  { backgroundColor: '#FDC857', color: '#7A5A00' },
   'לא בוצע': { backgroundColor: '#F3F4F6', color: '#4B5563' },
   'אחר':     { backgroundColor: '#E4DFEC', color: '#5F497A' },
+}
+
+const FREQ_SHORT: Record<TaskFrequency, string> = {
+  'חד-פעמי':   'חד-פ׳',
+  'חודשי':     'חודשי',
+  'רבעוני':    'רבעוני',
+  'חצי-שנתי':  'חצי-שנ׳',
+  'שנתי':      'שנתי',
+  'שוטף':      'שוטף',
+  'לפי חג':    'לפי חג',
 }
 
 const MONTH_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
@@ -38,6 +48,23 @@ function taskMatchesMonth(t: Task, year: number, month: number): boolean {
   }
 }
 
+function StatusSelect({ task }: { task: Task }) {
+  return (
+    <select
+      value={task.status}
+      onChange={(e) => {
+        e.stopPropagation()
+        updateDoc(doc(db, 'tasks', task.id), { status: e.target.value, updatedAt: serverTimestamp() })
+      }}
+      onClick={(e) => e.stopPropagation()}
+      style={STATUS_STYLE[task.status]}
+      className="text-xs font-medium px-1.5 py-0.5 rounded border-0 cursor-pointer shrink-0"
+    >
+      {STATUS_LABELS.map((s) => <option key={s} value={s}>{s}</option>)}
+    </select>
+  )
+}
+
 function TaskRow({ task }: { task: Task }) {
   const navigate = useNavigate()
   const domainColor = DOMAIN_COLORS[task.domain] || '#189A9F'
@@ -46,18 +73,7 @@ function TaskRow({ task }: { task: Task }) {
       className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer group border border-transparent hover:border-gray-100 transition-all"
       onClick={() => navigate(`/tasks/${task.id}`)}
     >
-      <select
-        value={task.status}
-        onChange={(e) => {
-          e.stopPropagation()
-          updateDoc(doc(db, 'tasks', task.id), { status: e.target.value, updatedAt: serverTimestamp() })
-        }}
-        onClick={(e) => e.stopPropagation()}
-        style={STATUS_STYLE[task.status]}
-        className="text-xs font-medium px-1.5 py-0.5 rounded border-0 cursor-pointer shrink-0 mt-0.5"
-      >
-        {STATUS_LABELS.map((s) => <option key={s} value={s}>{s}</option>)}
-      </select>
+      <div className="mt-0.5"><StatusSelect task={task} /></div>
       <div className="min-w-0 flex-1">
         <div className="text-sm font-medium text-brand-navy group-hover:underline truncate">{task.title}</div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -67,6 +83,7 @@ function TaskRow({ task }: { task: Task }) {
               {task.endDate.toDate().toLocaleDateString('he-IL')}
             </span>
           )}
+          <span className="text-xs text-gray-300">{FREQ_SHORT[task.frequency]}</span>
         </div>
       </div>
       <span
@@ -79,11 +96,62 @@ function TaskRow({ task }: { task: Task }) {
   )
 }
 
+function CompactRow({ task }: { task: Task }) {
+  const navigate = useNavigate()
+  const domainColor = DOMAIN_COLORS[task.domain] || '#189A9F'
+  return (
+    <div
+      className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 group"
+      onClick={() => navigate(`/tasks/${task.id}`)}
+    >
+      <StatusSelect task={task} />
+      <span className="text-sm text-brand-navy truncate flex-1 min-w-0 group-hover:underline">{task.title}</span>
+      {task.responsible && (
+        <span className="text-xs text-gray-400 shrink-0 hidden sm:block max-w-[120px] truncate">{task.responsible}</span>
+      )}
+      <span
+        style={{ backgroundColor: domainColor, color: getTextColor(domainColor) }}
+        className="text-xs px-1.5 py-0.5 rounded shrink-0 font-medium"
+      >
+        {DOMAIN_LABELS[task.domain]}
+      </span>
+    </div>
+  )
+}
+
+function SectionHeader({
+  label, count, icon, collapsed, onToggle,
+}: {
+  label: string
+  count: number
+  icon?: string
+  collapsed: boolean
+  onToggle: () => void
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className="w-full flex items-center gap-2 px-4 py-2 text-right border-b border-gray-100 hover:bg-gray-50 transition-colors"
+      style={{ background: 'transparent' }}
+    >
+      <span className="text-xs font-semibold text-gray-600 flex-1 text-right">
+        {icon && <span className="ml-1">{icon}</span>}
+        {label}
+        <span className="text-gray-400 font-normal mr-1.5">({count})</span>
+      </span>
+      <span className="text-gray-400 text-xs">{collapsed ? '▶' : '▼'}</span>
+    </button>
+  )
+}
+
 export function CalendarView({ tasks }: { tasks: Task[] }) {
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [myTasksOnly, setMyTasksOnly] = useState(false)
+  const [compact, setCompact] = useState(false)
+  const [selectedFreqs, setSelectedFreqs] = useState<Set<TaskFrequency>>(new Set(FREQUENCY_LABELS))
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
   const { appUser } = useAuth()
 
   const goBack = () => {
@@ -95,24 +163,45 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
     else setMonth(m => m + 1)
   }
 
+  const toggleFreq = (f: TaskFrequency) => {
+    setSelectedFreqs(prev => {
+      const next = new Set(prev)
+      if (next.has(f)) next.delete(f)
+      else next.add(f)
+      return next
+    })
+  }
+
+  const toggleSection = (key: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
   const displayTasks = useMemo(() => {
-    if (!myTasksOnly || !appUser?.name) return tasks
-    return tasks.filter(t =>
-      t.responsible === appUser.name ||
-      (t.involved ?? []).includes(appUser.name)
-    )
+    let filtered = tasks
+    if (myTasksOnly && appUser?.name) {
+      filtered = filtered.filter(t =>
+        t.responsible === appUser.name ||
+        (t.involved ?? []).includes(appUser.name)
+      )
+    }
+    return filtered
   }, [tasks, myTasksOnly, appUser])
 
   const monthTasks = useMemo(() => {
     return displayTasks
-      .filter(t => taskMatchesMonth(t, year, month))
+      .filter(t => taskMatchesMonth(t, year, month) && selectedFreqs.has(t.frequency))
       .sort((a, b) => {
         if (!a.endDate && !b.endDate) return 0
         if (!a.endDate) return 1
         if (!b.endDate) return -1
         return a.endDate.toDate().getTime() - b.endDate.toDate().getTime()
       })
-  }, [displayTasks, year, month])
+  }, [displayTasks, year, month, selectedFreqs])
 
   const grouped = useMemo(() => {
     const withAnchor: Record<string, Task[]> = {}
@@ -129,6 +218,7 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
   }, [monthTasks])
 
   const hasAnchorGroups = Object.keys(grouped.withAnchor).length > 0
+  const RowComponent = compact ? CompactRow : TaskRow
 
   return (
     <div className="space-y-3">
@@ -150,8 +240,21 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-gray-500">{monthTasks.length} משימות</span>
+
+          {/* Compact toggle */}
+          <button
+            onClick={() => setCompact(c => !c)}
+            title={compact ? 'תצוגה מורחבת' : 'תצוגה קומפקטית'}
+            className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+              compact ? 'bg-brand-navy text-white border-brand-navy' : 'text-gray-600 border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            {compact ? '☰ קומפקטי' : '≡ קומפקטי'}
+          </button>
+
+          {/* My tasks toggle */}
           <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
             <button
               onClick={() => setMyTasksOnly(false)}
@@ -169,6 +272,35 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
         </div>
       </div>
 
+      {/* Frequency filter chips */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-3 py-2 flex flex-wrap gap-1.5 items-center">
+        <span className="text-xs text-gray-400 ml-1">סינון תדירות:</span>
+        {FREQUENCY_LABELS.map(freq => {
+          const active = selectedFreqs.has(freq)
+          return (
+            <button
+              key={freq}
+              onClick={() => toggleFreq(freq)}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${
+                active
+                  ? 'bg-brand-teal text-white border-brand-teal'
+                  : 'text-gray-500 border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              {FREQ_SHORT[freq]}
+            </button>
+          )
+        })}
+        {selectedFreqs.size < FREQUENCY_LABELS.length && (
+          <button
+            onClick={() => setSelectedFreqs(new Set(FREQUENCY_LABELS))}
+            className="text-xs text-brand-teal hover:underline px-1"
+          >
+            הכל
+          </button>
+        )}
+      </div>
+
       {/* Task list */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         {monthTasks.length === 0 ? (
@@ -179,29 +311,42 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
         ) : (
           <div className="divide-y divide-gray-50">
             {/* Holiday anchor groups */}
-            {Object.entries(grouped.withAnchor).map(([anchor, anchorTasks]) => (
-              <div key={anchor}>
-                <div className="px-4 py-2.5 bg-amber-50 flex items-center gap-2 border-b border-amber-100">
-                  <span className="text-amber-700 font-semibold text-sm">🕎 {anchor}</span>
-                  <span className="text-xs text-amber-600">({anchorTasks.length} משימות)</span>
+            {Object.entries(grouped.withAnchor).map(([anchor, anchorTasks]) => {
+              const isCollapsed = collapsedSections.has(anchor)
+              return (
+                <div key={anchor}>
+                  <SectionHeader
+                    label={anchor}
+                    count={anchorTasks.length}
+                    icon="🕎"
+                    collapsed={isCollapsed}
+                    onToggle={() => toggleSection(anchor)}
+                  />
+                  {!isCollapsed && (
+                    <div className={compact ? '' : 'px-2 py-1'}>
+                      {anchorTasks.map(t => <RowComponent key={t.id} task={t} />)}
+                    </div>
+                  )}
                 </div>
-                <div className="px-2 py-1">
-                  {anchorTasks.map(t => <TaskRow key={t.id} task={t} />)}
-                </div>
-              </div>
-            ))}
+              )
+            })}
 
             {/* Tasks without anchor */}
             {grouped.noAnchor.length > 0 && (
               <div>
                 {hasAnchorGroups && (
-                  <div className="px-4 py-2 text-xs text-gray-400 font-medium bg-gray-50 border-b border-gray-100">
-                    ללא עוגן חג
+                  <SectionHeader
+                    label="ללא עוגן חג"
+                    count={grouped.noAnchor.length}
+                    collapsed={collapsedSections.has('noAnchor')}
+                    onToggle={() => toggleSection('noAnchor')}
+                  />
+                )}
+                {!collapsedSections.has('noAnchor') && (
+                  <div className={compact ? '' : 'px-2 py-1'}>
+                    {grouped.noAnchor.map(t => <RowComponent key={t.id} task={t} />)}
                   </div>
                 )}
-                <div className="px-2 py-1">
-                  {grouped.noAnchor.map(t => <TaskRow key={t.id} task={t} />)}
-                </div>
               </div>
             )}
           </div>
