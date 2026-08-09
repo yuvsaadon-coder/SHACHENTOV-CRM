@@ -6,16 +6,24 @@ import type { OrgRole } from '../types'
 export function useRoles() {
   const [roles, setRoles] = useState<OrgRole[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const q = query(collection(db, 'roles'), orderBy('level'))
-    return onSnapshot(q, (snap) => {
-      setRoles(snap.docs.map((d) => ({ id: d.id, ...d.data() } as OrgRole)))
-      setLoading(false)
-    })
+    return onSnapshot(
+      q,
+      (snap) => {
+        setRoles(snap.docs.map((d) => ({ id: d.id, ...d.data() } as OrgRole)))
+        setLoading(false)
+      },
+      (err) => {
+        setError(err.message)
+        setLoading(false)
+      }
+    )
   }, [])
 
-  return { roles, loading }
+  return { roles, loading, error }
 }
 
 export function applyDelegation(role: OrgRole): OrgRole {
