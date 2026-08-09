@@ -89,6 +89,7 @@ export interface OrgRole {
   affectsTasks: boolean
   delegatedTo: string | null
   notes: string
+  reportsTo?: string
 }
 
 export const ROLE_LEVELS: RoleLevel[] = ['מטה', 'סניף חוץ', 'סניף ירושלים', 'בתי קפה נודדים', 'טוסטר', 'סניפים עיתיים', 'יריד']

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useRoles, applyDelegation } from '../hooks/useRoles'
 import { useTasks } from '../hooks/useTasks'
 import { Spinner } from '../components/ui/Spinner'
+import { RoleEditModal } from '../components/roles/RoleEditModal'
 import type { RoleLevel, RoleStatus, OrgRole } from '../types'
 import { ROLE_LEVELS, ROLE_STATUS_LABELS } from '../types'
 
@@ -44,6 +45,12 @@ export function RolesPage() {
   const [levelFilter, setLevelFilter] = useState<RoleLevel | ''>('')
   const [statusFilter, setStatusFilter] = useState<RoleStatus | ''>('')
   const [search, setSearch] = useState('')
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedRole, setSelectedRole] = useState<OrgRole | null>(null)
+
+  const openEdit = (role: OrgRole) => { setSelectedRole(role); setModalOpen(true) }
+  const openNew = () => { setSelectedRole(null); setModalOpen(true) }
+  const closeModal = () => { setModalOpen(false); setSelectedRole(null) }
 
   const withDelegation = useMemo(() => roles.map(applyDelegation), [roles])
 
@@ -97,7 +104,16 @@ export function RolesPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-brand-navy">איוש תפקידים</h1>
-        <span className="text-sm text-gray-500">{roles.length} תפקידים</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500">{roles.length} תפקידים</span>
+          <button
+            onClick={openNew}
+            className="px-4 py-2 text-sm font-medium rounded-lg text-white hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: '#141348' }}
+          >
+            + תפקיד חדש
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -165,6 +181,7 @@ export function RolesPage() {
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">עדיפות</th>
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">משימות / הערות</th>
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">פרטי קשר</th>
+                <th className="px-3 py-2 w-10"></th>
               </tr>
             </thead>
             <tbody>
@@ -216,6 +233,15 @@ export function RolesPage() {
                       {role.phone && <div dir="ltr">{role.phone}</div>}
                       {role.email && <div className="text-gray-400 truncate max-w-[140px]">{role.email}</div>}
                     </td>
+                    <td className="px-3 py-3">
+                      <button
+                        onClick={() => openEdit(role)}
+                        className="text-gray-300 hover:text-[#189A9F] transition-colors p-1 rounded"
+                        title="עריכה"
+                      >
+                        ✏️
+                      </button>
+                    </td>
                   </tr>
                 )
               })}
@@ -226,6 +252,14 @@ export function RolesPage() {
 
       {grouped.length === 0 && (
         <div className="text-center py-12 text-gray-400">אין תפקידים להצגה</div>
+      )}
+
+      {modalOpen && (
+        <RoleEditModal
+          role={selectedRole}
+          allRoles={roles}
+          onClose={closeModal}
+        />
       )}
     </div>
   )
