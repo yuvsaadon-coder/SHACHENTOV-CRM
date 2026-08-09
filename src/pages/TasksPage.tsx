@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useTasks } from '../hooks/useTasks'
+import { exportTasks } from '../utils/export'
 import { Spinner } from '../components/ui/Spinner'
 import { DomainBadge } from '../components/ui/DomainBadge'
 import { KanbanView } from '../components/kanban/KanbanView'
@@ -67,12 +68,20 @@ export function TasksPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-brand-navy">משימות</h1>
-        <Link
-          to="/tasks/new"
-          className="bg-brand-teal hover:bg-brand-tealDark text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          + משימה חדשה
-        </Link>
+        <div className="flex gap-2">
+          <button
+            onClick={() => exportTasks(filtered)}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-600"
+          >
+            ייצוא CSV
+          </button>
+          <Link
+            to="/tasks/new"
+            className="bg-brand-teal hover:bg-brand-tealDark text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            + משימה חדשה
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}

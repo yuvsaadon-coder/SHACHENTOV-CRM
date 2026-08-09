@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useContacts } from '../hooks/useContacts'
 import { useTasks } from '../hooks/useTasks'
 import { Spinner } from '../components/ui/Spinner'
+import { exportContacts } from '../utils/export'
 import type { ContactType } from '../types'
 
 export function ContactsPage() {
@@ -35,6 +36,12 @@ export function ContactsPage() {
       <div className="flex-1 flex flex-col gap-3 overflow-auto">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h1 className="text-2xl font-bold text-brand-navy">אנשי קשר</h1>
+          <button
+            onClick={() => exportContacts(filtered)}
+            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-600"
+          >
+            ייצוא CSV
+          </button>
         </div>
         <div className="flex gap-2">
           <input

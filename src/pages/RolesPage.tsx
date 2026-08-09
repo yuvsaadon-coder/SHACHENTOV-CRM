@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { db } from '../lib/firebase'
 import { useRoles, applyDelegation } from '../hooks/useRoles'
+import { exportRoles } from '../utils/export'
 import { useTasks } from '../hooks/useTasks'
 import { Spinner } from '../components/ui/Spinner'
 import { RoleEditModal } from '../components/roles/RoleEditModal'
@@ -13,6 +16,18 @@ const STATUS_STYLES: Record<RoleStatus, string> = {
   'חלקי': 'bg-orange-100 text-orange-700',
   'בסיכון': 'bg-[#FDC857] text-[#7A5A00]',
   'אחר': 'bg-[#E4DFEC] text-[#5F497A]',
+}
+
+const STATUS_SELECT_STYLE: Record<RoleStatus, React.CSSProperties> = {
+  'מאויש': { backgroundColor: '#C6EFCE', color: '#0A6B2E' },
+  'חסר':   { backgroundColor: '#FEE2E2', color: '#B91C1C' },
+  'חלקי':  { backgroundColor: '#FED7AA', color: '#9A3412' },
+  'בסיכון':{ backgroundColor: '#FDC857', color: '#7A5A00' },
+  'אחר':   { backgroundColor: '#E4DFEC', color: '#5F497A' },
+}
+
+async function updateRoleStatus(roleId: string, status: RoleStatus) {
+  await updateDoc(doc(db, 'roles', roleId), { status, updatedAt: serverTimestamp() })
 }
 
 const PRIORITY_STYLES: Record<string, string> = {
@@ -31,13 +46,6 @@ const LEVEL_BG_COLOR: Record<string, string> = {
   'יריד':            '#7A5A00',
 }
 
-function RoleStatusBadge({ status }: { status: RoleStatus }) {
-  return (
-    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATUS_STYLES[status]}`}>
-      {status}
-    </span>
-  )
-}
 
 export function RolesPage() {
   const { roles, loading, error } = useRoles()
@@ -106,6 +114,12 @@ export function RolesPage() {
         <h1 className="text-2xl font-bold text-brand-navy">איוש תפקידים</h1>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-500">{roles.length} תפקידים</span>
+          <button
+            onClick={() => exportRoles(roles)}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-600"
+          >
+            ייצוא CSV
+          </button>
           <button
             onClick={openNew}
             className="px-4 py-2 text-sm font-medium rounded-lg text-white hover:opacity-90 transition-opacity"
@@ -199,7 +213,15 @@ export function RolesPage() {
                       {role.holderName || <span className="text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3">
-                      <RoleStatusBadge status={role.status} />
+                      <select
+                        value={role.status}
+                        onChange={(e) => updateRoleStatus(role.id, e.target.value as RoleStatus)}
+                        onClick={(e) => e.stopPropagation()}
+                        style={STATUS_SELECT_STYLE[role.status]}
+                        className="text-xs font-medium px-2 py-0.5 rounded border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-teal"
+                      >
+                        {ROLE_STATUS_LABELS.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
                       {role.delegatedTo && (
                         <div className="mt-1.5">
                           <span className="text-xs bg-orange-50 text-orange-700 border border-orange-200 px-1.5 py-0.5 rounded">
