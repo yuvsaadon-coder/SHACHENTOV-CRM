@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { Task, Domain } from '../../types'
 import { DOMAIN_COLORS, DOMAIN_LABELS, DOMAINS } from '../../types'
 import { getTextColor } from '../../utils/color'
+import { useAuth } from '../../context/AuthContext'
 
 type GroupMode = 'domain' | 'person'
 type TimelineMode = 'monthly' | 'quarterly'
@@ -94,23 +95,32 @@ function expandForMonthly(t: Task, year: number): DisplayTask[] {
 
 export function GanttView({ tasks }: { tasks: Task[] }) {
   const navigate = useNavigate()
+  const { appUser } = useAuth()
   const [groupBy, setGroupBy] = useState<GroupMode>('domain')
   const [timelineMode, setTimelineMode] = useState<TimelineMode>('monthly')
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedDomain, setSelectedDomain] = useState<Domain | null>(null)
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null)
+  const [myTasksOnly, setMyTasksOnly] = useState(true)
+
+  const baseTasks = useMemo(() => {
+    if (!myTasksOnly || !appUser?.name) return tasks
+    return tasks.filter(t =>
+      t.responsible === appUser.name || (t.involved ?? []).includes(appUser.name)
+    )
+  }, [tasks, myTasksOnly, appUser])
 
   const tasksForMonthly = useMemo<DisplayTask[]>(() => {
     const result: DisplayTask[] = []
-    for (const t of tasks) result.push(...expandForMonthly(t, selectedYear))
+    for (const t of baseTasks) result.push(...expandForMonthly(t, selectedYear))
     return result.sort((a, b) => a.displayStart.getTime() - b.displayStart.getTime())
-  }, [tasks, selectedYear])
+  }, [baseTasks, selectedYear])
 
   const tasksForQuarterly = useMemo<DisplayTask[]>(() => {
     const result: DisplayTask[] = []
-    for (const t of tasks) result.push(...expandForYear(t, selectedYear))
+    for (const t of baseTasks) result.push(...expandForYear(t, selectedYear))
     return result.sort((a, b) => a.displayStart.getTime() - b.displayStart.getTime())
-  }, [tasks, selectedYear])
+  }, [baseTasks, selectedYear])
 
   const allDisplayTasks = timelineMode === 'monthly' ? tasksForMonthly : tasksForQuarterly
 
@@ -120,7 +130,7 @@ export function GanttView({ tasks }: { tasks: Task[] }) {
     return allDisplayTasks
   }, [allDisplayTasks, groupBy, selectedDomain, selectedPerson])
 
-  const tasksWithDates = useMemo(() => tasks.filter(t => t.endDate), [tasks])
+  const tasksWithDates = useMemo(() => baseTasks.filter(t => t.endDate), [baseTasks])
 
   const persons = useMemo(
     () => [...new Set(tasksWithDates.map(t => t.responsible).filter(r => r.length > 0))].sort(),
@@ -213,6 +223,18 @@ export function GanttView({ tasks }: { tasks: Task[] }) {
     <div className="space-y-3">
       {/* Controls */}
       <div className="flex flex-wrap gap-3 items-center">
+        {/* My tasks toggle */}
+        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
+          <button
+            onClick={() => setMyTasksOnly(false)}
+            className={`px-3 py-1.5 transition-colors ${!myTasksOnly ? 'bg-brand-navy text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+          >כל המשימות</button>
+          <button
+            onClick={() => setMyTasksOnly(true)}
+            className={`px-3 py-1.5 transition-colors border-r border-gray-200 ${myTasksOnly ? 'bg-brand-navy text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+          >המשימות שלי</button>
+        </div>
+
         {/* Group toggle */}
         <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
           <button

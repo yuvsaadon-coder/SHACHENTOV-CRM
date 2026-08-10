@@ -6,7 +6,6 @@ const navItems = [
   { to: '/dashboard', label: 'לוח בקרה', icon: '📊' },
   { to: '/tasks', label: 'משימות', icon: '✅' },
   { to: '/contacts', label: 'אנשי קשר', icon: '👥' },
-  { to: '/calendar', label: 'לוח שנה', icon: '📅' },
   { to: '/roles', label: 'איוש תפקידים', icon: '🏢' },
   { to: '/orgchart', label: 'מבנה ארגוני', icon: '🌳' },
 ]

@@ -1,19 +1,11 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTasks } from '../hooks/useTasks'
 import { useRoles, applyDelegation } from '../hooks/useRoles'
 import { useAuth } from '../context/AuthContext'
 import { Spinner } from '../components/ui/Spinner'
 import { StatusBadge } from '../components/ui/StatusBadge'
-import { DOMAIN_LABELS, DOMAINS, STATUS_LABELS, type Domain, type TaskStatus } from '../types'
+import { DOMAIN_LABELS, DOMAINS, STATUS_LABELS, FREQUENCY_LABELS, type Domain, type TaskStatus, type TaskFrequency } from '../types'
 import { Link } from 'react-router-dom'
-
-function isSoon(ts: { toDate: () => Date } | null, days: number) {
-  if (!ts) return false
-  const d = ts.toDate()
-  const now = new Date()
-  const diff = (d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-  return diff >= 0 && diff <= days
-}
 
 function isOverdue(ts: { toDate: () => Date } | null, status: TaskStatus) {
   if (!ts || status === 'בוצע') return false
@@ -24,6 +16,8 @@ export function DashboardPage() {
   const { tasks, loading } = useTasks()
   const { roles } = useRoles()
   const { appUser } = useAuth()
+  const [domainCollapsed, setDomainCollapsed] = useState(false)
+  const [domainFreqFilter, setDomainFreqFilter] = useState<TaskFrequency | ''>('')
 
   const stats = useMemo(() => {
     const byStatus: Record<TaskStatus, number> = {
@@ -34,17 +28,14 @@ export function DashboardPage() {
   }, [tasks])
 
   const domainStats = useMemo(() => {
+    const base = domainFreqFilter ? tasks.filter(t => t.frequency === domainFreqFilter) : tasks
     return DOMAINS.map((domain) => {
-      const dt = tasks.filter((t) => t.domain === domain)
+      const dt = base.filter((t) => t.domain === domain)
       const done = dt.filter((t) => t.status === 'בוצע').length
       return { domain, total: dt.length, done }
     })
-  }, [tasks])
+  }, [tasks, domainFreqFilter])
 
-  const soon7 = useMemo(() => tasks.filter((t) => isSoon(t.endDate, 7)), [tasks])
-  // soon30 available for future use
-  const _soon30 = useMemo(() => tasks.filter((t) => isSoon(t.endDate, 30) && !isSoon(t.endDate, 7)), [tasks])
-  void _soon30
   const overdue = useMemo(() => tasks.filter((t) => isOverdue(t.endDate, t.status)), [tasks])
 
   const vacantHQ = useMemo(() =>
@@ -79,31 +70,62 @@ export function DashboardPage() {
         ))}
       </div>
 
-      {/* Domain progress */}
-      <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-        <h2 className="font-bold text-brand-navy mb-3">סטטוס לפי תחום</h2>
-        <div className="space-y-3">
-          {domainStats.map(({ domain, total, done }) => {
-            const pct = total > 0 ? Math.round((done / total) * 100) : 0
-            return (
-              <div key={domain} className="flex items-center gap-3">
-                <div className="w-24 text-sm text-brand-navy2 text-right shrink-0">
-                  {DOMAIN_LABELS[domain as Domain]}
-                </div>
-                <div className="flex-1 bg-gray-100 rounded-full h-2">
-                  <div
-                    className="bg-brand-teal h-2 rounded-full transition-all"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <div className="text-xs text-gray-500 w-16 text-left">{done}/{total}</div>
-              </div>
-            )
-          })}
-        </div>
+      {/* Domain progress — collapsible with frequency filter */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <button
+          onClick={() => setDomainCollapsed(c => !c)}
+          className="w-full flex items-center justify-between px-4 py-3 text-right hover:bg-gray-50 transition-colors rounded-xl"
+        >
+          <h2 className="font-bold text-brand-navy">סטטוס לפי תחום</h2>
+          <span className="text-gray-400 text-xs">{domainCollapsed ? '▶' : '▼'}</span>
+        </button>
+
+        {!domainCollapsed && (
+          <div className="px-4 pb-4">
+            {/* Frequency chips */}
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              <button
+                onClick={() => setDomainFreqFilter('')}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  !domainFreqFilter ? 'bg-brand-teal text-white border-brand-teal' : 'text-gray-500 border-gray-200 hover:border-gray-300'
+                }`}
+              >הכל</button>
+              {FREQUENCY_LABELS.map(f => (
+                <button
+                  key={f}
+                  onClick={() => setDomainFreqFilter(domainFreqFilter === f ? '' : f as TaskFrequency)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    domainFreqFilter === f ? 'bg-brand-teal text-white border-brand-teal' : 'text-gray-500 border-gray-200 hover:border-gray-300'
+                  }`}
+                >{f}</button>
+              ))}
+            </div>
+
+            {/* Progress bars */}
+            <div className="space-y-3">
+              {domainStats.map(({ domain, total, done }) => {
+                const pct = total > 0 ? Math.round((done / total) * 100) : 0
+                return (
+                  <div key={domain} className="flex items-center gap-3">
+                    <div className="w-24 text-sm text-brand-navy2 text-right shrink-0">
+                      {DOMAIN_LABELS[domain as Domain]}
+                    </div>
+                    <div className="flex-1 bg-gray-100 rounded-full h-2">
+                      <div
+                        className="bg-brand-teal h-2 rounded-full transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="text-xs text-gray-500 w-16 text-left">{done}/{total}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Overdue */}
         <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
           <h2 className="font-bold text-red-600 mb-3">⚠ באיחור ({overdue.length})</h2>
@@ -116,21 +138,6 @@ export function DashboardPage() {
               </li>
             ))}
             {overdue.length === 0 && <li className="text-sm text-gray-400">אין משימות באיחור 🎉</li>}
-          </ul>
-        </div>
-
-        {/* Soon 7 days */}
-        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-          <h2 className="font-bold text-brand-navy mb-3">📅 ב-7 הימים הקרובים ({soon7.length})</h2>
-          <ul className="space-y-2">
-            {soon7.slice(0, 5).map((t) => (
-              <li key={t.id}>
-                <Link to={`/tasks/${t.id}`} className="text-sm text-brand-navy hover:underline block truncate">
-                  {t.title}
-                </Link>
-              </li>
-            ))}
-            {soon7.length === 0 && <li className="text-sm text-gray-400">אין משימות קרובות</li>}
           </ul>
         </div>
 
@@ -150,6 +157,7 @@ export function DashboardPage() {
           </ul>
         </div>
       </div>
+
       {/* Roles alerts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl shadow-sm p-4 border border-red-100">

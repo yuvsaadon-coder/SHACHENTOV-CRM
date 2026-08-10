@@ -7,11 +7,10 @@ import { exportTasks } from '../utils/export'
 import { Spinner } from '../components/ui/Spinner'
 import { DomainBadge } from '../components/ui/DomainBadge'
 import { KanbanView } from '../components/kanban/KanbanView'
-import { CalendarView } from '../components/calendar/CalendarView'
 import { GanttView } from '../components/gantt/GanttView'
 import {
   DOMAIN_LABELS, DOMAINS, STATUS_LABELS, FREQUENCY_LABELS,
-  type Domain, type TaskStatus, type TaskFrequency
+  type Domain, type TaskStatus, type TaskFrequency, type Task
 } from '../types'
 
 const STATUS_STYLE: Record<TaskStatus, React.CSSProperties> = {
@@ -22,10 +21,33 @@ const STATUS_STYLE: Record<TaskStatus, React.CSSProperties> = {
   'אחר':     { backgroundColor: '#E4DFEC', color: '#5F497A' },
 }
 
-type ViewMode = 'list' | 'kanban' | 'calendar' | 'gantt'
+type ViewMode = 'list' | 'kanban' | 'gantt'
 
 async function updateStatus(taskId: string, status: TaskStatus) {
   await updateDoc(doc(db, 'tasks', taskId), { status, updatedAt: serverTimestamp() })
+}
+
+function taskMatchesCurrentMonth(t: Task): boolean {
+  if (!t.endDate) return false
+  const now = new Date()
+  const m = now.getMonth()
+  const end = t.endDate.toDate()
+  switch (t.frequency) {
+    case 'חד-פעמי':
+      return end.getFullYear() === now.getFullYear() && end.getMonth() === m
+    case 'חודשי':
+    case 'שוטף':
+      return true
+    case 'רבעוני':
+      return [2, 5, 8, 11].includes(m)
+    case 'חצי-שנתי':
+      return [5, 11].includes(m)
+    case 'שנתי':
+    case 'לפי חג':
+      return end.getMonth() === m
+    default:
+      return end.getFullYear() === now.getFullYear() && end.getMonth() === m
+  }
 }
 
 export function TasksPage() {
@@ -33,6 +55,7 @@ export function TasksPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [view, setView] = useState<ViewMode>('list')
   const [search, setSearch] = useState('')
+  const [monthFilter, setMonthFilter] = useState(false)
 
   const domainFilter = searchParams.get('domain') as Domain | null
   const statusFilter = searchParams.get('status') as TaskStatus | null
@@ -40,6 +63,7 @@ export function TasksPage() {
 
   const filtered = useMemo(() => {
     return tasks.filter((t) => {
+      if (monthFilter && !taskMatchesCurrentMonth(t)) return false
       if (domainFilter && t.domain !== domainFilter) return false
       if (statusFilter && t.status !== statusFilter) return false
       if (freqFilter && t.frequency !== freqFilter) return false
@@ -53,7 +77,7 @@ export function TasksPage() {
       }
       return true
     })
-  }, [tasks, domainFilter, statusFilter, freqFilter, search])
+  }, [tasks, monthFilter, domainFilter, statusFilter, freqFilter, search])
 
   const setFilter = (key: string, val: string | null) => {
     const p = new URLSearchParams(searchParams)
@@ -61,6 +85,8 @@ export function TasksPage() {
     else p.delete(key)
     setSearchParams(p)
   }
+
+  const hasAnyFilter = !!(domainFilter || statusFilter || freqFilter || search || monthFilter)
 
   if (loading) return <Spinner size="lg" />
 
@@ -128,9 +154,21 @@ export function TasksPage() {
             ))}
           </select>
 
-          {(domainFilter || statusFilter || freqFilter || search) && (
+          {/* Current month quick filter */}
+          <button
+            onClick={() => setMonthFilter(m => !m)}
+            className={`px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+              monthFilter
+                ? 'bg-brand-teal text-white border-brand-teal'
+                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            📅 החודש הנוכחי
+          </button>
+
+          {hasAnyFilter && (
             <button
-              onClick={() => { setSearchParams({}); setSearch('') }}
+              onClick={() => { setSearchParams({}); setSearch(''); setMonthFilter(false) }}
               className="text-xs text-gray-500 hover:text-red-500 underline"
             >
               נקה מסננים
@@ -142,7 +180,7 @@ export function TasksPage() {
 
         {/* View toggle */}
         <div className="flex gap-1 overflow-x-auto pb-0.5">
-          {(['list', 'kanban', 'calendar', 'gantt'] as ViewMode[]).map((v) => (
+          {(['list', 'kanban', 'gantt'] as ViewMode[]).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
@@ -152,7 +190,7 @@ export function TasksPage() {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {{ list: '📋 רשימה', kanban: '🗂 קנבן', calendar: '📅 לוח שנה', gantt: '📊 גאנט' }[v]}
+              {{ list: '📋 רשימה', kanban: '🗂 קנבן', gantt: '📊 גאנט' }[v]}
             </button>
           ))}
         </div>
@@ -189,10 +227,10 @@ export function TasksPage() {
                     <td className="px-4 py-2.5">
                       <DomainBadge domain={t.domain} />
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{t.category}</td>
-                    <td className="px-4 py-3 text-gray-600">{t.responsible}</td>
-                    <td className="px-4 py-3 text-gray-500">{t.frequency}</td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-2.5 text-gray-600">{t.category}</td>
+                    <td className="px-4 py-2.5 text-gray-600">{t.responsible}</td>
+                    <td className="px-4 py-2.5 text-gray-500">{t.frequency}</td>
+                    <td className="px-4 py-2.5 text-gray-500">
                       {t.endDate ? t.endDate.toDate().toLocaleDateString('he-IL') : '—'}
                     </td>
                     <td className="px-4 py-2.5">
@@ -254,7 +292,6 @@ export function TasksPage() {
       )}
 
       {view === 'kanban' && <KanbanView tasks={filtered} />}
-      {view === 'calendar' && <CalendarView tasks={filtered} />}
       {view === 'gantt' && <GanttView tasks={filtered} />}
     </div>
   )

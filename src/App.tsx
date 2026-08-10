@@ -8,20 +8,8 @@ import { TaskDetailPage } from './pages/TaskDetailPage'
 import { ContactsPage } from './pages/ContactsPage'
 import { RolesPage } from './pages/RolesPage'
 import { OrgChartPage } from './pages/OrgChartPage'
-import { CalendarView } from './components/calendar/CalendarView'
 import { HierarchySetupPage } from './pages/HierarchySetupPage'
 import { Spinner } from './components/ui/Spinner'
-import { useTasks } from './hooks/useTasks'
-
-function CalendarPage() {
-  const { tasks } = useTasks()
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-brand-navy">לוח שנה</h1>
-      <CalendarView tasks={tasks} />
-    </div>
-  )
-}
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { firebaseUser, loading } = useAuth()
@@ -49,7 +37,6 @@ export default function App() {
             <Route path="tasks" element={<TasksPage />} />
             <Route path="tasks/:id" element={<TaskDetailPage />} />
             <Route path="contacts" element={<ContactsPage />} />
-            <Route path="calendar" element={<CalendarPage />} />
             <Route path="roles" element={<RolesPage />} />
             <Route path="orgchart" element={<OrgChartPage />} />
             <Route path="admin/hierarchy" element={<HierarchySetupPage />} />
