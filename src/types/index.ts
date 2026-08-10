@@ -116,6 +116,7 @@ export interface OrgRole {
   notes: string
   reportsTo?: string
   volunteerInfo?: BranchVolunteerInfo | null
+  portalBranchId?: string
 }
 
 export const ROLE_LEVELS: RoleLevel[] = ['מטה', 'סניף חוץ', 'סניף ירושלים', 'בתי קפה נודדים', 'טוסטר', 'סניפים עיתיים', 'יריד']

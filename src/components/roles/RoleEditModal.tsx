@@ -3,6 +3,7 @@ import { doc, updateDoc, addDoc, collection, deleteDoc } from 'firebase/firestor
 import { db } from '../../lib/firebase'
 import type { OrgRole, RoleLevel, RoleStatus, RolePriority } from '../../types'
 import { ROLE_LEVELS, ROLE_STATUS_LABELS, ROLE_PRIORITY_LABELS } from '../../types'
+import { useAllBranches } from '../../hooks/useBranch'
 
 interface Props {
   role: OrgRole | null
@@ -24,6 +25,7 @@ const EMPTY: Omit<OrgRole, 'id'> = {
   delegatedTo: null,
   notes: '',
   reportsTo: undefined,
+  portalBranchId: undefined,
 }
 
 export function RoleEditModal({ role, allRoles, onClose }: Props) {
@@ -32,6 +34,7 @@ export function RoleEditModal({ role, allRoles, onClose }: Props) {
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { branches } = useAllBranches()
 
   useEffect(() => {
     setForm(role ? { ...EMPTY, ...role } : { ...EMPTY })
@@ -233,6 +236,23 @@ export function RoleEditModal({ role, allRoles, onClose }: Props) {
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F] resize-none"
             />
           </div>
+
+          {branches.length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">סניף פורטל מקושר</label>
+              <select
+                value={form.portalBranchId ?? ''}
+                onChange={(e) => set('portalBranchId', e.target.value || undefined)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+              >
+                <option value="">— ללא קישור —</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name} ({b.city})</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">מאפשר צפייה בדיווחים הרבעוניים של הסניף מתוך המבנה הארגוני</p>
+            </div>
+          )}
 
           {error && (
             <div className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</div>

@@ -74,6 +74,7 @@ export function OrgChartPage() {
       {detailsRole && (
         <BranchDetailsPanel
           role={detailsRole}
+          branchId={detailsRole.portalBranchId}
           onClose={closeDetails}
           onEditRole={(r) => { closeDetails(); openEdit(r) }}
         />
