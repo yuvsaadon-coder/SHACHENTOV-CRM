@@ -183,7 +183,7 @@ export function TaskDetailPage() {
       )}
 
       {(tab === 'details' || isNew) && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
           {editing ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">

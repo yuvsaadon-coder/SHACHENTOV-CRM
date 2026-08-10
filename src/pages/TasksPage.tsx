@@ -85,7 +85,7 @@ export function TasksPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 space-y-3">
+      <div className="bg-white rounded-xl shadow-sm p-3 border border-gray-100 space-y-2.5">
         <div className="flex flex-wrap gap-2 items-center">
           <input
             type="text"
@@ -166,13 +166,13 @@ export function TasksPage() {
             <table className="w-full text-sm">
               <thead className="bg-brand-teal050 text-brand-navy border-b border-gray-100">
                 <tr>
-                  <th className="px-4 py-3 text-right font-medium">משימה</th>
-                  <th className="px-4 py-3 text-right font-medium">תחום</th>
-                  <th className="px-4 py-3 text-right font-medium">קטגוריה</th>
-                  <th className="px-4 py-3 text-right font-medium">אחראי</th>
-                  <th className="px-4 py-3 text-right font-medium">תדירות</th>
-                  <th className="px-4 py-3 text-right font-medium">סיום</th>
-                  <th className="px-4 py-3 text-right font-medium">סטטוס</th>
+                  <th className="px-4 py-2.5 text-right font-medium">משימה</th>
+                  <th className="px-4 py-2.5 text-right font-medium">תחום</th>
+                  <th className="px-4 py-2.5 text-right font-medium">קטגוריה</th>
+                  <th className="px-4 py-2.5 text-right font-medium">אחראי</th>
+                  <th className="px-4 py-2.5 text-right font-medium">תדירות</th>
+                  <th className="px-4 py-2.5 text-right font-medium">סיום</th>
+                  <th className="px-4 py-2.5 text-right font-medium">סטטוס</th>
                 </tr>
               </thead>
               <tbody>
@@ -181,12 +181,12 @@ export function TasksPage() {
                     key={t.id}
                     className={`border-b border-gray-50 hover:bg-brand-teal050 transition-colors ${i % 2 === 0 ? '' : 'bg-gray-50/30'}`}
                   >
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-2.5">
                       <Link to={`/tasks/${t.id}`} className="font-medium text-brand-navy hover:underline">
                         {t.title}
                       </Link>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-2.5">
                       <DomainBadge domain={t.domain} />
                     </td>
                     <td className="px-4 py-3 text-gray-600">{t.category}</td>
@@ -195,7 +195,7 @@ export function TasksPage() {
                     <td className="px-4 py-3 text-gray-500">
                       {t.endDate ? t.endDate.toDate().toLocaleDateString('he-IL') : '—'}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-2.5">
                       <select
                         value={t.status}
                         onChange={(e) => updateStatus(t.id, e.target.value as TaskStatus)}
@@ -225,7 +225,7 @@ export function TasksPage() {
               <div className="text-center py-8 text-gray-400 text-sm">אין משימות להצגה</div>
             )}
             {filtered.map((t) => (
-              <div key={t.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+              <div key={t.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <Link to={`/tasks/${t.id}`} className="font-medium text-brand-navy hover:underline text-sm leading-snug">
                     {t.title}

@@ -8,6 +8,8 @@ type GroupMode = 'domain' | 'person'
 type TimelineMode = 'monthly' | 'quarterly'
 type DisplayTask = Task & { displayStart: Date; displayEnd: Date }
 
+const BAR_DAYS = 6
+
 function quarterRanges(year: number) {
   return [
     { label: 'Q1 (ינו–מרץ)', start: new Date(year, 0, 1),  end: new Date(year, 2, 31) },
@@ -45,6 +47,51 @@ function expandForYear(t: Task, year: number): DisplayTask[] {
   }
 }
 
+function expandForMonthly(t: Task, year: number): DisplayTask[] {
+  if (!t.endDate) return []
+  const end = t.endDate.toDate()
+  const start = t.startDate?.toDate() ?? end
+
+  switch (t.frequency) {
+    case 'חד-פעמי':
+      if (end.getFullYear() !== year) return []
+      return [{ ...t, displayStart: start, displayEnd: end }]
+    case 'חודשי':
+    case 'שוטף': {
+      const dom = Math.min(end.getDate(), 28)
+      return Array.from({ length: 12 }, (_, m) => ({
+        ...t,
+        displayStart: new Date(year, m, dom),
+        displayEnd: new Date(year, m, dom + BAR_DAYS),
+      }))
+    }
+    case 'רבעוני': {
+      const dom = Math.min(end.getDate(), 28)
+      return [2, 5, 8, 11].map(m => ({
+        ...t,
+        displayStart: new Date(year, m, dom),
+        displayEnd: new Date(year, m, dom + BAR_DAYS),
+      }))
+    }
+    case 'חצי-שנתי': {
+      const dom = Math.min(end.getDate(), 28)
+      return [5, 11].map(m => ({
+        ...t,
+        displayStart: new Date(year, m, dom),
+        displayEnd: new Date(year, m, dom + BAR_DAYS),
+      }))
+    }
+    case 'שנתי':
+    case 'לפי חג': {
+      const m = end.getMonth()
+      const dom = Math.min(end.getDate(), 28)
+      return [{ ...t, displayStart: new Date(year, m, dom), displayEnd: new Date(year, m, dom + BAR_DAYS) }]
+    }
+    default:
+      return [{ ...t, displayStart: start, displayEnd: end }]
+  }
+}
+
 export function GanttView({ tasks }: { tasks: Task[] }) {
   const navigate = useNavigate()
   const [groupBy, setGroupBy] = useState<GroupMode>('domain')
@@ -53,17 +100,11 @@ export function GanttView({ tasks }: { tasks: Task[] }) {
   const [selectedDomain, setSelectedDomain] = useState<Domain | null>(null)
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null)
 
-  const tasksForMonthly = useMemo<DisplayTask[]>(() =>
-    tasks
-      .filter(t => t.endDate)
-      .map(t => ({
-        ...t,
-        displayStart: t.startDate?.toDate() ?? t.endDate!.toDate(),
-        displayEnd: t.endDate!.toDate(),
-      }))
-      .sort((a, b) => a.displayStart.getTime() - b.displayStart.getTime()),
-    [tasks]
-  )
+  const tasksForMonthly = useMemo<DisplayTask[]>(() => {
+    const result: DisplayTask[] = []
+    for (const t of tasks) result.push(...expandForMonthly(t, selectedYear))
+    return result.sort((a, b) => a.displayStart.getTime() - b.displayStart.getTime())
+  }, [tasks, selectedYear])
 
   const tasksForQuarterly = useMemo<DisplayTask[]>(() => {
     const result: DisplayTask[] = []
@@ -79,9 +120,11 @@ export function GanttView({ tasks }: { tasks: Task[] }) {
     return allDisplayTasks
   }, [allDisplayTasks, groupBy, selectedDomain, selectedPerson])
 
+  const tasksWithDates = useMemo(() => tasks.filter(t => t.endDate), [tasks])
+
   const persons = useMemo(
-    () => [...new Set(tasksForMonthly.map(t => t.responsible).filter(r => r.length > 0))].sort(),
-    [tasksForMonthly]
+    () => [...new Set(tasksWithDates.map(t => t.responsible).filter(r => r.length > 0))].sort(),
+    [tasksWithDates]
   )
 
   const byDomain = useMemo(() =>
@@ -109,21 +152,14 @@ export function GanttView({ tasks }: { tasks: Task[] }) {
   if (allDisplayTasks.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center text-gray-400">
-        {timelineMode === 'quarterly'
-          ? `אין משימות עם תאריכי יעד בשנת ${selectedYear}`
-          : 'אין משימות עם תאריכי יעד להצגה'
-        }
+        {`אין משימות עם תאריכי יעד בשנת ${selectedYear}`}
       </div>
     )
   }
 
   const today = new Date()
-  const minDate = timelineMode === 'quarterly'
-    ? new Date(selectedYear, 0, 1)
-    : allDisplayTasks.reduce((m, t) => t.displayStart < m ? t.displayStart : m, allDisplayTasks[0].displayStart)
-  const maxDate = timelineMode === 'quarterly'
-    ? new Date(selectedYear, 11, 31)
-    : allDisplayTasks.reduce((m, t) => t.displayEnd > m ? t.displayEnd : m, allDisplayTasks[0].displayEnd)
+  const minDate = new Date(selectedYear, 0, 1)
+  const maxDate = new Date(selectedYear, 11, 31)
 
   const totalDays = Math.max(1, (maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24))
   const pct = (d: Date) => Math.max(0, Math.min(100, (d.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24) / totalDays * 100))
@@ -142,7 +178,7 @@ export function GanttView({ tasks }: { tasks: Task[] }) {
     while (cur <= maxDate) {
       const ms = new Date(Math.max(cur.getTime(), minDate.getTime()))
       const me = new Date(Math.min(new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getTime(), maxDate.getTime()))
-      colHeaders.push({ label: cur.toLocaleDateString('he-IL', { month: 'short', year: '2-digit' }), left: pct(ms), width: bw(ms, me) })
+      colHeaders.push({ label: cur.toLocaleDateString('he-IL', { month: 'short' }), left: pct(ms), width: bw(ms, me) })
       cur.setMonth(cur.getMonth() + 1)
     }
   }
@@ -160,7 +196,7 @@ export function GanttView({ tasks }: { tasks: Task[] }) {
         <div className="flex-1 relative h-full">
           <div
             className="absolute top-2 h-6 rounded cursor-pointer opacity-80 group-hover:opacity-100 transition-opacity flex items-center px-2 overflow-hidden"
-            style={{ left: `${bLeft}%`, width: `${bWidth}%`, minWidth: '4px', backgroundColor: color }}
+            style={{ right: `${bLeft}%`, width: `${bWidth}%`, minWidth: '4px', backgroundColor: color }}
             onClick={() => navigate(`/tasks/${t.id}`)}
             title={t.title}
           >
@@ -201,14 +237,12 @@ export function GanttView({ tasks }: { tasks: Task[] }) {
           >רבעוני</button>
         </div>
 
-        {/* Year navigation — quarterly only */}
-        {timelineMode === 'quarterly' && (
-          <div className="flex items-center gap-1 text-xs">
-            <button onClick={() => setSelectedYear(y => y - 1)} className="p-1 rounded hover:bg-gray-100 text-gray-500">←</button>
-            <span className="font-bold px-1" style={{ color: '#141348' }}>{selectedYear}</span>
-            <button onClick={() => setSelectedYear(y => y + 1)} className="p-1 rounded hover:bg-gray-100 text-gray-500">→</button>
-          </div>
-        )}
+        {/* Year navigation — both modes */}
+        <div className="flex items-center gap-1 text-xs">
+          <button onClick={() => setSelectedYear(y => y - 1)} className="p-1 rounded hover:bg-gray-100 text-gray-500">←</button>
+          <span className="font-bold px-1" style={{ color: '#141348' }}>{selectedYear}</span>
+          <button onClick={() => setSelectedYear(y => y + 1)} className="p-1 rounded hover:bg-gray-100 text-gray-500">→</button>
+        </div>
 
         {/* Domain chips */}
         {groupBy === 'domain' && (
@@ -217,7 +251,7 @@ export function GanttView({ tasks }: { tasks: Task[] }) {
               onClick={() => setSelectedDomain(null)}
               className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${!selectedDomain ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
             >הכל</button>
-            {DOMAINS.filter(d => tasksForMonthly.some(t => t.domain === d)).map(d => {
+            {DOMAINS.filter(d => tasksWithDates.some(t => t.domain === d)).map(d => {
               const bg = DOMAIN_COLORS[d]
               const isActive = selectedDomain === d
               return (
@@ -226,7 +260,7 @@ export function GanttView({ tasks }: { tasks: Task[] }) {
                   onClick={() => setSelectedDomain(isActive ? null : d)}
                   className="px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity"
                   style={{ backgroundColor: bg, color: getTextColor(bg), opacity: isActive || !selectedDomain ? 1 : 0.45, outline: isActive ? '2px solid #141348' : undefined, outlineOffset: '2px' }}
-                >{DOMAIN_LABELS[d]} ({tasksForMonthly.filter(t => t.domain === d).length})</button>
+                >{DOMAIN_LABELS[d]} ({tasksWithDates.filter(t => t.domain === d).length})</button>
               )
             })}
           </div>
@@ -238,13 +272,13 @@ export function GanttView({ tasks }: { tasks: Task[] }) {
             <button
               onClick={() => setSelectedPerson(null)}
               className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${!selectedPerson ? 'bg-brand-teal text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-            >הכל ({tasksForMonthly.length})</button>
+            >הכל ({tasksWithDates.length})</button>
             {persons.map(person => (
               <button
                 key={person}
                 onClick={() => setSelectedPerson(selectedPerson === person ? null : person)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${selectedPerson === person ? 'bg-brand-navy text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-              >{person} ({tasksForMonthly.filter(t => t.responsible === person).length})</button>
+              >{person} ({tasksWithDates.filter(t => t.responsible === person).length})</button>
             ))}
           </div>
         )}
@@ -269,11 +303,11 @@ export function GanttView({ tasks }: { tasks: Task[] }) {
             </div>
           </div>
 
-          {/* Today line */}
+          {/* Today line — right: 30% + todayPct×0.7% aligns with bar area RTL positioning */}
           {showToday && (
             <div
               className="absolute top-8 bottom-0 w-px z-10 pointer-events-none"
-              style={{ right: `calc(70% - ${todayPct * 0.7}%)`, backgroundColor: '#EF4444', opacity: 0.6 }}
+              style={{ right: `calc(${30 + todayPct * 0.7}%)`, backgroundColor: '#EF4444', opacity: 0.6 }}
               title="היום"
             />
           )}

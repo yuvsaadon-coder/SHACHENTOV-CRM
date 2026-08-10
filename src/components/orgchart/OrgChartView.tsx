@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import type { OrgRole, RoleStatus } from '../../types'
 
 type TreeNode = OrgRole & { children: TreeNode[] }
@@ -43,12 +43,12 @@ function OrgCard({ role, childCount, collapsed, onToggle, onClick }: {
       title={isHQ ? 'לחץ לעריכה' : 'לחץ לצפייה בפרטי הסניף'}
       style={{
         border: '1.5px solid #E5E7EB',
-        borderRadius: 10,
-        padding: '8px 12px',
+        borderRadius: 8,
+        padding: '4px 8px',
         backgroundColor: 'white',
         cursor: 'pointer',
-        minWidth: 138,
-        maxWidth: 172,
+        minWidth: 96,
+        maxWidth: 120,
         boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
         direction: 'rtl',
         userSelect: 'none',
@@ -63,25 +63,25 @@ function OrgCard({ role, childCount, collapsed, onToggle, onClick }: {
         e.currentTarget.style.borderColor = '#E5E7EB'
       }}
     >
-      <div style={{ fontSize: 12, fontWeight: 700, color: '#141348', marginBottom: 2, lineHeight: 1.3 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#141348', marginBottom: 1, lineHeight: 1.3 }}>
         {role.roleName}
       </div>
       {role.holderName
-        ? <div style={{ fontSize: 10, color: '#6B7280', marginBottom: 5 }}>{role.holderName}</div>
-        : <div style={{ fontSize: 10, color: '#D1D5DB', marginBottom: 5, fontStyle: 'italic' }}>לא מאויש</div>
+        ? <div style={{ fontSize: 9, color: '#6B7280', marginBottom: 3 }}>{role.holderName}</div>
+        : <div style={{ fontSize: 9, color: '#D1D5DB', marginBottom: 3, fontStyle: 'italic' }}>לא מאויש</div>
       }
-      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: 9, fontWeight: 500, backgroundColor: sc.bg, color: sc.text, padding: '1px 5px', borderRadius: 4 }}>
+      <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: 8, fontWeight: 500, backgroundColor: sc.bg, color: sc.text, padding: '1px 4px', borderRadius: 4 }}>
           {role.status}
         </span>
-        <span style={{ fontSize: 9, fontWeight: 500, backgroundColor: '#F3F4F6', color: '#374151', padding: '1px 5px', borderRadius: 4 }}>
+        <span style={{ fontSize: 8, fontWeight: 500, backgroundColor: '#F3F4F6', color: '#374151', padding: '1px 4px', borderRadius: 4 }}>
           {role.level}
         </span>
         {childCount > 0 && (
           <button
             onClick={(e) => { e.stopPropagation(); onToggle() }}
             style={{
-              fontSize: 9, marginRight: 'auto', color: '#189A9F',
+              fontSize: 8, marginRight: 'auto', color: '#189A9F',
               background: 'none', border: 'none', cursor: 'pointer', padding: '1px 4px',
             }}
             title={collapsed ? 'הרחב' : 'כווץ'}
@@ -95,7 +95,7 @@ function OrgCard({ role, childCount, collapsed, onToggle, onClick }: {
 }
 
 const LINE = '#D1D5DB'
-const LINE_H = 18
+const LINE_H = 12
 
 type ChildColumn =
   | { type: 'single'; key: string; node: TreeNode }
@@ -143,11 +143,11 @@ function AreaGroupBox({ area, nodes, onEdit, onBranchDetails, collapsedSet, onTo
   return (
     <div style={{
       border: '1.5px dashed #CBD5E1',
-      borderRadius: 10,
-      padding: '16px 10px 10px',
+      borderRadius: 8,
+      padding: '12px 8px 8px',
       backgroundColor: '#F8FAFC',
       position: 'relative',
-      minWidth: 152,
+      minWidth: 108,
     }}>
       <div style={{
         position: 'absolute',
@@ -155,7 +155,7 @@ function AreaGroupBox({ area, nodes, onEdit, onBranchDetails, collapsedSet, onTo
         right: 10,
         backgroundColor: '#F8FAFC',
         padding: '0 6px',
-        fontSize: 10,
+        fontSize: 9,
         color: '#64748B',
         fontWeight: 700,
         letterSpacing: '0.05em',
@@ -209,8 +209,8 @@ function OrgNode({ node, onEdit, onBranchDetails, collapsedSet, onToggle }: {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    paddingLeft: 10,
-                    paddingRight: 10,
+                    paddingLeft: 6,
+                    paddingRight: 6,
                     paddingTop: LINE_H,
                     position: 'relative',
                   }}
@@ -245,7 +245,25 @@ interface Props {
 
 export function OrgChartView({ roles, onEdit, onBranchDetails }: Props) {
   const [collapsedSet, setCollapsedSet] = useState<Set<string>>(new Set())
+  const [zoom, setZoom] = useState(1)
   const hasInitialized = useRef(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  const measureAndFit = useCallback(() => {
+    const content = contentRef.current
+    const container = containerRef.current
+    if (!content || !container) return
+    const prevZoom = content.style.zoom
+    content.style.zoom = '1'
+    const naturalW = content.scrollWidth
+    content.style.zoom = prevZoom || ''
+    const containerW = container.clientWidth - 32
+    if (naturalW > 0 && containerW > 0) {
+      setZoom(Math.max(0.25, +Math.min(1, containerW / naturalW).toFixed(2)))
+    }
+  }, [])
+
   const roots = buildTree(roles)
   const allUnlinked = roles.every((r) => !r.reportsTo)
 
@@ -262,8 +280,18 @@ export function OrgChartView({ roles, onEdit, onBranchDetails }: Props) {
       }
       collectNonRoot(tree, true)
       setCollapsedSet(collapsed)
+      setTimeout(measureAndFit, 50)
     }
-  }, [roles])
+  }, [roles, measureAndFit])
+
+  useEffect(() => {
+    window.addEventListener('resize', measureAndFit)
+    window.addEventListener('orientationchange', measureAndFit)
+    return () => {
+      window.removeEventListener('resize', measureAndFit)
+      window.removeEventListener('orientationchange', measureAndFit)
+    }
+  }, [measureAndFit])
 
   const toggleCollapse = (id: string) => {
     setCollapsedSet(prev => {
@@ -275,23 +303,45 @@ export function OrgChartView({ roles, onEdit, onBranchDetails }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-auto">
+    <div ref={containerRef} className="bg-white rounded-xl shadow-sm border border-gray-100">
+      {/* Zoom toolbar */}
+      <div className="flex items-center gap-1.5 px-4 py-2 border-b border-gray-100">
+        <button
+          onClick={() => setZoom(z => Math.max(0.25, +(z - 0.1).toFixed(2)))}
+          className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600 font-bold text-base"
+          title="הקטן"
+        >−</button>
+        <span className="w-10 text-center text-xs font-medium text-gray-600">{Math.round(zoom * 100)}%</span>
+        <button
+          onClick={() => setZoom(z => Math.min(1.5, +(z + 0.1).toFixed(2)))}
+          className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600 font-bold text-base"
+          title="הגדל"
+        >+</button>
+        <button
+          onClick={measureAndFit}
+          className="mr-2 px-2.5 py-1 rounded text-xs font-medium text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
+        >התאם למסך</button>
+      </div>
+
       {allUnlinked && roles.length > 0 && (
         <div className="px-5 py-3 border-b border-gray-100 bg-amber-50 text-amber-700 text-xs">
           💡 לחץ על כל תפקיד ובחר "כפוף ל-" כדי לבנות את עץ הכפיפויות. תפקידים עם אותו שדה "אזור" יקובצו אוטומטית תחת כותרת אחת.
         </div>
       )}
-      <div dir="ltr" style={{ padding: 24, minWidth: 'max-content' }}>
-        {roots.length === 0 && (
-          <div className="text-center py-12 text-gray-400 text-sm" dir="rtl">
-            אין תפקידים להצגה
-          </div>
-        )}
 
-        <div style={{ display: 'flex', gap: 28, alignItems: 'flex-start', justifyContent: 'center', flexWrap: 'wrap' }}>
-          {roots.map((root) => (
-            <OrgNode key={root.id} node={root} onEdit={onEdit} onBranchDetails={onBranchDetails} collapsedSet={collapsedSet} onToggle={toggleCollapse} />
-          ))}
+      <div className="overflow-auto">
+        <div ref={contentRef} dir="ltr" style={{ padding: 24, minWidth: 'max-content', zoom }}>
+          {roots.length === 0 && (
+            <div className="text-center py-12 text-gray-400 text-sm" dir="rtl">
+              אין תפקידים להצגה
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {roots.map((root) => (
+              <OrgNode key={root.id} node={root} onEdit={onEdit} onBranchDetails={onBranchDetails} collapsedSet={collapsedSet} onToggle={toggleCollapse} />
+            ))}
+          </div>
         </div>
       </div>
     </div>

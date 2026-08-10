@@ -67,10 +67,10 @@ export function ContactsPage() {
           <table className="w-full text-sm">
             <thead className="bg-brand-teal050 text-brand-navy border-b border-gray-100">
               <tr>
-                <th className="px-4 py-3 text-right font-medium">שם</th>
-                <th className="px-4 py-3 text-right font-medium">סוג</th>
-                <th className="px-4 py-3 text-right font-medium">טלפון</th>
-                <th className="px-4 py-3 text-right font-medium">אימייל</th>
+                <th className="px-4 py-2.5 text-right font-medium">שם</th>
+                <th className="px-4 py-2.5 text-right font-medium">סוג</th>
+                <th className="px-4 py-2.5 text-right font-medium">טלפון</th>
+                <th className="px-4 py-2.5 text-right font-medium">אימייל</th>
               </tr>
             </thead>
             <tbody>
@@ -82,12 +82,12 @@ export function ContactsPage() {
                     selected === c.id ? 'bg-brand-teal050' : 'hover:bg-gray-50'
                   }`}
                 >
-                  <td className="px-4 py-3 font-medium text-brand-navy">{c.name}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-2.5 font-medium text-brand-navy">{c.name}</td>
+                  <td className="px-4 py-2.5">
                     <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded">{c.type}</span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600" dir="ltr">{c.phone || '—'}</td>
-                  <td className="px-4 py-3 text-gray-600">{c.email || '—'}</td>
+                  <td className="px-4 py-2.5 text-gray-600" dir="ltr">{c.phone || '—'}</td>
+                  <td className="px-4 py-2.5 text-gray-600">{c.email || '—'}</td>
                 </tr>
               ))}
               {filtered.length === 0 && (

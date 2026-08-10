@@ -63,7 +63,7 @@ export function DashboardPage() {
   if (loading) return <Spinner size="lg" />
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-brand-navy">לוח בקרה</h1>
         <span className="text-sm text-gray-500">{tasks.length} משימות בסך הכל</span>
@@ -80,8 +80,8 @@ export function DashboardPage() {
       </div>
 
       {/* Domain progress */}
-      <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
-        <h2 className="font-bold text-brand-navy mb-4">סטטוס לפי תחום</h2>
+      <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+        <h2 className="font-bold text-brand-navy mb-3">סטטוס לפי תחום</h2>
         <div className="space-y-3">
           {domainStats.map(({ domain, total, done }) => {
             const pct = total > 0 ? Math.round((done / total) * 100) : 0
@@ -105,7 +105,7 @@ export function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Overdue */}
-        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
           <h2 className="font-bold text-red-600 mb-3">⚠ באיחור ({overdue.length})</h2>
           <ul className="space-y-2">
             {overdue.slice(0, 5).map((t) => (
@@ -120,7 +120,7 @@ export function DashboardPage() {
         </div>
 
         {/* Soon 7 days */}
-        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
           <h2 className="font-bold text-brand-navy mb-3">📅 ב-7 הימים הקרובים ({soon7.length})</h2>
           <ul className="space-y-2">
             {soon7.slice(0, 5).map((t) => (
@@ -135,7 +135,7 @@ export function DashboardPage() {
         </div>
 
         {/* My tasks */}
-        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
           <h2 className="font-bold text-brand-navy mb-3">👤 המשימות שלי ({myTasks.length})</h2>
           <ul className="space-y-2">
             {myTasks.slice(0, 5).map((t) => (
@@ -152,7 +152,7 @@ export function DashboardPage() {
       </div>
       {/* Roles alerts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl shadow-sm p-5 border border-red-100">
+        <div className="bg-white rounded-xl shadow-sm p-4 border border-red-100">
           <h2 className="font-bold text-red-600 mb-3">
             🔴 תפקידי מטה חסרים ({vacantHQ.length})
           </h2>
@@ -174,7 +174,7 @@ export function DashboardPage() {
           </Link>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-5 border border-yellow-100">
+        <div className="bg-white rounded-xl shadow-sm p-4 border border-yellow-100">
           <h2 className="font-bold text-yellow-600 mb-3">
             ⚠ תפקידים בסיכון ({atRiskRoles.length})
           </h2>
