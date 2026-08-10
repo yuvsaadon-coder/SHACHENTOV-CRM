@@ -1,7 +1,7 @@
 import type { Timestamp } from 'firebase/firestore'
 
 export type Domain = 'CEO' | 'JLM' | 'SUP' | 'FIN' | 'DON' | 'DES' | 'PUB' | 'VOL'
-export type Role = Domain | 'admin'
+export type Role = Domain | 'admin' | 'coordinator'
 export type TaskStatus = 'בוצע' | 'בעבודה' | 'בהמתנה' | 'לא בוצע' | 'אחר'
 export type TaskFrequency = 'חד-פעמי' | 'חודשי' | 'רבעוני' | 'חצי-שנתי' | 'שנתי' | 'שוטף' | 'לפי חג'
 export type ContactType = 'מטה' | 'ספק' | 'תורם'
@@ -44,6 +44,7 @@ export interface AppUser {
   name: string
   email: string
   role: Role
+  branchId?: string
   active: boolean
 }
 
@@ -169,3 +170,51 @@ export const DOMAIN_COLORS: Record<Domain, string> = {
 export const STATUS_LABELS: TaskStatus[] = ['בוצע', 'בעבודה', 'בהמתנה', 'לא בוצע', 'אחר']
 export const FREQUENCY_LABELS: TaskFrequency[] = ['חד-פעמי', 'חודשי', 'רבעוני', 'חצי-שנתי', 'שנתי', 'שוטף', 'לפי חג']
 export const DOMAINS: Domain[] = ['CEO', 'JLM', 'SUP', 'FIN', 'DON', 'DES', 'PUB', 'VOL']
+
+// ─── Coordinator portal types ───────────────────────────────────────────────
+
+export interface Branch {
+  id: string
+  name: string
+  type: 'food' | 'cafe_youth'
+  city: string
+  coordinatorUids: string[]
+  createdAt: Timestamp
+}
+
+export type QuarterLabel = 'Q1' | 'Q2' | 'Q3' | 'Q4'
+export const QUARTERS: QuarterLabel[] = ['Q1', 'Q2', 'Q3', 'Q4']
+export const QUARTER_LABELS: Record<QuarterLabel, string> = {
+  Q1: 'רבעון 1 (ינואר–מרץ)',
+  Q2: 'רבעון 2 (אפריל–יוני)',
+  Q3: 'רבעון 3 (יולי–ספטמבר)',
+  Q4: 'רבעון 4 (אוקטובר–דצמבר)',
+}
+
+export interface QuarterlyReport {
+  id: string
+  branchId: string
+  branchType: 'food' | 'cafe_youth'
+  quarter: QuarterLabel
+  year: number
+  submittedAt: Timestamp
+  submittedBy: string
+  isFirstReport: boolean
+  data: Record<string, unknown>
+}
+
+export type KnowledgeItemType = 'document' | 'link' | 'tip'
+export const KNOWLEDGE_TAGS = ['לוגיסטיקה', 'מתנדבים', 'אוכלוסייה', 'תפעול', 'אחר'] as const
+export type KnowledgeTag = (typeof KNOWLEDGE_TAGS)[number]
+
+export interface KnowledgeItem {
+  id: string
+  branchId: string
+  type: KnowledgeItemType
+  title: string
+  content: string
+  url?: string
+  tags: string[]
+  createdBy: string
+  createdAt: Timestamp
+}

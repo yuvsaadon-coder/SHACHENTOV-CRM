@@ -9,13 +9,35 @@ import { ContactsPage } from './pages/ContactsPage'
 import { RolesPage } from './pages/RolesPage'
 import { OrgChartPage } from './pages/OrgChartPage'
 import { HierarchySetupPage } from './pages/HierarchySetupPage'
+import { CoordinatorPortal } from './pages/portal/CoordinatorPortal'
+import { PortalHome } from './pages/portal/PortalHome'
+import { PortalReport } from './pages/portal/PortalReport'
+import { PortalKnowledge } from './pages/portal/PortalKnowledge'
+import { PortalChat } from './pages/portal/PortalChat'
+import { BranchesAdminPage } from './pages/admin/BranchesAdminPage'
 import { Spinner } from './components/ui/Spinner'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { firebaseUser, loading } = useAuth()
+  const { firebaseUser, appUser, loading } = useAuth()
   if (loading) return <Spinner size="lg" />
   if (!firebaseUser) return <Navigate to="/login" replace />
+  if (appUser?.role === 'coordinator') return <Navigate to="/portal/home" replace />
   return <>{children}</>
+}
+
+function RequireCoordinator({ children }: { children: React.ReactNode }) {
+  const { firebaseUser, appUser, loading } = useAuth()
+  if (loading) return <Spinner size="lg" />
+  if (!firebaseUser) return <Navigate to="/login" replace />
+  if (appUser && appUser.role !== 'coordinator') return <Navigate to="/dashboard" replace />
+  return <>{children}</>
+}
+
+function SmartRedirect() {
+  const { appUser, loading } = useAuth()
+  if (loading) return <Spinner size="lg" />
+  if (appUser?.role === 'coordinator') return <Navigate to="/portal/home" replace />
+  return <Navigate to="/dashboard" replace />
 }
 
 export default function App() {
@@ -24,6 +46,24 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+
+          {/* Coordinator portal */}
+          <Route
+            path="/portal"
+            element={
+              <RequireCoordinator>
+                <CoordinatorPortal />
+              </RequireCoordinator>
+            }
+          >
+            <Route index element={<Navigate to="/portal/home" replace />} />
+            <Route path="home" element={<PortalHome />} />
+            <Route path="report" element={<PortalReport />} />
+            <Route path="knowledge" element={<PortalKnowledge />} />
+            <Route path="chat" element={<PortalChat />} />
+          </Route>
+
+          {/* Admin / CRM */}
           <Route
             path="/"
             element={
@@ -40,8 +80,10 @@ export default function App() {
             <Route path="roles" element={<RolesPage />} />
             <Route path="orgchart" element={<OrgChartPage />} />
             <Route path="admin/hierarchy" element={<HierarchySetupPage />} />
+            <Route path="admin/branches" element={<BranchesAdminPage />} />
           </Route>
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+
+          <Route path="*" element={<SmartRedirect />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -3,11 +3,12 @@ import { useAuth } from '../../context/AuthContext'
 import { DOMAIN_LABELS, DOMAINS, type Domain } from '../../types'
 
 const navItems = [
-  { to: '/dashboard', label: 'לוח בקרה', icon: '📊' },
-  { to: '/tasks', label: 'משימות', icon: '✅' },
-  { to: '/contacts', label: 'אנשי קשר', icon: '👥' },
-  { to: '/roles', label: 'איוש תפקידים', icon: '🏢' },
-  { to: '/orgchart', label: 'מבנה ארגוני', icon: '🌳' },
+  { to: '/dashboard', label: 'לוח בקרה', icon: '📊', adminOnly: false },
+  { to: '/tasks', label: 'משימות', icon: '✅', adminOnly: false },
+  { to: '/contacts', label: 'אנשי קשר', icon: '👥', adminOnly: false },
+  { to: '/roles', label: 'איוש תפקידים', icon: '🏢', adminOnly: false },
+  { to: '/orgchart', label: 'מבנה ארגוני', icon: '🌳', adminOnly: false },
+  { to: '/admin/branches', label: 'סניפים', icon: '🏪', adminOnly: true },
 ]
 
 interface Props {
@@ -22,6 +23,10 @@ export function Sidebar({ onClose }: Props) {
     await logOut()
     navigate('/login')
   }
+
+  const visibleNavItems = navItems.filter(
+    (item) => !item.adminOnly || appUser?.role === 'admin'
+  )
 
   return (
     <aside className="w-64 bg-brand-navy min-h-screen flex flex-col text-white shrink-0">
@@ -46,7 +51,7 @@ export function Sidebar({ onClose }: Props) {
       {/* Main nav */}
       <nav className="flex-1 py-4 overflow-y-auto">
         <ul className="space-y-1 px-2">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <li key={item.to}>
               <NavLink
                 to={item.to}
