@@ -292,7 +292,7 @@ export function TasksPage() {
       )}
 
       {view === 'kanban' && <KanbanView tasks={filtered} />}
-      {view === 'gantt' && <GanttView tasks={filtered} />}
+      {view === 'gantt' && <GanttView tasks={filtered} singleMonth={monthFilter ? new Date() : undefined} />}
     </div>
   )
 }
