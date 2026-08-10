@@ -1,10 +1,10 @@
 /**
- * Seed script: creates 13 branches + 23 coordinator Firebase Auth users + Firestore docs.
- * Idempotent: skips if auth user already exists (email-already-in-use), updates coordinatorUids.
+ * Seed script: creates real coordinator users from the organization's contact list.
+ * displayName = Hebrew name, password = phone digits only.
+ * Idempotent: skips existing auth users, updates coordinatorUids in branch docs.
  *
  * Usage:
  *   FIREBASE_SERVICE_ACCOUNT='{"type":"service_account",...}' npx ts-node scripts/seedCoordinators.ts
- *   (or set FIREBASE_SERVICE_ACCOUNT in .env and use dotenv-cli)
  */
 
 import { cert, initializeApp, getApps } from 'firebase-admin/app'
@@ -24,110 +24,157 @@ if (getApps().length === 0) {
 const auth = getAuth()
 const db = getFirestore()
 
+function phoneToPassword(phone: string): string {
+  return phone.replace(/\D/g, '')
+}
+
+interface CoordinatorSeed {
+  name: string
+  email: string
+  phone: string
+}
+
 interface BranchSeed {
   name: string
   city: string
   type: 'food' | 'cafe_youth'
-  coordinatorEmails: string[]
+  coordinators: CoordinatorSeed[]
 }
 
 const BRANCHES: BranchSeed[] = [
   {
-    name: 'סניף ירושלים מרכז',
+    name: 'סלי מזון - בית שמש',
+    city: 'בית שמש',
+    type: 'food',
+    coordinators: [
+      { name: 'רושי פרידמן',  email: 'roshi.friedman@shachentov.org',   phone: '052-7320074' },
+      { name: 'מאיר פרידמן',  email: 'meir.friedman@shachentov.org',    phone: '052-3477913' },
+    ],
+  },
+  {
+    name: 'סלי מזון - תל אביב',
+    city: 'תל אביב',
+    type: 'food',
+    coordinators: [
+      { name: 'ורד רבינוביץ', email: 'vered.rabinovitz@shachentov.org', phone: '054-4423118' },
+    ],
+  },
+  {
+    name: 'סלי מזון - קדימה',
+    city: 'קדימה',
+    type: 'food',
+    coordinators: [
+      { name: 'גלית שפירא',   email: 'galit.shapira@shachentov.org',    phone: '050-711-3617' },
+    ],
+  },
+  {
+    name: 'סלי מזון - טבריה',
+    city: 'טבריה',
+    type: 'food',
+    coordinators: [
+      { name: 'רן שרון',      email: 'ran.sharon@shachentov.org',       phone: '054-6432281' },
+      { name: 'שירה שרון',    email: 'shira.sharon@shachentov.org',     phone: '054-6432281' },
+    ],
+  },
+  {
+    name: 'סלי מזון - צפת',
+    city: 'צפת',
+    type: 'food',
+    coordinators: [
+      { name: 'רותי בן הרוש', email: 'ruti.benharosh@shachentov.org',   phone: '052-440-9349' },
+      { name: 'דוד בן הרוש',  email: 'david.benharosh@shachentov.org',  phone: '052-440-9349' },
+    ],
+  },
+  {
+    name: 'סלי מזון - ירושלים גילה',
     city: 'ירושלים',
     type: 'food',
-    coordinatorEmails: ['coord.jlm.center@shachentov.org'],
+    coordinators: [
+      { name: 'לאה ליבנת',    email: 'leah.livnat@shachentov.org',      phone: '054-948-1122' },
+    ],
   },
   {
-    name: 'סניף ירושלים צפון',
+    name: 'סלי מזון - ירושלים רמות',
     city: 'ירושלים',
     type: 'food',
-    coordinatorEmails: ['coord.jlm.north@shachentov.org'],
+    coordinators: [
+      { name: 'יאיר יעקבי',   email: 'yair.yakobi@shachentov.org',      phone: '058-446-6127' },
+      { name: 'סיגל דאדי',    email: 'sigal.dadi@shachentov.org',       phone: '052-322-0656' },
+    ],
   },
   {
-    name: 'סניף תל אביב יפו',
-    city: 'תל אביב-יפו',
+    name: 'סלי מזון - ירושלים בקעה',
+    city: 'ירושלים',
     type: 'food',
-    coordinatorEmails: ['coord.tlv@shachentov.org', 'coord.tlv2@shachentov.org'],
+    coordinators: [
+      { name: 'שירה גולדברג', email: 'shira.goldberg@shachentov.org',   phone: '058-465-0964' },
+      { name: 'שירי תהילה',   email: 'shiri.tehila@shachentov.org',     phone: '053-935-1712' },
+    ],
   },
   {
-    name: 'סניף חיפה',
-    city: 'חיפה',
+    name: 'סלי מזון - ירושלים נחלאות',
+    city: 'ירושלים',
     type: 'food',
-    coordinatorEmails: ['coord.haifa@shachentov.org'],
+    coordinators: [
+      { name: 'הדס צויבל',    email: 'hadas.tzuibel@shachentov.org',    phone: '052-8990130' },
+      { name: 'עוז בינר',     email: 'oz.biner@shachentov.org',         phone: '052-3763246' },
+    ],
   },
   {
-    name: 'סניף באר שבע',
-    city: 'באר שבע',
+    name: 'סלי מזון - ירושלים קרית יובל',
+    city: 'ירושלים',
     type: 'food',
-    coordinatorEmails: ['coord.beersheva@shachentov.org'],
+    coordinators: [
+      { name: 'יהונתן אלבז',      email: 'yonatan.elbaz@shachentov.org',     phone: '052-385-5335' },
+      { name: 'אלישי בר טימור',   email: 'elishi.bartimor@shachentov.org',   phone: '050-650-7936' },
+      { name: 'יהודית רוטקוביץ',  email: 'yehudit.rotkovitz@shachentov.org', phone: '052-883-6428' },
+      { name: 'דב קראוס',         email: 'dov.kraus@shachentov.org',         phone: '055-256-5964' },
+    ],
   },
   {
-    name: 'סניף נתניה',
-    city: 'נתניה',
+    name: 'סלי מזון - ירושלים קטמון',
+    city: 'ירושלים',
     type: 'food',
-    coordinatorEmails: ['coord.netanya@shachentov.org'],
+    coordinators: [
+      { name: 'ציפי זלמנוביץ',  email: 'tzipi.zalmanowitz@shachentov.org', phone: '050-2114502' },
+      { name: 'אביטל עזיז',     email: 'avital.aziz@shachentov.org',       phone: '054-7993453' },
+      { name: 'אסתי בראור',     email: 'esti.brauer@shachentov.org',       phone: '050-7691577' },
+      { name: 'כרמל קרופפלד',   email: 'carmel.kropfeld@shachentov.org',   phone: '054-6954475' },
+    ],
   },
   {
-    name: 'סניף פתח תקווה',
-    city: 'פתח תקווה',
+    name: 'סלי מזון - ירושלים נווה יעקב',
+    city: 'ירושלים',
     type: 'food',
-    coordinatorEmails: ['coord.petah@shachentov.org', 'coord.petah2@shachentov.org'],
+    coordinators: [
+      { name: 'נעמי',          email: 'naomi@shachentov.org',            phone: '052-3301495' },
+    ],
   },
   {
-    name: 'סניף ראשון לציון',
-    city: 'ראשון לציון',
-    type: 'food',
-    coordinatorEmails: ['coord.rishon@shachentov.org'],
-  },
-  {
-    name: 'סניף אשדוד',
-    city: 'אשדוד',
-    type: 'food',
-    coordinatorEmails: ['coord.ashdod@shachentov.org'],
-  },
-  {
-    name: 'סניף חולון',
-    city: 'חולון',
-    type: 'food',
-    coordinatorEmails: ['coord.holon@shachentov.org'],
-  },
-  {
-    name: 'קפה נוער ירושלים',
+    name: 'מועדון נוער - פסגת זאב',
     city: 'ירושלים',
     type: 'cafe_youth',
-    coordinatorEmails: ['coord.cafe.jlm@shachentov.org'],
-  },
-  {
-    name: 'קפה נוער תל אביב',
-    city: 'תל אביב-יפו',
-    type: 'cafe_youth',
-    coordinatorEmails: ['coord.cafe.tlv@shachentov.org'],
-  },
-  {
-    name: 'קפה נוער חיפה',
-    city: 'חיפה',
-    type: 'cafe_youth',
-    coordinatorEmails: ['coord.cafe.haifa@shachentov.org', 'coord.cafe.haifa2@shachentov.org'],
+    coordinators: [
+      { name: 'אבי שרעבי',    email: 'avi.sharabi@shachentov.org',      phone: '050-2603396' },
+    ],
   },
 ]
 
-const DEFAULT_PASSWORD = 'Shachentov2025!'
-
-async function getOrCreateUser(email: string): Promise<string> {
+async function getOrCreateUser(coord: CoordinatorSeed): Promise<string> {
+  const password = phoneToPassword(coord.phone)
   try {
-    const user = await auth.getUserByEmail(email)
-    console.log(`  ↩ user exists: ${email} (${user.uid})`)
-    return user.uid
+    const existing = await auth.getUserByEmail(coord.email)
+    console.log(`  ↩ קיים: ${coord.name} (${existing.uid})`)
+    return existing.uid
   } catch (err: unknown) {
     if ((err as { code?: string }).code === 'auth/user-not-found') {
       const newUser = await auth.createUser({
-        email,
-        password: DEFAULT_PASSWORD,
-        displayName: email.split('@')[0].replace(/\./g, ' '),
+        email: coord.email,
+        password,
+        displayName: coord.name,
         emailVerified: false,
       })
-      console.log(`  ✓ created user: ${email} (${newUser.uid})`)
+      console.log(`  ✓ נוצר: ${coord.name} — סיסמה: ${password}`)
       return newUser.uid
     }
     throw err
@@ -135,28 +182,27 @@ async function getOrCreateUser(email: string): Promise<string> {
 }
 
 async function main() {
-  console.log('=== Seeding Shachentov coordinator data ===\n')
+  console.log('=== Seeding שכן טוב coordinators ===\n')
 
   for (const seed of BRANCHES) {
-    console.log(`Branch: ${seed.name} (${seed.city}, ${seed.type})`)
+    console.log(`סניף: ${seed.name} (${seed.city})`)
 
     const uids: string[] = []
-    for (const email of seed.coordinatorEmails) {
-      const uid = await getOrCreateUser(email)
+    for (const coord of seed.coordinators) {
+      const uid = await getOrCreateUser(coord)
       uids.push(uid)
 
-      // Upsert users/{uid} Firestore doc
       await db.collection('users').doc(uid).set(
         {
-          email,
-          name: email.split('@')[0].replace(/\./g, ' '),
+          email: coord.email,
+          name: coord.name,
+          phone: coord.phone,
           role: 'coordinator',
         },
         { merge: true }
       )
     }
 
-    // Upsert branches document — use branch name as stable lookup key
     const branchesRef = db.collection('branches')
     const existing = await branchesRef.where('name', '==', seed.name).limit(1).get()
 
@@ -167,13 +213,10 @@ async function main() {
         city: seed.city,
         type: seed.type,
       })
-
-      // Update each coordinator's Firestore doc with this branchId
       for (const uid of uids) {
         await db.collection('users').doc(uid).set({ branchId: docRef.id }, { merge: true })
       }
-
-      console.log(`  ↩ branch exists (${docRef.id}), updated coordinatorUids\n`)
+      console.log(`  ↩ סניף קיים (${docRef.id}), עודכן\n`)
     } else {
       const docRef = await branchesRef.add({
         name: seed.name,
@@ -182,22 +225,19 @@ async function main() {
         coordinatorUids: uids,
         createdAt: FieldValue.serverTimestamp(),
       })
-
       for (const uid of uids) {
         await db.collection('users').doc(uid).set({ branchId: docRef.id }, { merge: true })
       }
-
-      console.log(`  ✓ branch created (${docRef.id})\n`)
+      console.log(`  ✓ סניף נוצר (${docRef.id})\n`)
     }
   }
 
-  console.log('=== Done ===')
-  console.log(`Default password for all new users: ${DEFAULT_PASSWORD}`)
-  console.log('Remember to set passwords via Firebase Console before handing credentials to coordinators.')
+  console.log('=== סיום ===')
+  console.log('הסיסמה של כל משתמש = ספרות הטלפון שלו בלבד (ללא מקפים)')
   process.exit(0)
 }
 
 main().catch((err) => {
-  console.error('Seed failed:', err)
+  console.error('שגיאה:', err)
   process.exit(1)
 })
