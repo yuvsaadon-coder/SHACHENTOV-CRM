@@ -10,6 +10,7 @@ import { RolesPage } from './pages/RolesPage'
 import { OrgChartPage } from './pages/OrgChartPage'
 import { HierarchySetupPage } from './pages/HierarchySetupPage'
 import { CoordinatorPortal } from './pages/portal/CoordinatorPortal'
+import { PortalLogin } from './pages/portal/PortalLogin'
 import { PortalHome } from './pages/portal/PortalHome'
 import { PortalReport } from './pages/portal/PortalReport'
 import { PortalKnowledge } from './pages/portal/PortalKnowledge'
@@ -28,7 +29,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 function RequireCoordinator({ children }: { children: React.ReactNode }) {
   const { firebaseUser, appUser, loading } = useAuth()
   if (loading) return <Spinner size="lg" />
-  if (!firebaseUser) return <Navigate to="/login" replace />
+  if (!firebaseUser) return <Navigate to="/portal/login" replace />
   if (appUser && appUser.role !== 'coordinator') return <Navigate to="/dashboard" replace />
   return <>{children}</>
 }
@@ -46,6 +47,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/portal/login" element={<PortalLogin />} />
 
           {/* Coordinator portal */}
           <Route

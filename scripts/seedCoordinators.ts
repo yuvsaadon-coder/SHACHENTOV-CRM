@@ -160,21 +160,28 @@ const BRANCHES: BranchSeed[] = [
   },
 ]
 
+// Internal email derived from phone digits — coordinators never see this
+function internalEmail(phone: string): string {
+  return `${phoneToPassword(phone)}@coord.shachentov.internal`
+}
+
 async function getOrCreateUser(coord: CoordinatorSeed): Promise<string> {
-  const password = phoneToPassword(coord.phone)
+  const email = internalEmail(coord.phone)
+  // Use a stable dummy password — login is via custom token (name + phone), not email/password
+  const dummyPassword = `CT_${phoneToPassword(coord.phone)}_ST`
   try {
-    const existing = await auth.getUserByEmail(coord.email)
+    const existing = await auth.getUserByEmail(email)
     console.log(`  ↩ קיים: ${coord.name} (${existing.uid})`)
     return existing.uid
   } catch (err: unknown) {
     if ((err as { code?: string }).code === 'auth/user-not-found') {
       const newUser = await auth.createUser({
-        email: coord.email,
-        password,
+        email,
+        password: dummyPassword,
         displayName: coord.name,
         emailVerified: false,
       })
-      console.log(`  ✓ נוצר: ${coord.name} — סיסמה: ${password}`)
+      console.log(`  ✓ נוצר: ${coord.name}`)
       return newUser.uid
     }
     throw err
@@ -194,7 +201,6 @@ async function main() {
 
       await db.collection('users').doc(uid).set(
         {
-          email: coord.email,
           name: coord.name,
           phone: coord.phone,
           role: 'coordinator',
@@ -233,7 +239,7 @@ async function main() {
   }
 
   console.log('=== סיום ===')
-  console.log('הסיסמה של כל משתמש = ספרות הטלפון שלו בלבד (ללא מקפים)')
+  console.log('כניסה לפורטל: שם מלא + מספר טלפון (בכתובת /portal/login)')
   process.exit(0)
 }
 
