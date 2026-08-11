@@ -16,7 +16,9 @@ import { PortalKnowledge } from './pages/portal/PortalKnowledge'
 import { PortalChat } from './pages/portal/PortalChat'
 import { BranchesAdminPage } from './pages/admin/BranchesAdminPage'
 import { SeedPage } from './pages/admin/SeedPage'
+import { KnowledgeAdminPage } from './pages/admin/KnowledgeAdminPage'
 import { BranchesPage } from './pages/BranchesPage'
+import { KnowledgeLibraryPage } from './pages/KnowledgeLibraryPage'
 import { Spinner } from './components/ui/Spinner'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -83,9 +85,11 @@ export default function App() {
             <Route path="roles" element={<RolesPage />} />
             <Route path="orgchart" element={<OrgChartPage />} />
             <Route path="branches" element={<BranchesPage />} />
+            <Route path="knowledge" element={<KnowledgeLibraryPage />} />
             <Route path="admin/hierarchy" element={<HierarchySetupPage />} />
             <Route path="admin/branches" element={<BranchesAdminPage />} />
             <Route path="admin/seed" element={<SeedPage />} />
+            <Route path="admin/knowledge" element={<KnowledgeAdminPage />} />
           </Route>
 
           <Route path="*" element={<SmartRedirect />} />

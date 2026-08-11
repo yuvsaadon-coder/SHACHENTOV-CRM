@@ -94,6 +94,19 @@ export const handler: Handler = async (event) => {
   const formatItems = (items: KnowledgeDoc[]) =>
     items.map((item) => `— **${item.title}**: ${item.content}`).join('\n')
 
+  // Fetch research articles catalog for 'all' mode
+  let researchSection = ''
+  if (mode === 'all') {
+    const researchSnap = await db.collection('knowledge_articles').limit(30).get()
+    if (!researchSnap.empty) {
+      const researchItems = researchSnap.docs.map((d) => {
+        const data = d.data() as { titleHe?: string; summary?: string; lang?: string }
+        return `— **${data.titleHe ?? ''}** (${data.lang ?? ''}): ${data.summary ?? ''}`
+      })
+      researchSection = `\n\nספריית מחקר ומידע מקצועי:\n${researchItems.join('\n')}`
+    }
+  }
+
   const localSection = localItems.length > 0
     ? `ידע הסניף הספציפי (תעדף זאת ראשון):\n${formatItems(localItems)}`
     : 'אין ידע ספציפי לסניף זה.'
@@ -105,7 +118,7 @@ export const handler: Handler = async (event) => {
   const systemPrompt = `אתה עוזר AI של עמותת שכן טוב, מסייע לרכזי סניפים.
 ענה בעברית בלבד. היה ישיר ומעשי.
 
-${localSection}${globalSection}
+${localSection}${globalSection}${researchSection}
 
 אם התשובה מגיעה ממסמך ספציפי — ציין את שמו.
 אם אין מידע רלוונטי במאגר — אמור זאת ותן תשובה כללית.`
