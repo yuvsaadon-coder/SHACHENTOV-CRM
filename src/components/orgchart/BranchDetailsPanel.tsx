@@ -244,18 +244,20 @@ export function BranchDetailsPanel({ role, branchId, onClose, onEditRole }: Prop
               {/* Operations */}
               <section>
                 <h3 className="text-sm font-bold text-gray-700 mb-3">פרטי פעילות</h3>
+
+                {/* Address */}
+                <div className="mb-3">
+                  <label className="block text-xs text-gray-500 mb-1">כתובת סניף</label>
+                  <input
+                    type="text"
+                    value={info.address ?? ''}
+                    onChange={e => upd({ address: e.target.value || undefined })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+                    placeholder="רחוב, שכונה, ירושלים"
+                  />
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">סלים שבועיים</label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={info.weeklyBaskets ?? ''}
-                      onChange={e => upd({ weeklyBaskets: e.target.value ? +e.target.value : null })}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
-                      placeholder="כמות"
-                    />
-                  </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">תדירות חלוקה</label>
                     <select
@@ -266,6 +268,61 @@ export function BranchDetailsPanel({ role, branchId, onClose, onEditRole }: Prop
                       <option value="">בחר...</option>
                       {DIST_FREQ_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
                     </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">יום פעילות</label>
+                    <select
+                      value={info.distributionDay ?? ''}
+                      onChange={e => upd({ distributionDay: e.target.value || undefined })}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+                    >
+                      <option value="">בחר...</option>
+                      {['ראשון','שני','שלישי','רביעי','חמישי','שישי','משתנה'].map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">סלים לחלוקה</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={info.weeklyBaskets ?? ''}
+                      onChange={e => upd({ weeklyBaskets: e.target.value ? +e.target.value : null })}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+                      placeholder="כמות"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">סלים חודשי סה"כ</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={info.monthlyBaskets ?? ''}
+                      onChange={e => upd({ monthlyBaskets: e.target.value ? +e.target.value : null })}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+                      placeholder="כמות"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">זמן אריזה</label>
+                    <input
+                      type="text"
+                      value={info.packagingTime ?? ''}
+                      onChange={e => upd({ packagingTime: e.target.value || undefined })}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+                      placeholder="09:00–10:00"
+                      dir="ltr"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">זמן חלוקה</label>
+                    <input
+                      type="text"
+                      value={info.distributionTime ?? ''}
+                      onChange={e => upd({ distributionTime: e.target.value || undefined })}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+                      placeholder="10:30–12:00"
+                      dir="ltr"
+                    />
                   </div>
                 </div>
                 <div className="mt-3 flex items-center gap-2">

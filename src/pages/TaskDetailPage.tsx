@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   doc, getDoc, updateDoc, serverTimestamp, setDoc,
   collection, addDoc, onSnapshot, orderBy, query, deleteDoc,
-  Timestamp
+  where, Timestamp
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import { db, storage } from '../lib/firebase'
@@ -37,6 +37,13 @@ export function TaskDetailPage() {
   const [newComment, setNewComment] = useState('')
   const [uploading, setUploading] = useState(false)
   const [tab, setTab] = useState<'details' | 'comments' | 'files' | 'history'>('details')
+  const [subTasks, setSubTasks] = useState<Task[]>([])
+  const [parentTask, setParentTask] = useState<Task | null>(null)
+  const [showNewSub, setShowNewSub] = useState(false)
+  const [subForm, setSubForm] = useState<{ title: string; responsible: string; status: TaskStatus }>({
+    title: '', responsible: '', status: 'לא בוצע',
+  })
+  const [savingSub, setSavingSub] = useState(false)
 
   const isNew = id === 'new'
 
@@ -55,6 +62,28 @@ export function TaskDetailPage() {
       }
     })
   }, [id, isNew])
+
+  // Load sub-tasks for this task
+  useEffect(() => {
+    if (!id || isNew) return
+    const q = query(collection(db, 'tasks'), where('parentTaskId', '==', id))
+    const unsub = onSnapshot(q, (snap) => {
+      setSubTasks(
+        snap.docs
+          .map((d) => ({ id: d.id, ...d.data() } as Task))
+          .sort((a, b) => (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0))
+      )
+    })
+    return unsub
+  }, [id, isNew])
+
+  // Load parent task if this is a sub-task
+  useEffect(() => {
+    if (!task?.parentTaskId) return
+    getDoc(doc(db, 'tasks', task.parentTaskId)).then((snap) => {
+      if (snap.exists()) setParentTask({ id: snap.id, ...snap.data() } as Task)
+    })
+  }, [task?.parentTaskId])
 
   useEffect(() => {
     if (!id || isNew) return
@@ -142,12 +171,54 @@ export function TaskDetailPage() {
     await deleteDoc(doc(db, 'tasks', id, 'attachments', att.id))
   }
 
+  const saveSubTask = async () => {
+    if (!subForm.title.trim() || !id || !task) return
+    setSavingSub(true)
+    try {
+      const newId = `TASK-${Date.now()}`
+      await setDoc(doc(db, 'tasks', newId), {
+        title: subForm.title.trim(),
+        responsible: subForm.responsible.trim(),
+        status: subForm.status,
+        parentTaskId: id,
+        domain: task.domain,
+        category: task.category || '',
+        frequency: task.frequency || 'חד-פעמי',
+        startDate: null,
+        endDate: null,
+        holidayAnchor: null,
+        activator: null,
+        involved: [],
+        contactRefs: [],
+        dependsOn: [],
+        steps: '',
+        notes: '',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdBy: appUser?.name || '',
+        updatedBy: appUser?.name || '',
+      })
+      setSubForm({ title: '', responsible: '', status: 'לא בוצע' })
+      setShowNewSub(false)
+    } finally {
+      setSavingSub(false)
+    }
+  }
+
   if (!isNew && !task) return <Spinner size="lg" />
 
   return (
     <div className="space-y-4 max-w-4xl">
       <div className="flex items-center gap-3 flex-wrap">
         <Link to="/tasks" className="text-brand-teal hover:underline text-sm">← משימות</Link>
+        {parentTask && (
+          <>
+            <span className="text-gray-300">/</span>
+            <Link to={`/tasks/${parentTask.id}`} className="text-brand-teal hover:underline text-sm truncate max-w-[200px]">
+              {parentTask.title}
+            </Link>
+          </>
+        )}
         <span className="text-gray-300">/</span>
         <h1 className="text-xl font-bold text-brand-navy flex-1">
           {task?.title || 'משימה חדשה'}
@@ -342,6 +413,69 @@ export function TaskDetailPage() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Sub-tasks — shown on details tab for top-level tasks */}
+      {tab === 'details' && !isNew && !task?.parentTaskId && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-brand-navy text-sm">תתי-משימות ({subTasks.length})</h2>
+            <button
+              onClick={() => setShowNewSub((v) => !v)}
+              className="text-xs bg-brand-teal text-white px-3 py-1 rounded-lg hover:opacity-90 transition-opacity"
+            >
+              {showNewSub ? 'ביטול' : '+ הוסף תת-משימה'}
+            </button>
+          </div>
+
+          {showNewSub && (
+            <div className="flex flex-wrap gap-2 mb-3 p-3 bg-gray-50 rounded-lg">
+              <input
+                value={subForm.title}
+                onChange={(e) => setSubForm({ ...subForm, title: e.target.value })}
+                placeholder="כותרת תת-משימה *"
+                className="flex-1 min-w-[160px] border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
+              />
+              <input
+                value={subForm.responsible}
+                onChange={(e) => setSubForm({ ...subForm, responsible: e.target.value })}
+                placeholder="אחראי"
+                className="w-36 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
+              />
+              <select
+                value={subForm.status}
+                onChange={(e) => setSubForm({ ...subForm, status: e.target.value as TaskStatus })}
+                className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
+              >
+                {STATUS_LABELS.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <button
+                onClick={saveSubTask}
+                disabled={savingSub || !subForm.title.trim()}
+                className="bg-brand-teal text-white text-sm px-3 py-1.5 rounded-lg disabled:opacity-50 hover:opacity-90 transition-opacity"
+              >
+                {savingSub ? 'שומר...' : 'שמור'}
+              </button>
+            </div>
+          )}
+
+          <ul className="space-y-2">
+            {subTasks.map((st) => (
+              <li key={st.id} className="flex items-center justify-between gap-2 py-1 border-b border-gray-50 last:border-0">
+                <Link to={`/tasks/${st.id}`} className="text-sm text-brand-navy hover:underline truncate flex-1">
+                  {st.title}
+                </Link>
+                <div className="flex items-center gap-2 shrink-0">
+                  {st.responsible && <span className="text-xs text-gray-400">{st.responsible}</span>}
+                  <StatusBadge status={st.status} />
+                </div>
+              </li>
+            ))}
+            {subTasks.length === 0 && !showNewSub && (
+              <li className="text-sm text-gray-400 text-center py-2">אין תתי-משימות</li>
+            )}
+          </ul>
         </div>
       )}
 

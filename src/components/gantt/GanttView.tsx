@@ -130,8 +130,9 @@ export function GanttView({ tasks, singleMonth }: Props) {
   const [myTasksOnly, setMyTasksOnly] = useState(true)
 
   const baseTasks = useMemo(() => {
-    if (!myTasksOnly || !appUser?.name) return tasks
-    return tasks.filter(t =>
+    const topLevel = tasks.filter(t => !t.parentTaskId)
+    if (!myTasksOnly || !appUser?.name) return topLevel
+    return topLevel.filter(t =>
       t.responsible === appUser.name || (t.involved ?? []).includes(appUser.name)
     )
   }, [tasks, myTasksOnly, appUser])

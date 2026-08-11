@@ -27,6 +27,8 @@ export interface Task {
   updatedAt: Timestamp
   createdBy: string
   updatedBy: string
+  parentTaskId?: string
+  dependsOn?: string[]
 }
 
 export interface Contact {
@@ -94,7 +96,12 @@ export interface BranchVolunteerInfo {
   targetPackagingVolunteers?: number | null
   targetDistributionVolunteers?: number | null
   weeklyBaskets?: number | null
+  monthlyBaskets?: number | null
   distributionFrequency?: string
+  distributionDay?: string
+  packagingTime?: string
+  distributionTime?: string
+  address?: string
   acceptsGroups?: boolean
   seasonalPeriods?: SeasonalPeriod[]
   generalVolunteerStatus?: VolunteerStatus

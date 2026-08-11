@@ -63,6 +63,7 @@ export function TasksPage() {
 
   const filtered = useMemo(() => {
     return tasks.filter((t) => {
+      if (t.parentTaskId) return false
       if (monthFilter && !taskMatchesCurrentMonth(t)) return false
       if (domainFilter && t.domain !== domainFilter) return false
       if (statusFilter && t.status !== statusFilter) return false

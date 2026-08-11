@@ -72,7 +72,7 @@ export function DashboardPage() {
   const { tasks, loading } = useTasks()
   const { roles } = useRoles()
   const { appUser } = useAuth()
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all')
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('month')
   const [domainCollapsed, setDomainCollapsed] = useState(false)
   const [domainFreqFilter, setDomainFreqFilter] = useState<TaskFrequency | ''>('')
 
