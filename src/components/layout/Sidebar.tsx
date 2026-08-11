@@ -8,7 +8,8 @@ const navItems = [
   { to: '/contacts', label: 'אנשי קשר', icon: '👥', adminOnly: false },
   { to: '/roles', label: 'איוש תפקידים', icon: '🏢', adminOnly: false },
   { to: '/orgchart', label: 'מבנה ארגוני', icon: '🌳', adminOnly: false },
-  { to: '/admin/branches', label: 'סניפים', icon: '🏪', adminOnly: true },
+  { to: '/branches', label: 'סניפים', icon: '🏪', adminOnly: false },
+  { to: '/admin/branches', label: 'פורטל רכזים', icon: '📋', adminOnly: true },
 ]
 
 interface Props {

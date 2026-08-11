@@ -15,6 +15,7 @@ import { PortalReport } from './pages/portal/PortalReport'
 import { PortalKnowledge } from './pages/portal/PortalKnowledge'
 import { PortalChat } from './pages/portal/PortalChat'
 import { BranchesAdminPage } from './pages/admin/BranchesAdminPage'
+import { BranchesPage } from './pages/BranchesPage'
 import { Spinner } from './components/ui/Spinner'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -80,6 +81,7 @@ export default function App() {
             <Route path="contacts" element={<ContactsPage />} />
             <Route path="roles" element={<RolesPage />} />
             <Route path="orgchart" element={<OrgChartPage />} />
+            <Route path="branches" element={<BranchesPage />} />
             <Route path="admin/hierarchy" element={<HierarchySetupPage />} />
             <Route path="admin/branches" element={<BranchesAdminPage />} />
           </Route>

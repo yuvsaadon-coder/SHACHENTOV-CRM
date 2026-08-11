@@ -55,11 +55,19 @@ export function TasksPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [view, setView] = useState<ViewMode>('list')
   const [search, setSearch] = useState('')
-  const [monthFilter, setMonthFilter] = useState(false)
+  const [monthFilter, setMonthFilter] = useState(true)
 
   const domainFilter = searchParams.get('domain') as Domain | null
   const statusFilter = searchParams.get('status') as TaskStatus | null
   const freqFilter = searchParams.get('freq') as TaskFrequency | null
+
+  const subTaskCountByParent = useMemo(() => {
+    const map: Record<string, number> = {}
+    tasks.filter((t) => t.parentTaskId).forEach((t) => {
+      map[t.parentTaskId!] = (map[t.parentTaskId!] || 0) + 1
+    })
+    return map
+  }, [tasks])
 
   const filtered = useMemo(() => {
     return tasks.filter((t) => {
@@ -224,6 +232,11 @@ export function TasksPage() {
                       <Link to={`/tasks/${t.id}`} className="font-medium text-brand-navy hover:underline">
                         {t.title}
                       </Link>
+                      {subTaskCountByParent[t.id] && (
+                        <span className="mr-1.5 text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                          📋 {subTaskCountByParent[t.id]}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5">
                       <DomainBadge domain={t.domain} />
@@ -266,9 +279,16 @@ export function TasksPage() {
             {filtered.map((t) => (
               <div key={t.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <Link to={`/tasks/${t.id}`} className="font-medium text-brand-navy hover:underline text-sm leading-snug">
-                    {t.title}
-                  </Link>
+                  <div className="flex-1 min-w-0">
+                    <Link to={`/tasks/${t.id}`} className="font-medium text-brand-navy hover:underline text-sm leading-snug">
+                      {t.title}
+                    </Link>
+                    {subTaskCountByParent[t.id] && (
+                      <span className="mr-1.5 text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                        📋 {subTaskCountByParent[t.id]}
+                      </span>
+                    )}
+                  </div>
                   <select
                     value={t.status}
                     onChange={(e) => updateStatus(t.id, e.target.value as TaskStatus)}
