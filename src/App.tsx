@@ -15,6 +15,7 @@ import { PortalReport } from './pages/portal/PortalReport'
 import { PortalKnowledge } from './pages/portal/PortalKnowledge'
 import { PortalChat } from './pages/portal/PortalChat'
 import { BranchesAdminPage } from './pages/admin/BranchesAdminPage'
+import { SeedPage } from './pages/admin/SeedPage'
 import { BranchesPage } from './pages/BranchesPage'
 import { Spinner } from './components/ui/Spinner'
 
@@ -84,6 +85,7 @@ export default function App() {
             <Route path="branches" element={<BranchesPage />} />
             <Route path="admin/hierarchy" element={<HierarchySetupPage />} />
             <Route path="admin/branches" element={<BranchesAdminPage />} />
+            <Route path="admin/seed" element={<SeedPage />} />
           </Route>
 
           <Route path="*" element={<SmartRedirect />} />

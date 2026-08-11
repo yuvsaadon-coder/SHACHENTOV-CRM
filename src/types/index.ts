@@ -187,7 +187,17 @@ export interface Branch {
   type: 'food' | 'cafe_youth'
   city: string
   coordinatorUids: string[]
+  coordinatorNames?: string[]
   createdAt: Timestamp
+  // Operational data (from Excel / manual edit)
+  distributionFrequency?: string
+  distributionDay?: string
+  weeklyBaskets?: number | null
+  monthlyBaskets?: number | null
+  packagingTime?: string
+  distributionTime?: string
+  address?: string
+  acceptsGroups?: boolean
 }
 
 export type QuarterLabel = 'Q1' | 'Q2' | 'Q3' | 'Q4'
