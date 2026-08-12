@@ -10,6 +10,8 @@ const navItems = [
   { to: '/orgchart', label: 'מבנה ארגוני', icon: '🌳', adminOnly: false },
   { to: '/branches', label: 'סניפים', icon: '🏪', adminOnly: false },
   { to: '/knowledge', label: 'ספריית ידע', icon: '📚', adminOnly: false },
+  { to: '/hq-knowledge', label: 'מאגר ידע מטה', icon: '🗃️', adminOnly: false },
+  { to: '/hq-chat', label: "צ'אטבוט מטה", icon: '🤖', adminOnly: false },
   { to: '/admin/branches', label: 'פורטל רכזים', icon: '📋', adminOnly: true },
   { to: '/admin/knowledge', label: 'ניהול ספרייה', icon: '📖', adminOnly: true },
   { to: '/admin/seed', label: 'סידינג', icon: '🌱', adminOnly: true },

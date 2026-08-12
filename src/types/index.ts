@@ -236,3 +236,28 @@ export interface KnowledgeItem {
   createdBy: string
   createdAt: Timestamp
 }
+
+export type HQKnowledgeCategory = 'handover' | 'instructions' | 'procedures' | 'sop' | 'tips' | 'other'
+
+export const HQ_KNOWLEDGE_CATEGORIES: { id: HQKnowledgeCategory; label: string; icon: string }[] = [
+  { id: 'handover',     label: 'קבצי חפיפה',            icon: '🔄' },
+  { id: 'instructions', label: 'הנחיות',                 icon: '📋' },
+  { id: 'procedures',   label: 'שימור מידע תהליכי',     icon: '⚙️' },
+  { id: 'sop',          label: 'סדרי פעולות',            icon: '📌' },
+  { id: 'tips',         label: 'טיפים ועצות',            icon: '💡' },
+  { id: 'other',        label: 'אחר',                    icon: '📎' },
+]
+
+export interface HQKnowledgeItem {
+  id: string
+  domain: Domain | 'all'
+  category: HQKnowledgeCategory
+  title: string
+  content: string
+  fileUrl?: string
+  fileName?: string
+  tags: string[]
+  createdBy: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
