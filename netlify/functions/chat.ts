@@ -121,7 +121,7 @@ export const handler: Handler = async (event) => {
 ${localSection}${globalSection}${researchSection}
 
 אם התשובה מגיעה ממסמך ספציפי — ציין את שמו.
-אם אין מידע רלוונטי במאגר — אמור זאת ותן תשובה כללית.`
+אם אין מידע רלוונטי במאגר הידע — אמור זאת בכנות: "אין לי מידע על זה במאגר הידע של הסניף." אל תנסה לספק מידע כללי שאינו מבוסס על המסמכים לעיל.`
 
   // Call Anthropic API
   const apiKey = process.env.ANTHROPIC_API_KEY

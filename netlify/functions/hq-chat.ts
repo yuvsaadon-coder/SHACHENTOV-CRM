@@ -109,7 +109,7 @@ export const handler: Handler = async (event) => {
 ${knowledgeBlock}
 
 כשתשובה נסמכת על פריט ספציפי — ציין את שמו.
-אם אין מידע רלוונטי — אמור זאת ותן תשובה כללית מניסיונך.`
+אם אין מידע רלוונטי במאגר הידע — אמור זאת בכנות: "אין לי מידע על זה במאגר הידע שלי." אל תנסה לספק מידע כללי שאינו מבוסס על המסמכים לעיל.`
 
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return { statusCode: 500, body: JSON.stringify({ error: 'Missing API key' }) }

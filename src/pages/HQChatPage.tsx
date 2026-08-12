@@ -1,13 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { DOMAIN_LABELS, DOMAINS, type Domain } from '../types'
+import { useChatHistory } from '../hooks/useChatHistory'
+import type { ChatMessage } from '../hooks/useChatHistory'
 
 type KnowledgeScope = 'hq' | 'all'
-
-interface Message {
-  role: 'user' | 'assistant'
-  content: string
-}
 
 const SCOPE_LABELS: Record<KnowledgeScope, string> = {
   hq:  'מאגר מטה',
@@ -18,11 +15,15 @@ export function HQChatPage() {
   const { firebaseUser, appUser } = useAuth()
   const [scope, setScope] = useState<KnowledgeScope>('all')
   const [domainFilter, setDomainFilter] = useState<Domain | ''>('')
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [showDomainFilter, setShowDomainFilter] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+
+  const { sessions, saveSession, startNewSession, loadSession } =
+    useChatHistory(appUser?.uid, 'hq')
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -32,8 +33,9 @@ export function HQChatPage() {
     const question = input.trim()
     if (!question || loading) return
 
-    const userMsg: Message = { role: 'user', content: question }
-    setMessages((prev) => [...prev, userMsg])
+    const userMsg: ChatMessage = { role: 'user', content: question }
+    const updatedMessages = [...messages, userMsg]
+    setMessages(updatedMessages)
     setInput('')
     setLoading(true)
 
@@ -48,7 +50,7 @@ export function HQChatPage() {
         body: JSON.stringify({
           scope,
           domainFilter: domainFilter || null,
-          messages: [...messages, userMsg],
+          messages: updatedMessages,
           question,
         }),
       })
@@ -63,7 +65,9 @@ export function HQChatPage() {
       }
 
       const { reply } = (await res.json()) as { reply: string }
-      setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
+      const withReply: ChatMessage[] = [...updatedMessages, { role: 'assistant', content: reply }]
+      setMessages(withReply)
+      void saveSession(withReply)
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -78,6 +82,18 @@ export function HQChatPage() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void send() }
   }
 
+  const handleNewChat = () => {
+    startNewSession()
+    setMessages([])
+    setShowHistory(false)
+  }
+
+  const handleLoadSession = (session: Parameters<typeof loadSession>[0]) => {
+    const msgs = loadSession(session)
+    setMessages(msgs)
+    setShowHistory(false)
+  }
+
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]" dir="rtl">
       {/* Top bar */}
@@ -87,7 +103,7 @@ export function HQChatPage() {
             <h1 className="font-bold text-sm" style={{ color: '#141348' }}>צ׳אטבוט AI — מטה שכן טוב</h1>
             <p className="text-xs text-gray-400">שלום {appUser?.name}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             {/* Scope toggle */}
             <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
               {(Object.keys(SCOPE_LABELS) as KnowledgeScope[]).map((s) => (
@@ -112,7 +128,14 @@ export function HQChatPage() {
               {domainFilter ? DOMAIN_LABELS[domainFilter] : 'תחום ▾'}
             </button>
             <button
-              onClick={() => setMessages([])}
+              onClick={() => setShowHistory((v) => !v)}
+              className="text-xs border border-gray-200 rounded px-2 py-1 transition-colors"
+              style={{ color: showHistory ? '#189A9F' : '#6B7280', borderColor: showHistory ? '#189A9F' : '#E5E7EB' }}
+            >
+              📋 {sessions.length > 0 ? `היסטוריה (${sessions.length})` : 'היסטוריה'}
+            </button>
+            <button
+              onClick={handleNewChat}
               className="text-xs text-gray-400 hover:text-red-500 border border-gray-200 rounded px-2 py-1 transition-colors"
             >
               שיחה חדשה
@@ -146,6 +169,30 @@ export function HQChatPage() {
           </div>
         )}
       </div>
+
+      {/* History panel */}
+      {showHistory && (
+        <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 max-h-48 overflow-y-auto shrink-0">
+          {sessions.length === 0 ? (
+            <p className="text-xs text-gray-400 py-2">אין שיחות שמורות עדיין</p>
+          ) : (
+            <div className="space-y-1">
+              {sessions.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => handleLoadSession(s)}
+                  className="w-full text-right text-xs px-3 py-2 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 transition-colors flex items-center justify-between gap-2"
+                >
+                  <span className="truncate text-gray-700">{s.title}</span>
+                  <span className="text-gray-400 shrink-0">
+                    {s.updatedAt.toLocaleDateString('he-IL')}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">

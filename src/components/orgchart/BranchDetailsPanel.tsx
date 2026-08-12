@@ -43,8 +43,57 @@ function VolChip({ value, onChange }: { value?: VolunteerStatus; onChange: (v: V
 
 type PanelTab = 'volunteer' | 'reports'
 
+const FOOD_LABELS: Record<string, string> = {
+  f1:  'כמות סלי מזון ממוצעת',
+  f2:  'מוצרים יבשים',
+  f3:  'עופות',
+  f4:  'ביצים',
+  f5:  'חלות',
+  f6:  'ירקות',
+  f7:  'שקיות / אריזה',
+  f8:  'חוסרים במלאי',
+  f9:  'מצב מחסן',
+  f10: 'ביטוח מתנדבים הופץ?',
+  f11: 'מתנדבי אריזה',
+  f12: 'מתנדבי חלוקה/נהגים',
+  f13: 'מתנדבי איסוף',
+  f14: 'מצב הרוח הכללי',
+  f15: 'במה המטה יכול לעזור?',
+  f16: 'כמות אריזה אידיאלית',
+  f17: 'כמות חלוקה אידיאלית',
+}
+
+const CAFE_LABELS: Record<string, string> = {
+  c1: 'כמות משתתפים ממוצעת',
+  c2: 'מצב מבנה/ציוד',
+  c3: 'חוסרים בציוד/מלאי',
+  c4: 'ביטוח מתנדבים הופץ?',
+  c5: 'מצב מתנדבים כללי',
+  c6: 'מצב הרוח הכללי',
+  c7: 'במה המטה יכול לעזור?',
+  c8: 'כמות מתנדבים אידיאלית',
+}
+
+function formatReportValue(v: unknown): string {
+  if (v === null || v === undefined || v === '') return '—'
+  if (typeof v === 'object' && v !== null) {
+    if ('rating' in (v as Record<string, unknown>)) {
+      const sr = v as { rating?: string; notes?: string }
+      const stars = sr.rating ? `⭐ ${sr.rating}/5` : '—'
+      return sr.notes ? `${stars}  |  ${sr.notes}` : stars
+    }
+    return String(v)
+  }
+  return String(v)
+}
+
 function ReportAccordion({ report }: { report: QuarterlyReport }) {
   const [open, setOpen] = useState(false)
+  const isFood = report.branchType === 'food'
+  const labelMap = isFood ? FOOD_LABELS : CAFE_LABELS
+
+  const entries = Object.entries(report.data).filter(([, v]) => v !== null && v !== undefined && v !== '')
+
   return (
     <div className="border border-gray-100 rounded-lg overflow-hidden">
       <button
@@ -62,15 +111,20 @@ function ReportAccordion({ report }: { report: QuarterlyReport }) {
         <span className="text-gray-400 text-xs">{open ? '▲' : '▼'}</span>
       </button>
       {open && (
-        <div className="px-3 py-2 bg-gray-50 border-t border-gray-100 text-xs space-y-1">
-          {Object.entries(report.data).map(([k, v]) => (
-            <div key={k} className="flex gap-2">
-              <span className="text-gray-500 shrink-0 w-28">{k}:</span>
-              <span style={{ color: '#141348' }}>
-                {typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v ?? '—')}
-              </span>
-            </div>
-          ))}
+        <div className="px-3 py-2 bg-gray-50 border-t border-gray-100 text-xs space-y-2">
+          {entries.length === 0 ? (
+            <span className="text-gray-400">אין נתונים</span>
+          ) : entries.map(([k, v]) => {
+            const label = labelMap[k] ?? k
+            const formatted = formatReportValue(v)
+            const isRating = typeof v === 'object' && v !== null && 'rating' in (v as Record<string, unknown>)
+            return (
+              <div key={k} className={isRating ? 'space-y-0.5' : 'flex gap-2'}>
+                <span className="text-gray-500 shrink-0 font-medium">{label}:</span>
+                <span style={{ color: '#141348', whiteSpace: 'pre-wrap' }}>{isRating ? ` ${formatted}` : formatted}</span>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

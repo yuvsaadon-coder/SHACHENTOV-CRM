@@ -1,23 +1,24 @@
 import { useState, useRef, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useChatHistory } from '../../hooks/useChatHistory'
+import type { ChatMessage } from '../../hooks/useChatHistory'
 import type { PortalOutletContext } from './CoordinatorPortal'
 
 type Mode = 'branch' | 'all'
 
-interface Message {
-  role: 'user' | 'assistant'
-  content: string
-}
-
 export function PortalChat() {
   const { branch } = useOutletContext<PortalOutletContext>()
-  const { firebaseUser } = useAuth()
+  const { firebaseUser, appUser } = useAuth()
   const [mode, setMode] = useState<Mode>('branch')
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+
+  const { sessions, saveSession, startNewSession, loadSession } =
+    useChatHistory(appUser?.uid, 'portal', branch.id)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -27,8 +28,9 @@ export function PortalChat() {
     const question = input.trim()
     if (!question || loading) return
 
-    const userMsg: Message = { role: 'user', content: question }
-    setMessages((prev) => [...prev, userMsg])
+    const userMsg: ChatMessage = { role: 'user', content: question }
+    const updatedMessages = [...messages, userMsg]
+    setMessages(updatedMessages)
     setInput('')
     setLoading(true)
 
@@ -43,7 +45,7 @@ export function PortalChat() {
         body: JSON.stringify({
           branchId: branch.id,
           mode,
-          messages: [...messages, userMsg],
+          messages: updatedMessages,
           question,
         }),
       })
@@ -58,7 +60,9 @@ export function PortalChat() {
       }
 
       const { reply } = (await res.json()) as { reply: string }
-      setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
+      const withReply: ChatMessage[] = [...updatedMessages, { role: 'assistant', content: reply }]
+      setMessages(withReply)
+      void saveSession(withReply)
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -74,6 +78,18 @@ export function PortalChat() {
       e.preventDefault()
       void send()
     }
+  }
+
+  const handleNewChat = () => {
+    startNewSession()
+    setMessages([])
+    setShowHistory(false)
+  }
+
+  const handleLoadSession = (session: Parameters<typeof loadSession>[0]) => {
+    const msgs = loadSession(session)
+    setMessages(msgs)
+    setShowHistory(false)
   }
 
   return (
@@ -105,14 +121,46 @@ export function PortalChat() {
               כל הידע
             </button>
           </div>
+          {/* History button */}
           <button
-            onClick={() => setMessages([])}
+            onClick={() => setShowHistory((v) => !v)}
+            className="text-xs border border-gray-200 rounded px-2 py-1 transition-colors relative"
+            style={{ color: showHistory ? '#189A9F' : '#6B7280', borderColor: showHistory ? '#189A9F' : '#E5E7EB' }}
+          >
+            📋 היסטוריה {sessions.length > 0 && `(${sessions.length})`}
+          </button>
+          <button
+            onClick={handleNewChat}
             className="text-xs text-gray-400 hover:text-red-500 border border-gray-200 rounded px-2 py-1 transition-colors"
           >
             שיחה חדשה
           </button>
         </div>
       </div>
+
+      {/* History panel */}
+      {showHistory && (
+        <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 max-h-48 overflow-y-auto shrink-0">
+          {sessions.length === 0 ? (
+            <p className="text-xs text-gray-400 py-2">אין שיחות שמורות עדיין</p>
+          ) : (
+            <div className="space-y-1">
+              {sessions.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => handleLoadSession(s)}
+                  className="w-full text-right text-xs px-3 py-2 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 transition-colors flex items-center justify-between gap-2"
+                >
+                  <span className="truncate text-gray-700">{s.title}</span>
+                  <span className="text-gray-400 shrink-0">
+                    {s.updatedAt.toLocaleDateString('he-IL')}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
