@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useTasks } from '../hooks/useTasks'
+import { useAuth } from '../context/AuthContext'
 import { exportTasks } from '../utils/export'
 import { Spinner } from '../components/ui/Spinner'
 import { DomainBadge } from '../components/ui/DomainBadge'
@@ -52,6 +53,7 @@ function taskMatchesCurrentMonth(t: Task): boolean {
 
 export function TasksPage() {
   const { tasks, loading } = useTasks()
+  const { appUser } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [view, setView] = useState<ViewMode>('list')
   const [search, setSearch] = useState('')
@@ -60,6 +62,12 @@ export function TasksPage() {
   const domainFilter = searchParams.get('domain') as Domain | null
   const statusFilter = searchParams.get('status') as TaskStatus | null
   const freqFilter = searchParams.get('freq') as TaskFrequency | null
+  const responsibleFilter = searchParams.get('responsible')
+
+  const persons = useMemo(
+    () => [...new Set(tasks.filter((t) => !t.parentTaskId && t.responsible).map((t) => t.responsible))].sort(),
+    [tasks]
+  )
 
   const subTaskCountByParent = useMemo(() => {
     const map: Record<string, number> = {}
@@ -76,6 +84,7 @@ export function TasksPage() {
       if (domainFilter && t.domain !== domainFilter) return false
       if (statusFilter && t.status !== statusFilter) return false
       if (freqFilter && t.frequency !== freqFilter) return false
+      if (responsibleFilter && t.responsible !== responsibleFilter) return false
       if (search) {
         const q = search.toLowerCase()
         return (
@@ -86,7 +95,7 @@ export function TasksPage() {
       }
       return true
     })
-  }, [tasks, monthFilter, domainFilter, statusFilter, freqFilter, search])
+  }, [tasks, monthFilter, domainFilter, statusFilter, freqFilter, responsibleFilter, search])
 
   const setFilter = (key: string, val: string | null) => {
     const p = new URLSearchParams(searchParams)
@@ -95,7 +104,7 @@ export function TasksPage() {
     setSearchParams(p)
   }
 
-  const hasAnyFilter = !!(domainFilter || statusFilter || freqFilter || search || monthFilter)
+  const hasAnyFilter = !!(domainFilter || statusFilter || freqFilter || responsibleFilter || search || monthFilter)
 
   if (loading) return <Spinner size="lg" />
 
@@ -162,6 +171,31 @@ export function TasksPage() {
               <option key={f} value={f}>{f}</option>
             ))}
           </select>
+
+          <select
+            value={responsibleFilter || ''}
+            onChange={(e) => setFilter('responsible', e.target.value || null)}
+            className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
+          >
+            <option value="">כל האחראים</option>
+            {persons.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+
+          {appUser?.name && (
+            <button
+              onClick={() => setFilter('responsible', responsibleFilter === appUser.name ? null : appUser.name)}
+              className={`px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                responsibleFilter === appUser.name
+                  ? 'border-brand-teal text-white'
+                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+              style={responsibleFilter === appUser.name ? { backgroundColor: '#189A9F' } : {}}
+            >
+              👤 המשימות שלי
+            </button>
+          )}
 
           {/* Current month quick filter */}
           <button

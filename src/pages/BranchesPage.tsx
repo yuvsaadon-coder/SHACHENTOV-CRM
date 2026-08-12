@@ -2,9 +2,11 @@ import { useState, useMemo } from 'react'
 import { doc, updateDoc, addDoc, collection, serverTimestamp, query, where, getDocs } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAllBranches } from '../hooks/useBranch'
+import { useQuarterlyReports } from '../hooks/useQuarterlyReports'
+import { useAuth } from '../context/AuthContext'
 import { Spinner } from '../components/ui/Spinner'
-import type { Branch, AppUser } from '../types'
-import { DIST_FREQ_OPTIONS } from '../types'
+import type { Branch, AppUser, QuarterlyReport } from '../types'
+import { DIST_FREQ_OPTIONS, QUARTER_LABELS } from '../types'
 
 const DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת', 'משתנה']
 
@@ -15,6 +17,174 @@ const TYPE_LABELS: Record<Branch['type'], string> = {
 const TYPE_COLOR: Record<Branch['type'], string> = {
   food: '#189A9F',
   cafe_youth: '#FDC857',
+}
+
+type BranchLevel = 'סניף ירושלים' | 'סניף חוץ' | 'בתי קפה נודדים'
+
+function inferLevel(branch: Branch): BranchLevel {
+  if (branch.type === 'cafe_youth') return 'בתי קפה נודדים'
+  if (branch.city === 'ירושלים' || branch.city.startsWith('ירושלים')) return 'סניף ירושלים'
+  return 'סניף חוץ'
+}
+
+const LEVEL_COLORS: Record<BranchLevel, { bg: string; text: string }> = {
+  'סניף ירושלים':    { bg: '#189A9F22', text: '#189A9F' },
+  'סניף חוץ':        { bg: '#141348', text: 'white' },
+  'בתי קפה נודדים':  { bg: '#FDC85722', text: '#7A5A00' },
+}
+
+const FOOD_LABELS: Record<string, string> = {
+  f1: 'כמות סלי מזון ממוצעת', f2: 'מוצרים יבשים', f3: 'עופות',
+  f4: 'ביצים', f5: 'חלות', f6: 'ירקות', f7: 'שקיות / אריזה',
+  f8: 'חוסרים במלאי', f9: 'מצב מחסן', f10: 'ביטוח מתנדבים הופץ?',
+  f11: 'מתנדבי אריזה', f12: 'מתנדבי חלוקה/נהגים', f13: 'מתנדבי איסוף',
+  f14: 'מצב הרוח הכללי', f15: 'במה המטה יכול לעזור?',
+  f16: 'כמות אריזה אידיאלית', f17: 'כמות חלוקה אידיאלית',
+}
+const CAFE_LABELS: Record<string, string> = {
+  c1: 'כמות משתתפים ממוצעת', c2: 'מצב מבנה/ציוד', c3: 'חוסרים בציוד/מלאי',
+  c4: 'ביטוח מתנדבים הופץ?', c5: 'מצב מתנדבים כללי',
+  c6: 'מצב הרוח הכללי', c7: 'במה המטה יכול לעזור?', c8: 'כמות מתנדבים אידיאלית',
+}
+
+function formatReportValue(v: unknown): string {
+  if (v === null || v === undefined || v === '') return '—'
+  if (typeof v === 'object' && v !== null) {
+    if ('rating' in (v as Record<string, unknown>)) {
+      const sr = v as { rating?: string; notes?: string }
+      const stars = sr.rating ? `⭐ ${sr.rating}/5` : '—'
+      return sr.notes ? `${stars}  |  ${sr.notes}` : stars
+    }
+    return String(v)
+  }
+  return String(v)
+}
+
+function ReportAccordion({ report }: { report: QuarterlyReport }) {
+  const [open, setOpen] = useState(false)
+  const labelMap = report.branchType === 'food' ? FOOD_LABELS : CAFE_LABELS
+  const entries = Object.entries(report.data).filter(([, v]) => v !== null && v !== undefined && v !== '')
+  return (
+    <div className="border border-gray-100 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-3 py-2.5 bg-white hover:bg-gray-50 text-right"
+      >
+        <div>
+          <span className="text-sm font-medium" style={{ color: '#141348' }}>
+            {QUARTER_LABELS[report.quarter]} {report.year}
+          </span>
+          <span className="text-xs text-gray-400 mr-2">
+            {report.submittedAt?.toDate?.().toLocaleDateString('he-IL')}
+          </span>
+        </div>
+        <span className="text-gray-400 text-xs">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="px-3 py-2 bg-gray-50 border-t border-gray-100 text-xs space-y-1.5">
+          {entries.length === 0 ? (
+            <span className="text-gray-400">אין נתונים</span>
+          ) : entries.map(([k, v]) => (
+            <div key={k} className="flex gap-2">
+              <span className="text-gray-500 min-w-[130px] shrink-0">{labelMap[k] ?? k}:</span>
+              <span className="text-gray-700">{formatReportValue(v)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function BranchReportsModal({ branch, onClose }: { branch: Branch; onClose: () => void }) {
+  const { firebaseUser } = useAuth()
+  const { reports, loading } = useQuarterlyReports(branch.id)
+  const [aiAnalysis, setAiAnalysis] = useState('')
+  const [analyzing, setAnalyzing] = useState(false)
+
+  const runAiAnalysis = async () => {
+    if (reports.length === 0) return
+    setAnalyzing(true)
+    setAiAnalysis('')
+    try {
+      const token = await firebaseUser?.getIdToken()
+      const reportsText = reports.map((r) => {
+        const labelMap = r.branchType === 'food' ? FOOD_LABELS : CAFE_LABELS
+        const entries = Object.entries(r.data)
+          .filter(([, v]) => v !== null && v !== undefined && v !== '')
+          .map(([k, v]) => `  ${labelMap[k] ?? k}: ${formatReportValue(v)}`)
+          .join('\n')
+        return `${QUARTER_LABELS[r.quarter]} ${r.year}:\n${entries}`
+      }).join('\n\n---\n\n')
+
+      const question = `להלן דיווחי רבעון של הסניף "${branch.name}" לאורך זמן:\n\n${reportsText}\n\nנתח את המגמות לאורך זמן: מה השתנה? מה משתפר? מה מדאיג? מה הסניף צריך? ספק ניתוח תמציתי ומעשי.`
+
+      const res = await fetch('/.netlify/functions/hq-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token ?? ''}` },
+        body: JSON.stringify({ scope: 'all', domainFilter: null, messages: [{ role: 'user', content: question }], question }),
+      })
+      if (!res.ok) {
+        setAiAnalysis('שגיאה בניתוח AI. נסה שוב.')
+        return
+      }
+      const { reply } = await res.json() as { reply: string }
+      setAiAnalysis(reply)
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        dir="rtl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 className="font-bold text-sm" style={{ color: '#141348' }}>דיווחים — {branch.name}</h2>
+            <p className="text-xs text-gray-400">{reports.length} דיווחים</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => void runAiAnalysis()}
+              disabled={analyzing || reports.length === 0}
+              className="text-xs px-3 py-1.5 rounded-lg text-white disabled:opacity-50"
+              style={{ backgroundColor: '#189A9F' }}
+            >
+              {analyzing ? '⏳ מנתח...' : '✨ ניתוח AI'}
+            </button>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+          </div>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {aiAnalysis && (
+            <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+              <div className="font-semibold text-xs mb-2" style={{ color: '#189A9F' }}>ניתוח AI — מגמות לאורך זמן</div>
+              {aiAnalysis}
+            </div>
+          )}
+
+          {loading ? (
+            <div className="text-center py-8 text-gray-400 text-sm">טוען דיווחים...</div>
+          ) : reports.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              <div className="text-3xl mb-2">📋</div>
+              <div className="text-sm">אין דיווחים עדיין לסניף זה</div>
+              <div className="text-xs mt-1 text-gray-300">הרכז יכול להגיש דיווח מהפורטל</div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {reports.map((r) => <ReportAccordion key={r.id} report={r} />)}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 type FullEditForm = {
@@ -342,7 +512,10 @@ function AddBranchModal({ onClose }: { onClose: () => void }) {
 
 function BranchCard({ branch }: { branch: Branch }) {
   const [editing, setEditing] = useState(false)
+  const [viewingReports, setViewingReports] = useState(false)
   const color = TYPE_COLOR[branch.type]
+  const level = inferLevel(branch)
+  const levelStyle = LEVEL_COLORS[level]
 
   return (
     <>
@@ -353,7 +526,15 @@ function BranchCard({ branch }: { branch: Branch }) {
             <div className="font-bold text-sm truncate" style={{ color: '#141348' }}>
               {branch.name.replace(/^סלי מזון - /, '').replace(/^מועדון נוער - /, '')}
             </div>
-            <div className="text-xs text-gray-400">{branch.city}</div>
+            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              <span className="text-xs text-gray-400">{branch.city}</span>
+              <span
+                className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                style={{ backgroundColor: levelStyle.bg, color: levelStyle.text }}
+              >
+                {level}
+              </span>
+            </div>
           </div>
           <span
             className="text-xs px-1.5 py-0.5 rounded shrink-0 font-medium"
@@ -429,15 +610,23 @@ function BranchCard({ branch }: { branch: Branch }) {
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2 border-t border-gray-100 flex items-center justify-between">
-          <a
-            href="/orgchart"
-            className="text-xs hover:underline"
-            style={{ color: '#189A9F' }}
-            title="צפה בעץ הארגוני"
-          >
-            🌳 עץ ארגוני
-          </a>
+        <div className="px-4 py-2 border-t border-gray-100 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setViewingReports(true)}
+              className="text-xs hover:underline"
+              style={{ color: '#189A9F' }}
+            >
+              📋 דיווחים
+            </button>
+            <a
+              href="/orgchart"
+              className="text-xs hover:underline text-gray-400"
+              title="צפה בעץ הארגוני"
+            >
+              🌳 עץ ארגוני
+            </a>
+          </div>
           <button
             onClick={() => setEditing(true)}
             className="text-xs hover:underline"
@@ -449,6 +638,7 @@ function BranchCard({ branch }: { branch: Branch }) {
       </div>
 
       {editing && <BranchEditPanel branch={branch} onClose={() => setEditing(false)} />}
+      {viewingReports && <BranchReportsModal branch={branch} onClose={() => setViewingReports(false)} />}
     </>
   )
 }
@@ -456,6 +646,7 @@ function BranchCard({ branch }: { branch: Branch }) {
 export function BranchesPage() {
   const { branches, loading } = useAllBranches()
   const [typeFilter, setTypeFilter] = useState<Branch['type'] | ''>('')
+  const [levelFilter, setLevelFilter] = useState<BranchLevel | ''>('')
   const [cityFilter, setCityFilter] = useState('')
   const [search, setSearch] = useState('')
   const [addingBranch, setAddingBranch] = useState(false)
@@ -468,6 +659,7 @@ export function BranchesPage() {
   const filtered = useMemo(() => {
     return branches.filter((b) => {
       if (typeFilter && b.type !== typeFilter) return false
+      if (levelFilter && inferLevel(b) !== levelFilter) return false
       if (cityFilter && b.city !== cityFilter) return false
       if (search) {
         const q = search.toLowerCase()
@@ -479,7 +671,7 @@ export function BranchesPage() {
       }
       return true
     })
-  }, [branches, typeFilter, cityFilter, search])
+  }, [branches, typeFilter, levelFilter, cityFilter, search])
 
   const byCity = useMemo(() => {
     const groups: { city: string; branches: Branch[] }[] = []
@@ -548,9 +740,24 @@ export function BranchesPage() {
             {t === '' ? 'הכל' : TYPE_LABELS[t]}
           </button>
         ))}
-        {(search || typeFilter || cityFilter) && (
+        {(['', 'סניף ירושלים', 'סניף חוץ', 'בתי קפה נודדים'] as const).map((l) => (
           <button
-            onClick={() => { setSearch(''); setTypeFilter(''); setCityFilter('') }}
+            key={l}
+            onClick={() => setLevelFilter(l)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors"
+            style={{
+              backgroundColor: levelFilter === l ? (l === '' ? '#141348' : LEVEL_COLORS[l as BranchLevel].bg) : 'white',
+              color: levelFilter === l ? (l === '' ? 'white' : LEVEL_COLORS[l as BranchLevel].text) : '#6B7280',
+              borderColor: levelFilter === l ? '#141348' : '#E5E7EB',
+              opacity: l === '' && levelFilter !== '' ? 0.6 : 1,
+            }}
+          >
+            {l === '' ? 'כל הרמות' : l}
+          </button>
+        ))}
+        {(search || typeFilter || levelFilter || cityFilter) && (
+          <button
+            onClick={() => { setSearch(''); setTypeFilter(''); setLevelFilter(''); setCityFilter('') }}
             className="text-xs text-gray-400 hover:text-red-500 underline"
           >
             נקה
