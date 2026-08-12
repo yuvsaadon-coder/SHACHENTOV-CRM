@@ -37,59 +37,83 @@ function OrgCard({ role, childCount, collapsed, onToggle, onClick }: {
 }) {
   const sc = STATUS_CHIP[role.status] ?? STATUS_CHIP['אחר']
   const isHQ = role.level === HQ_LEVEL
+  const label = isHQ ? `ערוך תפקיד: ${role.roleName}` : `פרטי סניף: ${role.roleName}`
+
   return (
-    <div
-      onClick={onClick}
-      title={isHQ ? 'לחץ לעריכה' : 'לחץ לצפייה בפרטי הסניף'}
-      style={{
-        border: '1.5px solid #E5E7EB',
-        borderRadius: 8,
-        padding: '4px 8px',
-        backgroundColor: 'white',
-        cursor: 'pointer',
-        minWidth: 96,
-        maxWidth: 120,
-        boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
-        direction: 'rtl',
-        userSelect: 'none',
-        transition: 'box-shadow 0.15s, border-color 0.15s',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.14)'
-        e.currentTarget.style.borderColor = '#189A9F'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.07)'
-        e.currentTarget.style.borderColor = '#E5E7EB'
-      }}
-    >
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#141348', marginBottom: 1, lineHeight: 1.3 }}>
-        {role.roleName}
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      {/* Main card — role="button" because it contains a child <button> (collapse),
+          so a real <button> would create invalid nested-button HTML. */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={label}
+        onClick={onClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() }
+        }}
+        style={{
+          border: '1.5px solid #E5E7EB',
+          borderRadius: 8,
+          padding: childCount > 0 ? '4px 8px 20px' : '4px 8px',
+          backgroundColor: 'white',
+          cursor: 'pointer',
+          minWidth: 96,
+          maxWidth: 120,
+          boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
+          direction: 'rtl',
+          transition: 'box-shadow 0.15s, border-color 0.15s',
+          outline: 'none',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.14)'
+          e.currentTarget.style.borderColor = '#189A9F'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.07)'
+          e.currentTarget.style.borderColor = '#E5E7EB'
+        }}
+        onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px #189A9F' }}
+        onBlur={(e) => { e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.07)' }}
+      >
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#141348', marginBottom: 1, lineHeight: 1.3 }}>
+          {role.roleName}
+        </div>
+        {role.holderName
+          ? <div style={{ fontSize: 9, color: '#6B7280', marginBottom: 3 }}>{role.holderName}</div>
+          : <div style={{ fontSize: 9, color: '#D1D5DB', marginBottom: 3, fontStyle: 'italic' }}>לא מאויש</div>
+        }
+        <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 8, fontWeight: 500, backgroundColor: sc.bg, color: sc.text, padding: '1px 4px', borderRadius: 4 }}>
+            {role.status}
+          </span>
+          <span style={{ fontSize: 8, fontWeight: 500, backgroundColor: '#F3F4F6', color: '#374151', padding: '1px 4px', borderRadius: 4 }}>
+            {role.level}
+          </span>
+        </div>
       </div>
-      {role.holderName
-        ? <div style={{ fontSize: 9, color: '#6B7280', marginBottom: 3 }}>{role.holderName}</div>
-        : <div style={{ fontSize: 9, color: '#D1D5DB', marginBottom: 3, fontStyle: 'italic' }}>לא מאויש</div>
-      }
-      <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: 8, fontWeight: 500, backgroundColor: sc.bg, color: sc.text, padding: '1px 4px', borderRadius: 4 }}>
-          {role.status}
-        </span>
-        <span style={{ fontSize: 8, fontWeight: 500, backgroundColor: '#F3F4F6', color: '#374151', padding: '1px 4px', borderRadius: 4 }}>
-          {role.level}
-        </span>
-        {childCount > 0 && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onToggle() }}
-            style={{
-              fontSize: 8, marginRight: 'auto', color: '#189A9F',
-              background: 'none', border: 'none', cursor: 'pointer', padding: '1px 4px',
-            }}
-            title={collapsed ? 'הרחב' : 'כווץ'}
-          >
-            {collapsed ? `▶ ${childCount}` : `▼ ${childCount}`}
-          </button>
-        )}
-      </div>
+
+      {/* Collapse toggle — sibling to the card div to avoid nested interactives */}
+      {childCount > 0 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggle() }}
+          aria-label={collapsed ? `הרחב ${role.roleName}` : `כווץ ${role.roleName}`}
+          aria-expanded={!collapsed}
+          style={{
+            position: 'absolute',
+            bottom: 3,
+            left: 4,
+            fontSize: 8,
+            color: '#189A9F',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '1px 4px',
+            borderRadius: 3,
+          }}
+        >
+          {collapsed ? `▶ ${childCount}` : `▼ ${childCount}`}
+        </button>
+      )}
     </div>
   )
 }
