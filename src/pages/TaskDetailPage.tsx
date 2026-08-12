@@ -8,6 +8,7 @@ import {
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import { db, storage } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import { StatusBadge } from '../components/ui/StatusBadge'
 import { DomainBadge } from '../components/ui/DomainBadge'
 import { Spinner } from '../components/ui/Spinner'
@@ -26,6 +27,7 @@ export function TaskDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { appUser } = useAuth()
+  const { toast } = useToast()
 
   const [task, setTask] = useState<Task | null>(null)
   const [editing, setEditing] = useState(false)
@@ -103,7 +105,7 @@ export function TaskDetailPage() {
   const canEdit = !!appUser || isNew
 
   const save = async () => {
-    if (!form.title) return
+    if (!form.title) { toast('נא למלא כותרת משימה', 'error'); return }
     setSaving(true)
     try {
       if (isNew) {
@@ -113,6 +115,7 @@ export function TaskDetailPage() {
           createdBy: appUser?.name, updatedBy: appUser?.name,
         })
         navigate(`/tasks/${newId}`)
+        toast('המשימה נוצרה בהצלחה', 'success')
       } else {
         if (task) {
           const changed = Object.entries(form).filter(([k, v]) => {
@@ -134,7 +137,10 @@ export function TaskDetailPage() {
         })
         setTask({ ...task!, ...form } as Task)
         setEditing(false)
+        toast('המשימה עודכנה בהצלחה', 'success')
       }
+    } catch {
+      toast('שגיאה בשמירת המשימה. נסה שוב.', 'error')
     } finally {
       setSaving(false)
     }
@@ -142,15 +148,24 @@ export function TaskDetailPage() {
 
   const addComment = async () => {
     if (!newComment.trim() || !id) return
-    await addDoc(collection(db, 'tasks', id, 'comments'), {
-      text: newComment.trim(), author: appUser?.name, createdAt: serverTimestamp(),
-    })
-    setNewComment('')
+    try {
+      await addDoc(collection(db, 'tasks', id, 'comments'), {
+        text: newComment.trim(), author: appUser?.name, createdAt: serverTimestamp(),
+      })
+      setNewComment('')
+    } catch {
+      toast('שגיאה בשליחת ההערה', 'error')
+    }
   }
 
   const uploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !id) return
+    if (file.size > 20 * 1024 * 1024) {
+      toast('הקובץ גדול מדי — מקסימום 20 MB', 'error')
+      e.target.value = ''
+      return
+    }
     setUploading(true)
     try {
       const storageRef = ref(storage, `tasks/${id}/${Date.now()}_${file.name}`)
@@ -160,8 +175,12 @@ export function TaskDetailPage() {
         fileName: file.name, storageUrl: url,
         uploadedBy: appUser?.name, uploadedAt: serverTimestamp(),
       })
+      toast('הקובץ הועלה בהצלחה', 'success')
+    } catch {
+      toast('שגיאה בהעלאת הקובץ. נסה שוב.', 'error')
     } finally {
       setUploading(false)
+      e.target.value = ''
     }
   }
 

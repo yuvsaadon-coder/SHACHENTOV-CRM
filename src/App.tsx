@@ -22,6 +22,7 @@ import { KnowledgeLibraryPage } from './pages/KnowledgeLibraryPage'
 import { HQKnowledgePage } from './pages/HQKnowledgePage'
 import { HQChatPage } from './pages/HQChatPage'
 import { Spinner } from './components/ui/Spinner'
+import { ToastProvider } from './context/ToastContext'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { firebaseUser, appUser, loading } = useAuth()
@@ -49,6 +50,7 @@ function SmartRedirect() {
 export default function App() {
   return (
     <AuthProvider>
+      <ToastProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -99,6 +101,7 @@ export default function App() {
           <Route path="*" element={<SmartRedirect />} />
         </Routes>
       </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   )
 }

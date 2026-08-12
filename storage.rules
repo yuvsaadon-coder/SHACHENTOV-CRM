@@ -1,0 +1,35 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthed() {
+      return request.auth != null;
+    }
+
+    function isHQ() {
+      return isAuthed();
+    }
+
+    // Task attachments — authenticated users only, max 20 MB
+    match /tasks/{taskId}/{fileName} {
+      allow read: if isHQ();
+      allow write: if isHQ()
+        && request.resource.size < 20 * 1024 * 1024;
+      allow delete: if isHQ();
+    }
+
+    // Knowledge article PDFs — admins write, authenticated read
+    match /knowledge/{fileName} {
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.size < 50 * 1024 * 1024
+        && request.resource.contentType.matches('application/pdf');
+      allow delete: if isAuthed();
+    }
+
+    // Catch-all: deny everything else
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

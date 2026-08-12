@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthed() {
+      return request.auth != null;
+    }
+
+    function role() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isAuthed() && role() == 'admin';
+    }
+
+    function isHQ() {
+      return isAuthed() && role() in ['admin', 'hq'];
+    }
+
+    function isCoordinator() {
+      return isAuthed() && role() == 'coordinator';
+    }
+
+    // HQ staff & admins — full CRM access
+    match /tasks/{taskId} {
+      allow read, write: if isHQ();
+      match /{sub}/{subId} {
+        allow read, write: if isHQ();
+      }
+    }
+
+    match /contacts/{id}    { allow read, write: if isHQ(); }
+    match /roles/{id}       { allow read, write: if isHQ(); }
+    match /branches/{id}    { allow read: if isAuthed(); allow write: if isAdmin(); }
+
+    // Knowledge
+    match /hq_knowledge/{id}       { allow read: if isHQ(); allow write: if isAdmin(); }
+    match /knowledge_articles/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
+    match /knowledgeItems/{id}     {
+      allow read: if isAuthed();
+      allow write: if isCoordinator() || isHQ();
+    }
+
+    // Quarterly reports — coordinators write their own, HQ reads all
+    match /quarterlyReports/{id} {
+      allow read: if isHQ();
+      allow create: if isCoordinator() && request.resource.data.submittedBy == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // Users — each user reads own doc; HQ reads all; admin writes
+    match /users/{uid} {
+      allow read: if isAuthed() && (request.auth.uid == uid || isHQ());
+      allow write: if isAdmin();
+
+      match /chatSessions/{sessionId} {
+        allow read, write: if isAuthed() && request.auth.uid == uid;
+      }
+    }
+  }
+}

@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useOutletContext, Link } from 'react-router-dom'
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 import { useQuarterlyReports } from '../../hooks/useQuarterlyReports'
 import type { PortalOutletContext } from './CoordinatorPortal'
 import { QUARTERS, QUARTER_LABELS, type QuarterLabel } from '../../types'
@@ -65,10 +66,25 @@ function Section({ title }: { title: string }) {
   )
 }
 
+const initRating = (): SupplierRating => ({ rating: '', notes: '' })
+
+interface DraftData {
+  f1: string; f2: SupplierRating; f3: SupplierRating; f4: SupplierRating
+  f5: SupplierRating; f6: SupplierRating; f7: SupplierRating
+  f8: string; f9: string; f10: string; f11: string; f12: string; f13: string
+  f14: string; f15: string; f16: string; f17: string
+  c1: string; c2: string; c3: string; c4: string
+  c5: string; c6: string; c7: string; c8: string
+  quarter: QuarterLabel; year: number
+}
+
 export function PortalReport() {
   const { branch } = useOutletContext<PortalOutletContext>()
   const { appUser } = useAuth()
+  const { toast } = useToast()
   const { reports } = useQuarterlyReports(branch.id)
+
+  const DRAFT_KEY = `report_draft_${branch.id}`
 
   const [quarter, setQuarter] = useState<QuarterLabel>(currentQuarter())
   const [year, setYear] = useState(new Date().getFullYear())
@@ -77,7 +93,6 @@ export function PortalReport() {
 
   // Food form state
   const [f1, setF1] = useState('')
-  const initRating = (): SupplierRating => ({ rating: '', notes: '' })
   const [f2, setF2] = useState<SupplierRating>(initRating())
   const [f3, setF3] = useState<SupplierRating>(initRating())
   const [f4, setF4] = useState<SupplierRating>(initRating())
@@ -105,6 +120,72 @@ export function PortalReport() {
   const [c7, setC7] = useState('')
   const [c8, setC8] = useState('')
 
+  // Restore draft from localStorage on mount
+  useEffect(() => {
+    const raw = localStorage.getItem(DRAFT_KEY)
+    if (!raw) return
+    try {
+      const d = JSON.parse(raw) as Partial<DraftData>
+      if (d.quarter) setQuarter(d.quarter)
+      if (d.year) setYear(d.year)
+      if (d.f1 !== undefined) setF1(d.f1)
+      if (d.f2) setF2(d.f2)
+      if (d.f3) setF3(d.f3)
+      if (d.f4) setF4(d.f4)
+      if (d.f5) setF5(d.f5)
+      if (d.f6) setF6(d.f6)
+      if (d.f7) setF7(d.f7)
+      if (d.f8 !== undefined) setF8(d.f8)
+      if (d.f9 !== undefined) setF9(d.f9)
+      if (d.f10) setF10(d.f10 as RadioValue)
+      if (d.f11 !== undefined) setF11(d.f11)
+      if (d.f12 !== undefined) setF12(d.f12)
+      if (d.f13 !== undefined) setF13(d.f13)
+      if (d.f14 !== undefined) setF14(d.f14)
+      if (d.f15 !== undefined) setF15(d.f15)
+      if (d.f16 !== undefined) setF16(d.f16)
+      if (d.f17 !== undefined) setF17(d.f17)
+      if (d.c1 !== undefined) setC1(d.c1)
+      if (d.c2 !== undefined) setC2(d.c2)
+      if (d.c3 !== undefined) setC3(d.c3)
+      if (d.c4) setC4(d.c4 as RadioValue)
+      if (d.c5 !== undefined) setC5(d.c5)
+      if (d.c6 !== undefined) setC6(d.c6)
+      if (d.c7 !== undefined) setC7(d.c7)
+      if (d.c8 !== undefined) setC8(d.c8)
+      toast('טיוטה שמורה שוחזרה', 'info')
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Autosave to localStorage with 500ms debounce
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const draftRef = useRef<DraftData>({
+    f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17,
+    c1, c2, c3, c4, c5, c6, c7, c8, quarter, year,
+  })
+  // keep ref current
+  draftRef.current = { f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, c1, c2, c3, c4, c5, c6, c7, c8, quarter, year }
+
+  useEffect(() => {
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftRef.current))
+    }, 500)
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current) }
+  }, [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, c1, c2, c3, c4, c5, c6, c7, c8, quarter, year, DRAFT_KEY])
+
+  // beforeunload warning when form has content
+  const hasContent = f1 || f8 || f9 || f11 || f14 || c1 || c2 || c5 || c6
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (!hasContent) return
+      e.preventDefault()
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [hasContent])
+
   const existingReport = useMemo(
     () => reports.find((r) => r.quarter === quarter && r.year === year),
     [reports, quarter, year]
@@ -130,7 +211,11 @@ export function PortalReport() {
         isFirstReport,
         data,
       })
+      localStorage.removeItem(DRAFT_KEY)
       setSubmitted(true)
+      toast('הדיווח נשלח בהצלחה!', 'success')
+    } catch {
+      toast('שגיאה בשליחת הדיווח. נסה שוב.', 'error')
     } finally {
       setSubmitting(false)
     }
