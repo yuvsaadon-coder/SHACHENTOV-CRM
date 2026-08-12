@@ -4,22 +4,27 @@ import { DOMAIN_LABELS, DOMAINS, type Domain } from '../types'
 import { useChatHistory } from '../hooks/useChatHistory'
 import type { ChatMessage } from '../hooks/useChatHistory'
 
-type KnowledgeScope = 'hq' | 'all'
+export type ScopeKey = 'hq' | 'research' | 'global' | 'branch'
 
-const SCOPE_LABELS: Record<KnowledgeScope, string> = {
-  hq:  'מאגר מטה',
-  all: 'כל הידע',
-}
+const SCOPE_OPTIONS: { key: ScopeKey; label: string; description: string }[] = [
+  { key: 'hq',       label: 'מאגר מטה',       description: 'ידע ונהלים שנכתבו על ידי צוות המטה' },
+  { key: 'research', label: 'מחקר מקצועי',    description: 'מאמרים ומסמכי ידע מהספרייה' },
+  { key: 'global',   label: 'ידע כלל-ארגוני', description: 'פריטים משותפים שהוזנו על ידי הרכזים' },
+  { key: 'branch',   label: 'ידע סניפי',      description: 'ידע שהוזן ברמת הסניפים הספציפיים' },
+]
+
+const DEFAULT_SCOPES: ScopeKey[] = ['hq', 'research', 'global']
 
 export function HQChatPage() {
   const { firebaseUser, appUser } = useAuth()
-  const [scope, setScope] = useState<KnowledgeScope>('all')
+  const [scopes, setScopes] = useState<ScopeKey[]>(DEFAULT_SCOPES)
   const [domainFilter, setDomainFilter] = useState<Domain | ''>('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [showDomainFilter, setShowDomainFilter] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [showScopePanel, setShowScopePanel] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const { sessions, saveSession, startNewSession, loadSession } =
@@ -28,6 +33,14 @@ export function HQChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
+
+  const toggleScope = (key: ScopeKey) => {
+    setScopes((prev) =>
+      prev.includes(key)
+        ? prev.length > 1 ? prev.filter((s) => s !== key) : prev // keep at least one
+        : [...prev, key]
+    )
+  }
 
   const send = async () => {
     const question = input.trim()
@@ -48,7 +61,7 @@ export function HQChatPage() {
           Authorization: `Bearer ${token ?? ''}`,
         },
         body: JSON.stringify({
-          scope,
+          scopes,
           domainFilter: domainFilter || null,
           messages: updatedMessages,
           question,
@@ -94,32 +107,35 @@ export function HQChatPage() {
     setShowHistory(false)
   }
 
+  const activeScopeLabels = SCOPE_OPTIONS
+    .filter((o) => scopes.includes(o.key))
+    .map((o) => o.label)
+    .join(' · ')
+
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]" dir="rtl">
       {/* Top bar */}
       <div className="px-4 py-3 bg-white border-b border-gray-100 shrink-0 space-y-2">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="font-bold text-sm" style={{ color: '#141348' }}>צ׳אטבוט AI — מטה שכן טוב</h1>
             <p className="text-xs text-gray-400">שלום {appUser?.name}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
-            {/* Scope toggle */}
-            <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
-              {(Object.keys(SCOPE_LABELS) as KnowledgeScope[]).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setScope(s)}
-                  className="px-2.5 py-1.5 transition-colors"
-                  style={{
-                    backgroundColor: scope === s ? '#141348' : 'transparent',
-                    color: scope === s ? 'white' : '#6B7280',
-                  }}
-                >
-                  {SCOPE_LABELS[s]}
-                </button>
-              ))}
-            </div>
+            {/* Scope selector button */}
+            <button
+              onClick={() => setShowScopePanel((v) => !v)}
+              className="text-xs px-2.5 py-1.5 border rounded-lg transition-colors flex items-center gap-1.5"
+              style={{
+                borderColor: showScopePanel ? '#189A9F' : '#E5E7EB',
+                color: showScopePanel ? '#189A9F' : '#6B7280',
+              }}
+            >
+              <span>📚</span>
+              <span>מקורות ({scopes.length}/{SCOPE_OPTIONS.length})</span>
+              <span>{showScopePanel ? '▲' : '▼'}</span>
+            </button>
+
             <button
               onClick={() => setShowDomainFilter((v) => !v)}
               className="text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg transition-colors"
@@ -142,6 +158,46 @@ export function HQChatPage() {
             </button>
           </div>
         </div>
+
+        {/* Scope panel */}
+        {showScopePanel && (
+          <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 space-y-2">
+            <p className="text-xs text-gray-500 font-medium mb-2">בחר מאילו מקורות הצ׳אטבוט ישאב מידע:</p>
+            <div className="grid grid-cols-2 gap-2">
+              {SCOPE_OPTIONS.map((opt) => {
+                const active = scopes.includes(opt.key)
+                return (
+                  <button
+                    key={opt.key}
+                    onClick={() => toggleScope(opt.key)}
+                    className="flex items-start gap-2 p-2.5 rounded-lg border text-right transition-all"
+                    style={{
+                      backgroundColor: active ? '#EBF8F9' : 'white',
+                      borderColor: active ? '#189A9F' : '#E5E7EB',
+                    }}
+                  >
+                    <span
+                      className="w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5"
+                      style={{
+                        backgroundColor: active ? '#189A9F' : 'white',
+                        borderColor: active ? '#189A9F' : '#D1D5DB',
+                      }}
+                    >
+                      {active && <span className="text-white text-xs leading-none">✓</span>}
+                    </span>
+                    <div>
+                      <div className="text-xs font-medium" style={{ color: active ? '#141348' : '#374151' }}>{opt.label}</div>
+                      <div className="text-xs text-gray-400 leading-snug mt-0.5">{opt.description}</div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-xs text-gray-400 text-left">
+              {activeScopeLabels}
+            </p>
+          </div>
+        )}
 
         {/* Domain filter dropdown */}
         {showDomainFilter && (
@@ -201,8 +257,7 @@ export function HQChatPage() {
             <div className="text-4xl mb-3">🤖</div>
             <p className="font-medium text-gray-600">שלום! אני הצ׳אטבוט של מטה שכן טוב.</p>
             <p className="mt-1.5 text-xs max-w-xs mx-auto leading-relaxed">
-              אני מחובר למאגר הידע של המטה, לספריית המחקר ולידע הרכזים.
-              שאל אותי כל שאלה על תהליכים, נהלים, קבצי חפיפה או מידע מקצועי.
+              כרגע מחובר אל: <span className="font-medium text-gray-600">{activeScopeLabels}</span>
             </p>
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-sm mx-auto">
               {[

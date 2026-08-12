@@ -17,9 +17,12 @@ interface FirestoreArticle {
   summary: string
   storageUrl?: string
   updatedAt?: string
+  type?: 'research_article' | 'checklist' | 'document'
+  checklistItems?: string[]
 }
 
 type SeedStatus = 'idle' | 'seeding' | 'done' | 'error'
+type ItemType = 'article' | 'checklist'
 
 function ArticleRow({
   article,
@@ -114,9 +117,10 @@ function ArticleRow({
   }
 
   const uploadPdf = async (file: File) => {
-    if (!file.name.endsWith('.pdf')) return
+    if (!file.name.match(/\.(pdf|doc|docx)$/i)) return
     try {
-      const storageRef = ref(storage, `knowledge/${article.id}.pdf`)
+      const ext = file.name.split('.').pop() ?? 'pdf'
+      const storageRef = ref(storage, `knowledge/${article.id}.${ext}`)
       await uploadBytes(storageRef, file)
       const url = await getDownloadURL(storageRef)
       await updateDoc(doc(db, 'knowledge_articles', article.id), { storageUrl: url, updatedAt: new Date().toISOString() })
@@ -206,12 +210,12 @@ function ArticleRow({
                   className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 hover:border-teal-400 text-center"
                   style={{ color: '#189A9F' }}
                 >
-                  📄 PDF
+                  📄 מסמך
                 </a>
               )}
               <label className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 text-gray-500 hover:border-teal-400 cursor-pointer">
-                📎 החלף PDF
-                <input type="file" accept=".pdf" className="hidden" ref={inputRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadPdf(f) }} />
+                📎 החלף מסמך
+                <input type="file" accept=".pdf,.doc,.docx" className="hidden" ref={inputRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadPdf(f) }} />
               </label>
             </>
           )}
@@ -221,10 +225,70 @@ function ArticleRow({
   )
 }
 
+function ChecklistItemsEditor({
+  items,
+  onChange,
+}: {
+  items: string[]
+  onChange: (items: string[]) => void
+}) {
+  return (
+    <div className="space-y-2">
+      {items.map((item, i) => (
+        <div key={i} className="flex gap-2 items-center">
+          <span className="text-gray-300 text-sm shrink-0">☐</span>
+          <input
+            value={item}
+            onChange={(e) => {
+              const next = [...items]
+              next[i] = e.target.value
+              onChange(next)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                const next = [...items]
+                next.splice(i + 1, 0, '')
+                onChange(next)
+              }
+              if (e.key === 'Backspace' && item === '' && items.length > 1) {
+                e.preventDefault()
+                onChange(items.filter((_, j) => j !== i))
+              }
+            }}
+            placeholder={`פריט ${i + 1}...`}
+            className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+            autoFocus={i === items.length - 1 && item === '' && items.length > 1}
+          />
+          {items.length > 1 && (
+            <button
+              type="button"
+              onClick={() => onChange(items.filter((_, j) => j !== i))}
+              className="text-red-300 hover:text-red-500 text-lg leading-none shrink-0"
+              aria-label="מחק פריט"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => onChange([...items, ''])}
+        className="w-full text-xs py-1.5 rounded-lg border border-dashed border-gray-300 text-gray-500 hover:border-[#189A9F] hover:text-[#189A9F] transition-colors"
+      >
+        + הוסף פריט
+      </button>
+    </div>
+  )
+}
+
 function AddArticlePanel({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const { firebaseUser } = useAuth()
+  const [itemType, setItemType] = useState<ItemType>('article')
   const [title, setTitle] = useState('')
   const [summary, setSummary] = useState('')
+  const [checklistItems, setChecklistItems] = useState<string[]>([''])
   const [file, setFile] = useState<File | null>(null)
   const [summarizing, setSummarizing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -249,16 +313,24 @@ function AddArticlePanel({ onClose, onSaved }: { onClose: () => void; onSaved: (
 
   const save = async () => {
     if (!title.trim()) return
+    if (itemType === 'checklist' && checklistItems.filter(Boolean).length === 0) return
     setSaving(true)
     try {
       const id = `custom-${Date.now()}`
       let storageUrl: string | null = null
 
-      if (file) {
-        const storageRef = ref(storage, `knowledge/${id}.pdf`)
+      if (file && itemType === 'article') {
+        if (file.size > 50 * 1024 * 1024) return
+        const ext = file.name.split('.').pop() ?? 'pdf'
+        const storageRef = ref(storage, `knowledge/${id}.${ext}`)
         await uploadBytes(storageRef, file)
         storageUrl = await getDownloadURL(storageRef)
       }
+
+      const validItems = checklistItems.filter(Boolean)
+      const content = itemType === 'checklist'
+        ? `• ${validItems.join('\n• ')}`
+        : summary.trim()
 
       await setDoc(doc(db, 'knowledge_articles', id), {
         id,
@@ -266,18 +338,21 @@ function AddArticlePanel({ onClose, onSaved }: { onClose: () => void; onSaved: (
         lang: 'עברית',
         pages: 0,
         topics: [],
-        summary: summary.trim(),
+        summary: content,
         storageUrl,
+        type: itemType === 'checklist' ? 'checklist' : 'document',
+        ...(itemType === 'checklist' ? { checklistItems: validItems } : {}),
         updatedAt: new Date().toISOString(),
       })
 
       await setDoc(doc(db, 'knowledgeItems', `research-${id}`), {
         branchId: 'global',
-        type: 'research_article',
+        type: itemType === 'checklist' ? 'checklist' : 'document',
         title: title.trim(),
-        content: summary.trim(),
+        content,
         storageUrl,
         articleId: id,
+        ...(itemType === 'checklist' ? { checklistItems: validItems } : {}),
         createdAt: new Date().toISOString(),
       })
 
@@ -288,64 +363,193 @@ function AddArticlePanel({ onClose, onSaved }: { onClose: () => void; onSaved: (
     }
   }
 
+  const canSave = title.trim() && (
+    itemType === 'article'
+      ? true
+      : checklistItems.filter(Boolean).length > 0
+  )
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-bold text-sm" style={{ color: '#141348' }}>הוסף מאמר חדש</h2>
+          <h2 className="font-bold text-sm" style={{ color: '#141348' }}>הוסף פריט ידע חדש</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
         </div>
+
         <div className="p-5 space-y-4">
+          {/* Type selector */}
           <div>
-            <label className="block text-xs text-gray-500 mb-1">כותרת המאמר *</label>
+            <label className="block text-xs text-gray-500 mb-2">סוג פריט</label>
+            <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
+              {([
+                { key: 'article', label: '📄 מאמר / מסמך' },
+                { key: 'checklist', label: '✅ צ׳קליסט' },
+              ] as { key: ItemType; label: string }[]).map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setItemType(key)}
+                  className="flex-1 px-3 py-2 text-sm transition-colors"
+                  style={{
+                    backgroundColor: itemType === key ? '#141348' : 'transparent',
+                    color: itemType === key ? 'white' : '#6B7280',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Title */}
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">
+              {itemType === 'checklist' ? 'שם הצ׳קליסט *' : 'כותרת המסמך *'}
+            </label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="שם המאמר / המסמך..."
+              placeholder={itemType === 'checklist' ? 'למשל: רשימת פתיחת סניף...' : 'שם המאמר / המסמך...'}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
             />
           </div>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs text-gray-500">תקציר</label>
-              <button
-                onClick={() => void aiSummarize()}
-                disabled={summarizing || !title.trim()}
-                className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 text-gray-600 hover:border-teal-400 disabled:opacity-40"
-              >
-                {summarizing ? '⏳ מסכם...' : '✨ AI סיכום'}
-              </button>
+
+          {itemType === 'article' ? (
+            <>
+              {/* Summary with AI */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs text-gray-500">תקציר</label>
+                  <button
+                    type="button"
+                    onClick={() => void aiSummarize()}
+                    disabled={summarizing || !title.trim()}
+                    className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 text-gray-600 hover:border-teal-400 disabled:opacity-40"
+                  >
+                    {summarizing ? '⏳ מסכם...' : '✨ AI סיכום'}
+                  </button>
+                </div>
+                <textarea
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  rows={6}
+                  placeholder="תקציר המאמר..."
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+                />
+              </div>
+
+              {/* File upload */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">קובץ מסמך (אופציונלי)</label>
+                <label className="flex items-center gap-3 cursor-pointer border border-dashed border-gray-300 rounded-lg px-4 py-3 hover:border-[#189A9F] transition-colors">
+                  <span className="text-xl">📎</span>
+                  <div className="flex-1 min-w-0">
+                    {file ? (
+                      <span className="text-sm text-gray-700 truncate block">{file.name}</span>
+                    ) : (
+                      <span className="text-sm text-gray-400">לחץ להעלאת PDF, Word (.doc/.docx)</span>
+                    )}
+                  </div>
+                  {file && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); setFile(null) }}
+                      className="text-red-400 hover:text-red-600 text-sm shrink-0"
+                    >
+                      ×
+                    </button>
+                  )}
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="hidden"
+                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  />
+                </label>
+                <p className="text-xs text-gray-400 mt-1">מקסימום 50 MB</p>
+              </div>
+            </>
+          ) : (
+            /* Checklist */
+            <div>
+              <label className="block text-xs text-gray-500 mb-2">פריטי הצ׳קליסט *</label>
+              <ChecklistItemsEditor items={checklistItems} onChange={setChecklistItems} />
+              <p className="text-xs text-gray-400 mt-2">טיפ: לחץ Enter להוספת פריט, Backspace בשדה ריק למחיקתו</p>
             </div>
-            <textarea
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              rows={6}
-              placeholder="תקציר המאמר..."
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">קובץ PDF (אופציונלי)</label>
-            <input
-              type="file"
-              accept=".pdf"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="text-xs text-gray-600"
-            />
-            {file && <div className="text-xs text-gray-400 mt-1">{file.name}</div>}
-          </div>
+          )}
         </div>
+
         <div className="px-5 pb-5 flex gap-3 sticky bottom-0 bg-white pt-3 border-t border-gray-100">
           <button
+            type="button"
             onClick={() => void save()}
-            disabled={saving || !title.trim()}
+            disabled={saving || !canSave}
             className="flex-1 py-2.5 rounded-xl text-white text-sm font-medium disabled:opacity-50"
             style={{ backgroundColor: '#189A9F' }}
           >
-            {saving ? 'שומר...' : 'שמור מאמר'}
+            {saving ? 'שומר...' : itemType === 'checklist' ? 'שמור צ׳קליסט' : 'שמור מסמך'}
           </button>
-          <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm border border-gray-200 hover:bg-gray-50">ביטול</button>
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-sm border border-gray-200 hover:bg-gray-50">ביטול</button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function CustomDocCard({ doc: d, onDelete }: { doc: FirestoreArticle; onDelete: () => void }) {
+  const isChecklist = d.type === 'checklist'
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <div className="py-4 border-b border-gray-50 last:border-0">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-800">{d.titleHe}</span>
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">
+              {isChecklist ? '✅ צ׳קליסט' : '📄 מסמך'}
+            </span>
+          </div>
+
+          {isChecklist && d.checklistItems && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="text-xs text-gray-400 hover:text-gray-600 mb-1"
+              >
+                {expanded ? '▲ הסתר' : `▼ ${d.checklistItems.length} פריטים`}
+              </button>
+              {expanded && (
+                <ul className="space-y-1 mt-1">
+                  {d.checklistItems.map((item, i) => (
+                    <li key={i} className="flex items-center gap-2 text-xs text-gray-600">
+                      <span className="text-gray-300 shrink-0">☐</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {!isChecklist && d.storageUrl && (
+            <a href={d.storageUrl} target="_blank" rel="noopener noreferrer" className="text-xs mt-1 inline-block" style={{ color: '#189A9F' }}>
+              📄 פתח מסמך
+            </a>
+          )}
+
+          {!isChecklist && d.summary && (
+            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{d.summary}</p>
+          )}
+        </div>
+        <button
+          onClick={onDelete}
+          className="text-xs text-red-400 hover:text-red-600 border border-red-100 px-2 py-1 rounded-lg hover:bg-red-50 shrink-0"
+        >
+          מחק
+        </button>
       </div>
     </div>
   )
@@ -443,7 +647,7 @@ export function KnowledgeAdminPage() {
             onClick={() => setAddingArticle(true)}
             className="px-3 py-2 text-sm font-medium rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
           >
-            + מאמר חדש
+            + פריט ידע חדש
           </button>
           <button
             onClick={() => void seedAll()}
@@ -478,7 +682,6 @@ export function KnowledgeAdminPage() {
         </div>
       )}
 
-      {/* Progress bar during seeding */}
       {seedStatus === 'seeding' && (
         <div className="bg-white border border-gray-100 rounded-xl p-4">
           <div className="text-sm text-gray-600 mb-2">מסנכרן מאמרים... {seedProgress}/{totalCatalog}</div>
@@ -513,32 +716,15 @@ export function KnowledgeAdminPage() {
         )}
       </div>
 
-      {/* Custom (non-catalog) articles */}
+      {/* Custom items (docs, checklists) */}
       {customDocs.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
           <div className="px-4 py-3 border-b border-gray-50">
-            <h2 className="font-semibold text-sm" style={{ color: '#141348' }}>מאמרים שהועלו ידנית ({customDocs.length})</h2>
+            <h2 className="font-semibold text-sm" style={{ color: '#141348' }}>פריטים שנוספו ידנית ({customDocs.length})</h2>
           </div>
           <div className="px-4">
             {customDocs.map((d) => (
-              <div key={d.id} className="py-4 border-b border-gray-50 last:border-0">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-800">{d.titleHe}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{d.lang}</div>
-                    {d.storageUrl && (
-                      <a href={d.storageUrl} target="_blank" rel="noopener noreferrer" className="text-xs mt-1 inline-block" style={{ color: '#189A9F' }}>📄 PDF</a>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{d.summary}</p>
-                  </div>
-                  <button
-                    onClick={() => void deleteCustom(d.id)}
-                    className="text-xs text-red-400 hover:text-red-600 border border-red-100 px-2 py-1 rounded-lg hover:bg-red-50"
-                  >
-                    מחק
-                  </button>
-                </div>
-              </div>
+              <CustomDocCard key={d.id} doc={d} onDelete={() => void deleteCustom(d.id)} />
             ))}
           </div>
         </div>
