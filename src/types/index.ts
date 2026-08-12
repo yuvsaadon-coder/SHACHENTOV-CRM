@@ -221,7 +221,7 @@ export interface QuarterlyReport {
   data: Record<string, unknown>
 }
 
-export type KnowledgeItemType = 'document' | 'link' | 'tip'
+export type KnowledgeItemType = 'document' | 'link' | 'tip' | 'research_article'
 export const KNOWLEDGE_TAGS = ['לוגיסטיקה', 'מתנדבים', 'אוכלוסייה', 'תפעול', 'אחר'] as const
 export type KnowledgeTag = (typeof KNOWLEDGE_TAGS)[number]
 
