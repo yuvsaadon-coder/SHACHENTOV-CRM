@@ -18,7 +18,7 @@ service firebase.storage {
       allow delete: if isHQ();
     }
 
-    // Knowledge article PDFs — admins write, authenticated read
+    // Knowledge article PDFs — authenticated write, authenticated read
     match /knowledge/{fileName} {
       allow read: if isAuthed();
       allow write: if isAuthed()
@@ -27,6 +27,21 @@ service firebase.storage {
           request.resource.contentType.matches('application/pdf')
           || request.resource.contentType.matches('application/msword')
           || request.resource.contentType.matches('application/vnd.openxmlformats.*')
+        );
+      allow delete: if isAuthed();
+    }
+
+    // Coordinator handover docs & formats — PDF, Word, Excel, max 50 MB
+    match /handover/{branchId}/{fileName} {
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.size < 50 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('application/pdf')
+          || request.resource.contentType.matches('application/msword')
+          || request.resource.contentType.matches('application/vnd.openxmlformats.*')
+          || request.resource.contentType.matches('application/vnd.ms-excel')
+          || request.resource.contentType.matches('text/csv')
         );
       allow delete: if isAuthed();
     }
