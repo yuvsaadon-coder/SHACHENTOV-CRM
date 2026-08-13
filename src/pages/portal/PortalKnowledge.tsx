@@ -1,7 +1,5 @@
 import { useState, useMemo, useRef } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
-import { storage } from '../../lib/firebase'
 import { useKnowledge, useAddKnowledge } from '../../hooks/useKnowledge'
 import { useAuth } from '../../context/AuthContext'
 import type { PortalOutletContext } from './CoordinatorPortal'
@@ -253,20 +251,21 @@ function AddKnowledgeModal({ branchId, onClose }: { branchId: string; onClose: (
       let fileSize: number | undefined
 
       if (type === 'file' && selectedFile) {
-        const ext = selectedFile.name.split('.').pop() ?? 'bin'
-        const path = `handover/${effectiveBranchId}/${Date.now()}.${ext}`
-        const storageRef = ref(storage, path)
-        await new Promise<void>((resolve, reject) => {
-          const task = uploadBytesResumable(storageRef, selectedFile)
-          task.on('state_changed',
-            (snap) => setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
-            reject,
-            async () => {
-              fileUrl = await getDownloadURL(task.snapshot.ref)
-              resolve()
-            }
-          )
+        const MAX_SIZE = 500 * 1024
+        if (selectedFile.size > MAX_SIZE) {
+          setError(`קובץ גדול מדי (${formatBytes(selectedFile.size)}) — מקסימום 500 KB`)
+          setSaving(false)
+          return
+        }
+        setUploadProgress(20)
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = (e) => resolve(e.target?.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(selectedFile)
         })
+        setUploadProgress(90)
+        fileUrl = dataUrl
         fileName = selectedFile.name
         fileSize = selectedFile.size
       }
@@ -360,7 +359,7 @@ function AddKnowledgeModal({ branchId, onClose }: { branchId: string; onClose: (
                   <div className="space-y-1">
                     <div className="text-2xl">📂</div>
                     <div className="text-sm text-gray-500">לחץ לבחירת קובץ</div>
-                    <div className="text-xs text-gray-400">PDF, Word, Excel — עד 50MB</div>
+                    <div className="text-xs text-gray-400">PDF, Word, Excel — עד 500KB</div>
                   </div>
                 )}
               </button>

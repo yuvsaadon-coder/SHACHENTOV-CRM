@@ -1,6 +1,4 @@
 import { useState, useMemo, useRef } from 'react'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { storage } from '../lib/firebase'
 import { useHQKnowledge, useAddHQKnowledge } from '../hooks/useHQKnowledge'
 import { useAuth } from '../context/AuthContext'
 import {
@@ -107,9 +105,13 @@ function AddModal({ onClose }: { onClose: () => void }) {
       let fileUrl: string | undefined
       let fileName: string | undefined
       if (file) {
-        const storageRef = ref(storage, `hq_knowledge/${Date.now()}_${file.name}`)
-        await uploadBytes(storageRef, file)
-        fileUrl = await getDownloadURL(storageRef)
+        if (file.size > 500 * 1024) { alert('קובץ גדול מדי — מקסימום 500 KB'); setSaving(false); return }
+        fileUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = (ev) => resolve(ev.target?.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
         fileName = file.name
       }
       await addItem({ domain, category, title: title.trim(), content: content.trim(), tags, fileUrl, fileName })

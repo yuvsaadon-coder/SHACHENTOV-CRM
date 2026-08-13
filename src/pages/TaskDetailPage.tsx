@@ -5,8 +5,7 @@ import {
   collection, addDoc, onSnapshot, orderBy, query, deleteDoc,
   where, Timestamp
 } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
-import { db, storage } from '../lib/firebase'
+import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { StatusBadge } from '../components/ui/StatusBadge'
@@ -161,18 +160,21 @@ export function TaskDetailPage() {
   const uploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !id) return
-    if (file.size > 20 * 1024 * 1024) {
-      toast('הקובץ גדול מדי — מקסימום 20 MB', 'error')
+    if (file.size > 500 * 1024) {
+      toast('הקובץ גדול מדי — מקסימום 500 KB', 'error')
       e.target.value = ''
       return
     }
     setUploading(true)
     try {
-      const storageRef = ref(storage, `tasks/${id}/${Date.now()}_${file.name}`)
-      await uploadBytes(storageRef, file)
-      const url = await getDownloadURL(storageRef)
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = (ev) => resolve(ev.target?.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
       await addDoc(collection(db, 'tasks', id, 'attachments'), {
-        fileName: file.name, storageUrl: url,
+        fileName: file.name, storageUrl: dataUrl,
         uploadedBy: appUser?.name, uploadedAt: serverTimestamp(),
       })
       toast('הקובץ הועלה בהצלחה', 'success')
@@ -186,7 +188,6 @@ export function TaskDetailPage() {
 
   const deleteAttachment = async (att: Attachment) => {
     if (!id) return
-    try { await deleteObject(ref(storage, att.storageUrl)) } catch {}
     await deleteDoc(doc(db, 'tasks', id, 'attachments', att.id))
   }
 
@@ -370,6 +371,15 @@ export function TaskDetailPage() {
                 <input
                   value={form.activator || ''}
                   onChange={(e) => setForm({ ...form, activator: e.target.value || null })}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-brand-navy mb-1">מעורבים (מופרד בפסיקים)</label>
+                <input
+                  value={(form.involved ?? []).join(', ')}
+                  onChange={(e) => setForm({ ...form, involved: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })}
+                  placeholder="שם א׳, שם ב׳, ..."
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
                 />
               </div>
