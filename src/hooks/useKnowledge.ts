@@ -43,6 +43,10 @@ export function useAddKnowledge() {
     title: string
     content: string
     url?: string
+    fileUrl?: string
+    fileName?: string
+    fileSize?: number
+    checklistItems?: string[]
     tags: string[]
   }) => {
     await addDoc(collection(db, 'knowledgeItems'), {

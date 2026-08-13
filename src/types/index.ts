@@ -221,8 +221,8 @@ export interface QuarterlyReport {
   data: Record<string, unknown>
 }
 
-export type KnowledgeItemType = 'document' | 'link' | 'tip' | 'research_article'
-export const KNOWLEDGE_TAGS = ['לוגיסטיקה', 'מתנדבים', 'אוכלוסייה', 'תפעול', 'אחר'] as const
+export type KnowledgeItemType = 'document' | 'link' | 'tip' | 'research_article' | 'file' | 'checklist'
+export const KNOWLEDGE_TAGS = ['לוגיסטיקה', 'מתנדבים', 'אוכלוסייה', 'תפעול', 'חפיפה', 'פורמטים', 'אחר'] as const
 export type KnowledgeTag = (typeof KNOWLEDGE_TAGS)[number]
 
 export interface KnowledgeItem {
@@ -232,6 +232,10 @@ export interface KnowledgeItem {
   title: string
   content: string
   url?: string
+  fileUrl?: string
+  fileName?: string
+  fileSize?: number
+  checklistItems?: string[]
   tags: string[]
   createdBy: string
   createdAt: Timestamp
