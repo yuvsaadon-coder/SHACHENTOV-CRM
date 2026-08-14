@@ -2,7 +2,7 @@
  * HQ chatbot — queries configurable knowledge sources.
  * Auth: any Firebase authenticated user with role != 'coordinator'.
  */
-import type { Handler } from '@netlify/functions'
+import type { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions'
 import { cert, initializeApp, getApps } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getFirestore } from 'firebase-admin/firestore'
@@ -46,7 +46,7 @@ export const handler: Handler = async (event) => {
   }
 }
 
-const chat: Handler = async (event) => {
+async function chat(event: HandlerEvent): Promise<HandlerResponse> {
   if (event.httpMethod !== 'POST') return fail(405, 'Method Not Allowed')
 
   const authHeader = event.headers['authorization'] ?? ''
