@@ -6,23 +6,28 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // A signed-in user with no /users doc (or no role field) gets '' rather than
+    // an evaluation error, so a half-provisioned account is denied instead of
+    // failing the whole request with "Missing or insufficient permissions".
     function role() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return isAuthed()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '')
+        : '';
     }
 
-    function isAdmin() {
-      return isAuthed() && role() == 'admin';
+    function isAdmin()       { return role() == 'admin'; }
+    function isHQ()          { return role() in ['admin', 'hq']; }
+    function isCoordinator() { return role() == 'coordinator'; }
+
+    // True when the signed-in user is listed as a coordinator of that branch.
+    function coordinatesBranch(branchId) {
+      return isAuthed()
+        && exists(/databases/$(database)/documents/branches/$(branchId))
+        && request.auth.uid in get(/databases/$(database)/documents/branches/$(branchId)).data.get('coordinatorUids', []);
     }
 
-    function isHQ() {
-      return isAuthed() && role() in ['admin', 'hq'];
-    }
-
-    function isCoordinator() {
-      return isAuthed() && role() == 'coordinator';
-    }
-
-    // HQ staff & admins — full CRM access
+    // ── CRM (HQ staff & admins) ──────────────────────────────────────────────
     match /tasks/{taskId} {
       allow read, write: if isHQ();
       match /{sub}/{subId} {
@@ -30,30 +35,41 @@ service cloud.firestore {
       }
     }
 
-    match /contacts/{id}    { allow read, write: if isHQ(); }
-    match /roles/{id}       { allow read, write: if isHQ(); }
-    match /branches/{id}    { allow read: if isAuthed(); allow write: if isAdmin(); }
+    match /contacts/{id} { allow read, write: if isHQ(); }
+    match /roles/{id}    { allow read, write: if isHQ(); }
 
-    // Knowledge
-    match /hq_knowledge/{id}       { allow read: if isHQ(); allow write: if isAdmin(); }
+    // Coordinators need to read their own branch document to enter the portal.
+    match /branches/{id} {
+      allow read:  if isAuthed();
+      allow write: if isAdmin();
+    }
+
+    // ── Knowledge ────────────────────────────────────────────────────────────
+    match /hq_knowledge/{id}       { allow read: if isHQ();    allow write: if isAdmin(); }
     match /knowledge_articles/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
-    match /knowledgeItems/{id}     {
-      allow read: if isAuthed();
+    match /knowledgeItems/{id} {
+      allow read:  if isAuthed();
       allow write: if isCoordinator() || isHQ();
     }
 
-    // Quarterly reports — coordinators write their own, HQ reads all
+    // ── Quarterly reports ────────────────────────────────────────────────────
+    // HQ sees everything (the /reports page). A coordinator reads the reports of
+    // branches they are attached to — without this, "הדיווחים שלי" in the portal
+    // is denied.
     match /quarterlyReports/{id} {
-      allow read: if isHQ();
-      allow create: if isCoordinator() && request.resource.data.submittedBy == request.auth.uid;
+      allow read: if isHQ() || coordinatesBranch(resource.data.branchId);
+      allow create: if isCoordinator()
+                    && request.resource.data.submittedBy == request.auth.uid
+                    && coordinatesBranch(request.resource.data.branchId);
       allow update, delete: if isAdmin();
     }
 
-    // Users — each user reads own doc; HQ reads all; admin writes
+    // ── Users ────────────────────────────────────────────────────────────────
     match /users/{uid} {
-      allow read: if isAuthed() && (request.auth.uid == uid || isHQ());
+      allow read:  if isAuthed() && (request.auth.uid == uid || isHQ());
       allow write: if isAdmin();
 
+      // Chat history is private to its owner.
       match /chatSessions/{sessionId} {
         allow read, write: if isAuthed() && request.auth.uid == uid;
       }
