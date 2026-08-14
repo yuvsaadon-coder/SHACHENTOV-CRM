@@ -71,6 +71,12 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // Coordinators read this to render the report form; only admins edit it.
+    match /reportQuestions/{id} {
+      allow read:  if isAuthed();
+      allow write: if isAdmin();
+    }
+
     // ── Users ────────────────────────────────────────────────────────────────
     match /users/{uid} {
       allow read:  if isAuthed() && (request.auth.uid == uid || isHQ());

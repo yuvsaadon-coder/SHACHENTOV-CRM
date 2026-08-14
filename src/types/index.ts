@@ -229,6 +229,34 @@ export interface QuarterlyReport {
   data: Record<string, unknown>
 }
 
+// ── Quarterly report question definitions (editable by HQ) ─────────────────
+// PortalReport.tsx renders the form for a branch by reading the questions of
+// that branch's type from this collection, ordered by `order`. `key` is the
+// field name written into QuarterlyReport.data — existing reports keep
+// rendering correctly as long as a question's `key` doesn't change.
+
+export type ReportFieldType = 'number' | 'text' | 'textarea' | 'rating' | 'radio'
+
+export const REPORT_FIELD_TYPES: { id: ReportFieldType; label: string }[] = [
+  { id: 'number', label: 'מספר' },
+  { id: 'text', label: 'טקסט קצר' },
+  { id: 'textarea', label: 'טקסט ארוך' },
+  { id: 'rating', label: 'דירוג 1–5 + הערות' },
+  { id: 'radio', label: 'בחירה מרשימה' },
+]
+
+export interface ReportQuestion {
+  id: string
+  branchType: 'food' | 'cafe_youth'
+  key: string
+  label: string
+  section: string
+  type: ReportFieldType
+  options?: string[]
+  firstReportOnly: boolean
+  order: number
+}
+
 export type KnowledgeItemType = 'document' | 'link' | 'tip' | 'research_article' | 'file' | 'checklist'
 export const KNOWLEDGE_TAGS = ['לוגיסטיקה', 'מתנדבים', 'אוכלוסייה', 'תפעול', 'חפיפה', 'פורמטים', 'אחר'] as const
 export type KnowledgeTag = (typeof KNOWLEDGE_TAGS)[number]

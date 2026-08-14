@@ -5,24 +5,24 @@ import { db } from '../../lib/firebase'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useQuarterlyReports } from '../../hooks/useQuarterlyReports'
+import { useReportQuestions } from '../../hooks/useReportQuestions'
 import type { PortalOutletContext } from './CoordinatorPortal'
-import { QUARTERS, QUARTER_LABELS, type QuarterLabel } from '../../types'
+import { QUARTERS, QUARTER_LABELS, type QuarterLabel, type ReportQuestion } from '../../types'
+import { Spinner } from '../../components/ui/Spinner'
 
 function currentQuarter(): QuarterLabel {
   const m = new Date().getMonth()
   return (['Q1', 'Q2', 'Q3', 'Q4'] as QuarterLabel[])[Math.floor(m / 3)]
 }
 
-type RadioValue = 'כן' | 'לא' | 'דורש רענון'
-const RADIO_OPTS: RadioValue[] = ['כן', 'לא', 'דורש רענון']
-
 type SupplierRating = { rating: string; notes: string }
+const isRatingValue = (v: unknown): v is SupplierRating =>
+  typeof v === 'object' && v !== null && ('rating' in v || 'notes' in v)
 
 function RatingRow({
-  label, fieldKey, value, onChange,
+  label, value, onChange,
 }: {
   label: string
-  fieldKey: string
   value: SupplierRating
   onChange: (v: SupplierRating) => void
 }) {
@@ -53,7 +53,6 @@ function RatingRow({
         onChange={(e) => onChange({ ...value, notes: e.target.value })}
         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
       />
-      <input type="hidden" name={fieldKey} />
     </div>
   )
 }
@@ -66,23 +65,101 @@ function Section({ title }: { title: string }) {
   )
 }
 
-const initRating = (): SupplierRating => ({ rating: '', notes: '' })
+type FieldValue = string | SupplierRating
 
-interface DraftData {
-  f1: string; f2: SupplierRating; f3: SupplierRating; f4: SupplierRating
-  f5: SupplierRating; f6: SupplierRating; f7: SupplierRating
-  f8: string; f9: string; f10: string; f11: string; f12: string; f13: string
-  f14: string; f15: string; f16: string; f17: string
-  c1: string; c2: string; c3: string; c4: string
-  c5: string; c6: string; c7: string; c8: string
-  quarter: QuarterLabel; year: number
+function QuestionField({
+  question, value, onChange,
+}: {
+  question: ReportQuestion
+  value: FieldValue
+  onChange: (v: FieldValue) => void
+}) {
+  if (question.type === 'rating') {
+    const rv = isRatingValue(value) ? value : { rating: '', notes: '' }
+    return <RatingRow label={question.label} value={rv} onChange={onChange} />
+  }
+
+  const sv = typeof value === 'string' ? value : ''
+
+  if (question.type === 'radio') {
+    return (
+      <div>
+        <label className="block text-sm font-medium mb-2" style={{ color: '#141348' }}>{question.label}</label>
+        <div className="flex flex-wrap gap-2">
+          {(question.options ?? []).map((opt) => (
+            <button
+              key={opt}
+              onClick={() => onChange(opt)}
+              className="px-3 py-1.5 rounded-lg text-sm border transition-all"
+              style={{
+                backgroundColor: sv === opt ? '#141348' : 'white',
+                color: sv === opt ? 'white' : '#141348',
+                borderColor: sv === opt ? '#141348' : '#E5E7EB',
+              }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (question.type === 'number') {
+    return (
+      <div>
+        <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>{question.label}</label>
+        <input
+          type="number"
+          min={0}
+          value={sv}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="כמות"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+        />
+      </div>
+    )
+  }
+
+  if (question.type === 'text') {
+    return (
+      <div>
+        <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>{question.label}</label>
+        <input
+          type="text"
+          value={sv}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>{question.label}</label>
+      <textarea
+        rows={3}
+        value={sv}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+      />
+    </div>
+  )
 }
+
+const defaultFor = (type: ReportQuestion['type']): FieldValue =>
+  type === 'rating' ? { rating: '', notes: '' } : ''
+
+const hasContentValue = (v: FieldValue) =>
+  isRatingValue(v) ? Boolean(v.rating || v.notes) : Boolean(v)
 
 export function PortalReport() {
   const { branch } = useOutletContext<PortalOutletContext>()
   const { appUser } = useAuth()
   const { toast } = useToast()
   const { reports } = useQuarterlyReports(branch.id)
+  const { questions, loading: questionsLoading } = useReportQuestions(branch.type)
 
   const DRAFT_KEY = `report_draft_${branch.id}`
 
@@ -90,93 +167,54 @@ export function PortalReport() {
   const [year, setYear] = useState(new Date().getFullYear())
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [values, setValues] = useState<Record<string, FieldValue>>({})
+  const restoredRef = useRef(false)
 
-  // Food form state
-  const [f1, setF1] = useState('')
-  const [f2, setF2] = useState<SupplierRating>(initRating())
-  const [f3, setF3] = useState<SupplierRating>(initRating())
-  const [f4, setF4] = useState<SupplierRating>(initRating())
-  const [f5, setF5] = useState<SupplierRating>(initRating())
-  const [f6, setF6] = useState<SupplierRating>(initRating())
-  const [f7, setF7] = useState<SupplierRating>(initRating())
-  const [f8, setF8] = useState('')
-  const [f9, setF9] = useState('')
-  const [f10, setF10] = useState<RadioValue | ''>('')
-  const [f11, setF11] = useState('')
-  const [f12, setF12] = useState('')
-  const [f13, setF13] = useState('')
-  const [f14, setF14] = useState('')
-  const [f15, setF15] = useState('')
-  const [f16, setF16] = useState('')
-  const [f17, setF17] = useState('')
+  const existingReport = useMemo(
+    () => reports.find((r) => r.quarter === quarter && r.year === year),
+    [reports, quarter, year]
+  )
+  const isFirstReport = reports.length === 0
 
-  // Cafe/youth form state
-  const [c1, setC1] = useState('')
-  const [c2, setC2] = useState('')
-  const [c3, setC3] = useState('')
-  const [c4, setC4] = useState<RadioValue | ''>('')
-  const [c5, setC5] = useState('')
-  const [c6, setC6] = useState('')
-  const [c7, setC7] = useState('')
-  const [c8, setC8] = useState('')
-
-  // Restore draft from localStorage on mount
+  // Initialize any question not yet in state (covers newly-added questions too).
   useEffect(() => {
+    setValues((prev) => {
+      const next = { ...prev }
+      let changed = false
+      for (const q of questions) {
+        if (!(q.key in next)) { next[q.key] = defaultFor(q.type); changed = true }
+      }
+      return changed ? next : prev
+    })
+  }, [questions])
+
+  // Restore draft from localStorage once questions are known.
+  useEffect(() => {
+    if (restoredRef.current || questionsLoading) return
+    restoredRef.current = true
     const raw = localStorage.getItem(DRAFT_KEY)
     if (!raw) return
     try {
-      const d = JSON.parse(raw) as Partial<DraftData>
+      const d = JSON.parse(raw) as { quarter?: QuarterLabel; year?: number; values?: Record<string, FieldValue> }
       if (d.quarter) setQuarter(d.quarter)
       if (d.year) setYear(d.year)
-      if (d.f1 !== undefined) setF1(d.f1)
-      if (d.f2) setF2(d.f2)
-      if (d.f3) setF3(d.f3)
-      if (d.f4) setF4(d.f4)
-      if (d.f5) setF5(d.f5)
-      if (d.f6) setF6(d.f6)
-      if (d.f7) setF7(d.f7)
-      if (d.f8 !== undefined) setF8(d.f8)
-      if (d.f9 !== undefined) setF9(d.f9)
-      if (d.f10) setF10(d.f10 as RadioValue)
-      if (d.f11 !== undefined) setF11(d.f11)
-      if (d.f12 !== undefined) setF12(d.f12)
-      if (d.f13 !== undefined) setF13(d.f13)
-      if (d.f14 !== undefined) setF14(d.f14)
-      if (d.f15 !== undefined) setF15(d.f15)
-      if (d.f16 !== undefined) setF16(d.f16)
-      if (d.f17 !== undefined) setF17(d.f17)
-      if (d.c1 !== undefined) setC1(d.c1)
-      if (d.c2 !== undefined) setC2(d.c2)
-      if (d.c3 !== undefined) setC3(d.c3)
-      if (d.c4) setC4(d.c4 as RadioValue)
-      if (d.c5 !== undefined) setC5(d.c5)
-      if (d.c6 !== undefined) setC6(d.c6)
-      if (d.c7 !== undefined) setC7(d.c7)
-      if (d.c8 !== undefined) setC8(d.c8)
+      if (d.values) setValues((prev) => ({ ...prev, ...d.values }))
       toast('טיוטה שמורה שוחזרה', 'info')
-    } catch {}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    } catch { /* ignore malformed draft */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questionsLoading])
 
-  // Autosave to localStorage with 500ms debounce
+  // Autosave to localStorage with 500ms debounce.
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const draftRef = useRef<DraftData>({
-    f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17,
-    c1, c2, c3, c4, c5, c6, c7, c8, quarter, year,
-  })
-  // keep ref current
-  draftRef.current = { f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, c1, c2, c3, c4, c5, c6, c7, c8, quarter, year }
-
   useEffect(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftRef.current))
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ quarter, year, values }))
     }, 500)
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current) }
-  }, [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, c1, c2, c3, c4, c5, c6, c7, c8, quarter, year, DRAFT_KEY])
+  }, [values, quarter, year, DRAFT_KEY])
 
-  // beforeunload warning when form has content
-  const hasContent = f1 || f8 || f9 || f11 || f14 || c1 || c2 || c5 || c6
+  const hasContent = Object.values(values).some(hasContentValue)
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       if (!hasContent) return
@@ -186,20 +224,15 @@ export function PortalReport() {
     return () => window.removeEventListener('beforeunload', handler)
   }, [hasContent])
 
-  const existingReport = useMemo(
-    () => reports.find((r) => r.quarter === quarter && r.year === year),
-    [reports, quarter, year]
-  )
-
-  const isFirstReport = reports.length === 0
+  const setField = (key: string, v: FieldValue) => setValues((prev) => ({ ...prev, [key]: v }))
 
   const handleSubmit = async () => {
     if (!appUser) return
     setSubmitting(true)
     try {
-      const data = branch.type === 'food'
-        ? { f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, ...(isFirstReport ? { f16, f17 } : {}) }
-        : { c1, c2, c3, c4, c5, c6, c7, ...(isFirstReport ? { c8 } : {}) }
+      const visible = questions.filter((q) => isFirstReport || !q.firstReportOnly)
+      const data: Record<string, FieldValue> = {}
+      for (const q of visible) data[q.key] = values[q.key] ?? defaultFor(q.type)
 
       await addDoc(collection(db, 'quarterlyReports'), {
         branchId: branch.id,
@@ -234,6 +267,15 @@ export function PortalReport() {
         </Link>
       </div>
     )
+  }
+
+  // Group questions by section, in the order sections first appear.
+  const sections: { title: string; questions: ReportQuestion[] }[] = []
+  for (const q of questions) {
+    if (q.firstReportOnly && !isFirstReport) continue
+    let group = sections.find((s) => s.title === q.section)
+    if (!group) { group = { title: q.section, questions: [] }; sections.push(group) }
+    group.questions.push(q)
   }
 
   return (
@@ -274,177 +316,35 @@ export function PortalReport() {
         )}
       </div>
 
-      {!existingReport && (
+      {questionsLoading && <Spinner />}
+
+      {!questionsLoading && !existingReport && (
         <>
-          {branch.type === 'food' ? (
-            <div className="bg-white rounded-xl p-4 border border-gray-100 space-y-5">
-              <Section title="סעיף 1 — היקף חלוקה" />
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>כמות סלי מזון ממוצעת בחלוקה</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={f1}
-                  onChange={(e) => setF1(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
-                  placeholder="כמות"
-                />
-              </div>
-
-              <Section title="סעיף 2 — סטטוס ספקים" />
-              <RatingRow label="מוצרים יבשים" fieldKey="f2" value={f2} onChange={setF2} />
-              <RatingRow label="עופות" fieldKey="f3" value={f3} onChange={setF3} />
-              <RatingRow label="ביצים" fieldKey="f4" value={f4} onChange={setF4} />
-              <RatingRow label="חלות" fieldKey="f5" value={f5} onChange={setF5} />
-              <RatingRow label="ירקות" fieldKey="f6" value={f6} onChange={setF6} />
-              <RatingRow label="שקיות / אריזה" fieldKey="f7" value={f7} onChange={setF7} />
-
-              <Section title="סעיף 3 — מלאי, אחסון ותשתיות" />
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>חוסרים במלאי</label>
-                <textarea rows={3} value={f8} onChange={(e) => setF8(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>מצב מחסן/מקום האריזה</label>
-                <textarea rows={3} value={f9} onChange={(e) => setF9(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
-              </div>
-
-              <Section title="סעיף 4 — מתנדבים וצוות" />
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: '#141348' }}>ביטוח מתנדבים הופץ?</label>
-                <div className="flex flex-wrap gap-2">
-                  {RADIO_OPTS.map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => setF10(opt)}
-                      className="px-3 py-1.5 rounded-lg text-sm border transition-all"
-                      style={{
-                        backgroundColor: f10 === opt ? '#141348' : 'white',
-                        color: f10 === opt ? 'white' : '#141348',
-                        borderColor: f10 === opt ? '#141348' : '#E5E7EB',
-                      }}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {(['מצב מתנדבי אריזה', 'מצב מתנדבי חלוקה/נהגים', 'מתנדבי איסוף מספקים'] as const).map((label, i) => {
-                const setters = [setF11, setF12, setF13]
-                const values = [f11, f12, f13]
-                return (
-                  <div key={label}>
-                    <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>{label}</label>
-                    <textarea rows={3} value={values[i]} onChange={(e) => setters[i](e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
-                  </div>
-                )
-              })}
-
-              <Section title="סעיף 5 — אווירה וצרכים" />
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>מצב הרוח הכללי</label>
-                <textarea rows={3} value={f14} onChange={(e) => setF14(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>במה המטה יכול לעזור?</label>
-                <textarea rows={3} value={f15} onChange={(e) => setF15(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
-              </div>
-
-              {isFirstReport && (
-                <>
-                  <Section title="סעיף 6 — הקמה (דיווח ראשון)" />
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>כמות מתנדבי אריזה אידיאלית</label>
-                    <input type="text" value={f16} onChange={(e) => setF16(e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>כמות מתנדבי חלוקה/נהגים אידיאלית</label>
-                    <input type="text" value={f17} onChange={(e) => setF17(e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
-                  </div>
-                </>
-              )}
+          {questions.length === 0 ? (
+            <div className="bg-white rounded-xl p-4 border border-gray-100 text-center text-sm text-gray-400">
+              טופס הדיווח לא הוגדר עדיין עבור סוג סניף זה. פנה למטה.
             </div>
           ) : (
-            /* cafe_youth form */
             <div className="bg-white rounded-xl p-4 border border-gray-100 space-y-5">
-              <Section title="סעיף 1 — היקף פעילות" />
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>כמות משתתפים ממוצעת בפעילות</label>
-                <input type="number" min={0} value={c1} onChange={(e) => setC1(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
-                  placeholder="כמות" />
-              </div>
-
-              <Section title="סעיף 2 — ציוד ותשתיות" />
-              {[
-                ['מצב מבנה/ציוד/מקום', c2, setC2] as const,
-                ['חוסרים בציוד/מלאי שוטף', c3, setC3] as const,
-              ].map(([label, val, setter]) => (
-                <div key={label}>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>{label}</label>
-                  <textarea rows={3} value={val} onChange={(e) => setter(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
-                </div>
-              ))}
-
-              <Section title="סעיף 3 — מתנדבים" />
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: '#141348' }}>ביטוח מתנדבים הופץ?</label>
-                <div className="flex flex-wrap gap-2">
-                  {RADIO_OPTS.map((opt) => (
-                    <button key={opt} onClick={() => setC4(opt)}
-                      className="px-3 py-1.5 rounded-lg text-sm border transition-all"
-                      style={{
-                        backgroundColor: c4 === opt ? '#141348' : 'white',
-                        color: c4 === opt ? 'white' : '#141348',
-                        borderColor: c4 === opt ? '#141348' : '#E5E7EB',
-                      }}>
-                      {opt}
-                    </button>
+              {sections.map((section) => (
+                <div key={section.title} className="space-y-5">
+                  <Section title={section.title} />
+                  {section.questions.map((q) => (
+                    <QuestionField
+                      key={q.key}
+                      question={q}
+                      value={values[q.key] ?? defaultFor(q.type)}
+                      onChange={(v) => setField(q.key, v)}
+                    />
                   ))}
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>מצב מתנדבים כללי</label>
-                <textarea rows={3} value={c5} onChange={(e) => setC5(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
-              </div>
-
-              <Section title="סעיף 4 — אווירה וצרכים" />
-              {[
-                ['מצב הרוח הכללי', c6, setC6] as const,
-                ['במה המטה יכול לעזור?', c7, setC7] as const,
-              ].map(([label, val, setter]) => (
-                <div key={label}>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>{label}</label>
-                  <textarea rows={3} value={val} onChange={(e) => setter(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
-                </div>
               ))}
-
-              {isFirstReport && (
-                <>
-                  <Section title="סעיף 5 — הקמה (דיווח ראשון)" />
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: '#141348' }}>כמות מתנדבים אידיאלית</label>
-                    <input type="text" value={c8} onChange={(e) => setC8(e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
-                  </div>
-                </>
-              )}
             </div>
           )}
 
           <button
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || questions.length === 0}
             className="w-full py-3 rounded-xl text-white font-medium transition-opacity disabled:opacity-50"
             style={{ backgroundColor: '#141348' }}
           >

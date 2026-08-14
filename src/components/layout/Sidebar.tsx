@@ -12,6 +12,7 @@ const navGroups: NavGroup[] = [
       { to: '/dashboard', label: 'לוח בקרה', icon: '📊', adminOnly: false },
       { to: '/tasks', label: 'משימות', icon: '✅', adminOnly: false },
       { to: '/reports', label: 'דיווחים רבעוניים', icon: '📈', adminOnly: false },
+      { to: '/admin/report-questions', label: 'עריכת שאלות דיווח', icon: '📝', adminOnly: true },
       { to: '/admin/branches', label: 'פורטל רכזים', icon: '📋', adminOnly: true },
     ],
   },

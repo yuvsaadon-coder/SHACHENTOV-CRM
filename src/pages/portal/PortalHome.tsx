@@ -1,21 +1,10 @@
 import { useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import { useQuarterlyReports } from '../../hooks/useQuarterlyReports'
+import { useAllReportQuestions } from '../../hooks/useReportQuestions'
 import type { PortalOutletContext } from './CoordinatorPortal'
 import type { QuarterlyReport } from '../../types'
 import { QUARTER_LABELS } from '../../types'
-
-const FIELD_LABELS: Record<string, string> = {
-  f1: 'כמות סלי מזון ממוצעת', f2: 'מוצרים יבשים', f3: 'עופות',
-  f4: 'ביצים', f5: 'חלות', f6: 'ירקות', f7: 'שקיות / אריזה',
-  f8: 'חוסרים במלאי', f9: 'מצב מחסן', f10: 'ביטוח מתנדבים',
-  f11: 'מצב מתנדבי אריזה', f12: 'מצב מתנדבי חלוקה', f13: 'מתנדבי איסוף',
-  f14: 'מצב הרוח הכללי', f15: 'במה המטה יכול לעזור',
-  f16: 'יעד מתנדבי אריזה', f17: 'יעד מתנדבי חלוקה',
-  c1: 'כמות משתתפים ממוצעת', c2: 'מצב מבנה / ציוד',
-  c3: 'חוסרים בציוד', c4: 'ביטוח מתנדבים', c5: 'מצב מתנדבים כללי',
-  c6: 'מצב הרוח הכללי', c7: 'במה המטה יכול לעזור', c8: 'יעד מתנדבים',
-}
 
 /** Supplier fields are stored as `{ rating, notes }` — render them, never JSON.stringify. */
 function isRating(v: unknown): v is { rating?: string; notes?: string } {
@@ -45,7 +34,7 @@ function FieldValue({ value }: { value: unknown }) {
   return text ? <span>{text}</span> : <span className="text-gray-400">—</span>
 }
 
-function ReportAccordion({ report }: { report: QuarterlyReport }) {
+function ReportAccordion({ report, labelByKey }: { report: QuarterlyReport; labelByKey: Record<string, string> }) {
   const [open, setOpen] = useState(false)
   const title = `${QUARTER_LABELS[report.quarter]} ${report.year}`
   const date = report.submittedAt?.toDate?.().toLocaleDateString('he-IL') ?? ''
@@ -66,7 +55,7 @@ function ReportAccordion({ report }: { report: QuarterlyReport }) {
         <div className="px-4 py-3 bg-gray-50 space-y-2 border-t border-gray-100">
           {Object.entries(report.data).map(([k, v]) => (
             <div key={k} className="flex gap-3 text-sm items-start">
-              <span className="text-gray-500 shrink-0 w-36 leading-relaxed">{FIELD_LABELS[k] ?? k}:</span>
+              <span className="text-gray-500 shrink-0 w-36 leading-relaxed">{labelByKey[k] ?? k}:</span>
               <span className="flex-1 min-w-0 break-words leading-relaxed" style={{ color: '#141348' }}>
                 <FieldValue value={v} />
               </span>
@@ -81,6 +70,7 @@ function ReportAccordion({ report }: { report: QuarterlyReport }) {
 export function PortalHome() {
   const { branch } = useOutletContext<PortalOutletContext>()
   const { reports } = useQuarterlyReports(branch.id)
+  const { labelByKey } = useAllReportQuestions()
 
   return (
     <div className="p-4 space-y-5 max-w-lg mx-auto">
@@ -136,7 +126,7 @@ export function PortalHome() {
         ) : (
           <div className="space-y-2">
             {reports.map((r) => (
-              <ReportAccordion key={r.id} report={r} />
+              <ReportAccordion key={r.id} report={r} labelByKey={labelByKey} />
             ))}
           </div>
         )}

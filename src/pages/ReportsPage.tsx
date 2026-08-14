@@ -1,21 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useAllQuarterlyReports } from '../hooks/useAllQuarterlyReports'
 import { useAllBranches } from '../hooks/useBranch'
+import { useAllReportQuestions } from '../hooks/useReportQuestions'
 import { QUARTERS, QUARTER_LABELS, type QuarterLabel } from '../types'
 import type { QuarterlyReport, Branch } from '../types'
 import { Spinner } from '../components/ui/Spinner'
-
-const FIELD_LABELS: Record<string, string> = {
-  f1: 'כמות סלי מזון ממוצעת', f2: 'מוצרים יבשים', f3: 'עופות',
-  f4: 'ביצים', f5: 'חלות', f6: 'ירקות', f7: 'שקיות / אריזה',
-  f8: 'חוסרים במלאי', f9: 'מצב מחסן', f10: 'ביטוח מתנדבים',
-  f11: 'מצב מתנדבי אריזה', f12: 'מצב מתנדבי חלוקה', f13: 'מתנדבי איסוף',
-  f14: 'מצב הרוח הכללי', f15: 'במה המטה יכול לעזור',
-  f16: 'יעד מתנדבי אריזה', f17: 'יעד מתנדבי חלוקה',
-  c1: 'כמות משתתפים ממוצעת', c2: 'מצב מבנה / ציוד',
-  c3: 'חוסרים בציוד', c4: 'ביטוח מתנדבים', c5: 'מצב מתנדבים כללי',
-  c6: 'מצב הרוח הכללי', c7: 'במה המטה יכול לעזור', c8: 'יעד מתנדבים',
-}
 
 /** Supplier fields are stored as `{ rating, notes }`. */
 function isRating(v: unknown): v is { rating?: string; notes?: string } {
@@ -49,7 +38,7 @@ function FieldValue({ value }: { value: unknown }) {
   return text ? <span>{text}</span> : <span className="text-gray-400">—</span>
 }
 
-function ReportCard({ report, branch }: { report: QuarterlyReport; branch?: Branch }) {
+function ReportCard({ report, branch, labelByKey }: { report: QuarterlyReport; branch?: Branch; labelByKey: Record<string, string> }) {
   const [open, setOpen] = useState(false)
   const date = report.submittedAt?.toDate?.().toLocaleDateString('he-IL') ?? ''
 
@@ -92,7 +81,7 @@ function ReportCard({ report, branch }: { report: QuarterlyReport; branch?: Bran
         <div className="px-4 py-3 bg-gray-50 space-y-2 border-t border-gray-100">
           {Object.entries(report.data).map(([k, v]) => (
             <div key={k} className="flex gap-3 text-sm items-start">
-              <span className="text-gray-500 shrink-0 w-40 leading-relaxed">{FIELD_LABELS[k] ?? k}:</span>
+              <span className="text-gray-500 shrink-0 w-40 leading-relaxed">{labelByKey[k] ?? k}:</span>
               <span className="flex-1 min-w-0 break-words leading-relaxed" style={{ color: '#141348' }}>
                 <FieldValue value={v} />
               </span>
@@ -112,6 +101,7 @@ const BRANCH_TYPE_LABELS: Record<string, string> = {
 export function ReportsPage() {
   const { reports, loading, error } = useAllQuarterlyReports()
   const { branches } = useAllBranches()
+  const { labelByKey } = useAllReportQuestions()
 
   const [branchId, setBranchId] = useState('')
   const [quarter, setQuarter] = useState<QuarterLabel | ''>('')
@@ -165,7 +155,7 @@ export function ReportsPage() {
 
   const exportCsv = () => {
     const keys = [...new Set(filtered.flatMap((r) => Object.keys(r.data)))]
-    const header = ['סניף', 'עיר', 'סוג', 'רבעון', 'שנה', 'תאריך הגשה', ...keys.map((k) => FIELD_LABELS[k] ?? k)]
+    const header = ['סניף', 'עיר', 'סוג', 'רבעון', 'שנה', 'תאריך הגשה', ...keys.map((k) => labelByKey[k] ?? k)]
     const rows = filtered.map((r) => {
       const b = branchMap[r.branchId]
       return [
@@ -291,7 +281,7 @@ export function ReportsPage() {
       ) : (
         <div className="space-y-2">
           {filtered.map((r) => (
-            <ReportCard key={r.id} report={r} branch={branchMap[r.branchId]} />
+            <ReportCard key={r.id} report={r} branch={branchMap[r.branchId]} labelByKey={labelByKey} />
           ))}
         </div>
       )}
