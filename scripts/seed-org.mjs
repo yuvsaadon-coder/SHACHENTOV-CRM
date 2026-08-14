@@ -63,9 +63,14 @@ print(json.dumps([r for r in rows if any(r)], ensure_ascii=False))
   return JSON.parse(execFileSync('python3', ['-c', py], { encoding: 'utf8', maxBuffer: 1 << 24 }))
 }
 
-/** A phone lands in whichever column follows the name, so detect by shape. */
-const isPhone = (v) => /^[\d\-+()‏‎ ,./]{7,}$/.test(v || '')
-const isEmail = (v) => (v || '').includes('@')
+// The sheet is a rigid 7-column table — תפקיד | אזור הפעילות | אחראי | טלפון |
+// מייל | סטטוס | הערות נוספות — so every cell is read by fixed position.
+// (An earlier version scanned each row for "the first cell that doesn't look
+// like a phone/email/status" to guess the holder's name. That heuristic broke
+// whenever the area column held a plain word like 'ירושלים' — nothing
+// distinguishes it from a name — or when a vacant role's notes column held
+// free text like 'מעל גיל 23', which then got misread as the holder's name.)
+const clean = (v) => (v === 'חסר' ? '' : (v || '').trim())
 
 function parseRoles() {
   const rows = readSheet('תפקידים שכן טוב', 7)
@@ -74,39 +79,33 @@ function parseRoles() {
   let current = null   // the role a bare extra-holder row belongs to
 
   for (const row of rows) {
-    const [c0, ...rest] = row
-    if (c0 === 'תפקיד') continue
-    if (SECTIONS[c0] && !rest.some(Boolean)) { level = SECTIONS[c0]; current = null; continue }
+    const [roleName, area, holder, phone, email, status, notes] = row
+    if (roleName === 'תפקיד') continue
+    if (SECTIONS[roleName] && ![area, holder, phone, email, status, notes].some(Boolean)) {
+      level = SECTIONS[roleName]
+      current = null
+      continue
+    }
     if (!level) continue
 
-    const cells = row.filter(Boolean)
-    // A row whose first cell names a role starts a new role; otherwise it is an
-    // additional holder of the role above (the sheet lists one holder per line).
-    const startsRole = !!c0
-    const scan = startsRole ? row.slice(1) : row
-    const holderRaw = scan.find((v) => v && !isPhone(v) && !isEmail(v) && !STATUS_WORD(v)) ?? ''
-    const phone = scan.find(isPhone) ?? ''
-    const email = scan.find(isEmail) ?? ''
-    const statusRaw = cells.find(STATUS_WORD) ?? ''
-    const notes = cells.slice(cells.indexOf(statusRaw) + 1).filter((v) => v !== statusRaw).join(' · ')
-
+    const startsRole = !!roleName
     if (startsRole) {
-      current = { roleName: c0, level, holders: [] }
+      // The area column is only meaningful for branches — HQ roles are not a region.
+      current = { roleName, level, area: HQ_LEVELS.has(level) ? '' : clean(area), holders: [] }
       roles.push(current)
-      // The area column is only meaningful for branches.
-      const area = HQ_LEVELS.has(level) ? '' : (scan[0] && !isPhone(scan[0]) && !isEmail(scan[0]) && !STATUS_WORD(scan[0]) ? scan[0] : '')
-      current.area = area
-      const holder = holderRaw === area ? (scan.slice(1).find((v) => v && !isPhone(v) && !isEmail(v) && !STATUS_WORD(v)) ?? '') : holderRaw
-      current.holders.push({ holder: cleanHolder(holder), phone, email, statusRaw, notes })
-    } else if (current) {
-      current.holders.push({ holder: cleanHolder(holderRaw), phone, email, statusRaw, notes })
     }
+    if (!current) continue
+
+    current.holders.push({
+      holder: clean(holder),
+      phone: clean(phone),
+      email: clean(email),
+      statusRaw: (status || '').trim(),
+      notes: (notes || '').trim(),
+    })
   }
   return roles
 }
-
-const STATUS_WORD = (v) => /^(יציב|דחוף|בינוני|אחר|בחפיפה)/.test((v || '').trim())
-const cleanHolder = (v) => (v === 'חסר' ? '' : (v || '').trim())
 
 // ── Reporting lines ─────────────────────────────────────────────────────────
 // Keyed by role name so they survive re-numbering.

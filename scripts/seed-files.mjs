@@ -66,14 +66,9 @@ const HQ_FILES = [
     fileUrl: '/templates/hafifa-mankal-moran.docx',
     tags: ['חפיפה', 'מנכ״ל'],
   },
-  {
-    id: 'file-tafkidim',
-    domain: 'all', category: 'instructions',
-    title: 'קובץ תפקידים ואנשי קשר 2026',
-    content: 'המקור לאיוש התפקידים, המבנה הארגוני ורשימת אנשי הקשר. המערכת נטענת מקובץ זה.',
-    fileUrl: '/templates/tafkidim-veanshei-kesher-2026.xlsx',
-    tags: ['תפקידים', 'אנשי קשר'],
-  },
+  // Deliberately NOT listing the roles/contacts source xlsx here — its data
+  // belongs structured in the /roles and /contacts pages (which is where
+  // scripts/seed-org.mjs puts it), not as a raw file download in HQ knowledge.
   {
     id: 'file-jlm-list',
     domain: 'JLM', category: 'instructions',
