@@ -17,8 +17,15 @@ service cloud.firestore {
     }
 
     function isAdmin()       { return role() == 'admin'; }
-    function isHQ()          { return role() in ['admin', 'hq']; }
     function isCoordinator() { return role() == 'coordinator'; }
+
+    // The app routes on "coordinator or not": App.tsx sends coordinators to the
+    // portal and every other signed-in user to the CRM. Staff roles are stored
+    // as domain codes (JLM, SUP, DON, FIN, PUB, DES, VOL), so an allow-list of
+    // ['admin','hq'] would lock out most of the HQ team. Match the app instead.
+    function isHQ() {
+      return isAuthed() && role() != '' && role() != 'coordinator';
+    }
 
     // True when the signed-in user is listed as a coordinator of that branch.
     function coordinatesBranch(branchId) {
