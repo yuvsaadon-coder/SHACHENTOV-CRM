@@ -19,10 +19,13 @@ const TYPE_COLOR: Record<Branch['type'], string> = {
   cafe_youth: '#FDC857',
 }
 
-type BranchLevel = 'סניף ירושלים' | 'סניף חוץ' | 'בתי קפה נודדים'
+type BranchLevel = 'סניף ירושלים' | 'סניף חוץ' | 'בתי קפה נודדים' | 'מועדוני נוער'
 
 function inferLevel(branch: Branch): BranchLevel {
-  if (branch.type === 'cafe_youth') return 'בתי קפה נודדים'
+  // Both share the cafe_youth type, so the name is what separates them.
+  if (branch.type === 'cafe_youth') {
+    return branch.name.includes('מועדון נוער') ? 'מועדוני נוער' : 'בתי קפה נודדים'
+  }
   if (branch.city === 'ירושלים' || branch.city.startsWith('ירושלים')) return 'סניף ירושלים'
   return 'סניף חוץ'
 }
@@ -31,6 +34,7 @@ const LEVEL_COLORS: Record<BranchLevel, { bg: string; text: string }> = {
   'סניף ירושלים':    { bg: '#189A9F22', text: '#189A9F' },
   'סניף חוץ':        { bg: '#141348', text: 'white' },
   'בתי קפה נודדים':  { bg: '#FDC85722', text: '#7A5A00' },
+  'מועדוני נוער':    { bg: '#E4DFEC', text: '#5F497A' },
 }
 
 const FOOD_LABELS: Record<string, string> = {
@@ -726,21 +730,9 @@ export function BranchesPage() {
           <option value="">כל הערים</option>
           {cities.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
-        {(['', 'food', 'cafe_youth'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTypeFilter(t)}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors"
-            style={{
-              backgroundColor: typeFilter === t ? (t === 'food' ? '#189A9F' : t === 'cafe_youth' ? '#FDC857' : '#141348') : 'white',
-              color: typeFilter === t ? (t === 'cafe_youth' ? '#7A5A00' : 'white') : '#6B7280',
-              borderColor: typeFilter === t ? (t === 'food' ? '#189A9F' : t === 'cafe_youth' ? '#FDC857' : '#141348') : '#E5E7EB',
-            }}
-          >
-            {t === '' ? 'הכל' : TYPE_LABELS[t]}
-          </button>
-        ))}
-        {(['', 'סניף ירושלים', 'סניף חוץ', 'בתי קפה נודדים'] as const).map((l) => (
+        {/* One category row only. The old `type` row duplicated this: 'בית קפה /
+            נוער' and 'בתי קפה נודדים' were the same set under two names. */}
+        {(['', 'סניף ירושלים', 'סניף חוץ', 'בתי קפה נודדים', 'מועדוני נוער'] as const).map((l) => (
           <button
             key={l}
             onClick={() => setLevelFilter(l)}

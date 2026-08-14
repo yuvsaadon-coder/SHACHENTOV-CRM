@@ -2,20 +2,38 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { DOMAIN_LABELS, DOMAINS, type Domain } from '../../types'
 
-const navItems = [
-  { to: '/dashboard', label: 'לוח בקרה', icon: '📊', adminOnly: false },
-  { to: '/tasks', label: 'משימות', icon: '✅', adminOnly: false },
-  { to: '/contacts', label: 'אנשי קשר', icon: '👥', adminOnly: false },
-  { to: '/roles', label: 'איוש תפקידים', icon: '🏢', adminOnly: false },
-  { to: '/orgchart', label: 'מבנה ארגוני', icon: '🌳', adminOnly: false },
-  { to: '/branches', label: 'סניפים', icon: '🏪', adminOnly: false },
-  { to: '/reports', label: 'דיווחים רבעוניים', icon: '📈', adminOnly: false },
-  { to: '/knowledge', label: 'ספריית ידע', icon: '📚', adminOnly: false },
-  { to: '/hq-knowledge', label: 'מאגר ידע מטה', icon: '🗃️', adminOnly: false },
-  { to: '/hq-chat', label: "צ'אטבוט מטה", icon: '🤖', adminOnly: false },
-  { to: '/admin/branches', label: 'פורטל רכזים', icon: '📋', adminOnly: true },
-  { to: '/admin/knowledge', label: 'ניהול ספרייה', icon: '📖', adminOnly: true },
-  { to: '/admin/seed', label: 'סידינג', icon: '🌱', adminOnly: true },
+interface NavItem { to: string; label: string; icon: string; adminOnly: boolean }
+interface NavGroup { title: string; items: NavItem[] }
+
+const navGroups: NavGroup[] = [
+  {
+    title: 'משימות',
+    items: [
+      { to: '/dashboard', label: 'לוח בקרה', icon: '📊', adminOnly: false },
+      { to: '/tasks', label: 'משימות', icon: '✅', adminOnly: false },
+      { to: '/reports', label: 'דיווחים רבעוניים', icon: '📈', adminOnly: false },
+      { to: '/admin/branches', label: 'פורטל רכזים', icon: '📋', adminOnly: true },
+    ],
+  },
+  {
+    title: 'תפקידים',
+    items: [
+      { to: '/roles', label: 'איוש תפקידים', icon: '🏢', adminOnly: false },
+      { to: '/orgchart', label: 'מבנה ארגוני', icon: '🌳', adminOnly: false },
+      { to: '/contacts', label: 'אנשי קשר', icon: '👥', adminOnly: false },
+      { to: '/branches', label: 'סניפים', icon: '🏪', adminOnly: false },
+    ],
+  },
+  {
+    title: 'מאגר ידע',
+    items: [
+      { to: '/hq-knowledge', label: 'מאגר ידע מטה', icon: '🗃️', adminOnly: false },
+      { to: '/knowledge', label: 'ספריית ידע', icon: '📚', adminOnly: false },
+      { to: '/hq-chat', label: "צ'אטבוט מטה", icon: '🤖', adminOnly: false },
+      { to: '/admin/knowledge', label: 'ניהול ספרייה', icon: '📖', adminOnly: true },
+      { to: '/admin/seed', label: 'סידינג', icon: '🌱', adminOnly: true },
+    ],
+  },
 ]
 
 interface Props {
@@ -31,9 +49,12 @@ export function Sidebar({ onClose }: Props) {
     navigate('/login')
   }
 
-  const visibleNavItems = navItems.filter(
-    (item) => !item.adminOnly || appUser?.role === 'admin'
-  )
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !item.adminOnly || appUser?.role === 'admin'),
+    }))
+    .filter((group) => group.items.length > 0)
 
   return (
     <aside className="w-64 bg-brand-navy min-h-screen flex flex-col text-white shrink-0">
@@ -57,26 +78,33 @@ export function Sidebar({ onClose }: Props) {
 
       {/* Main nav */}
       <nav className="flex-1 py-4 overflow-y-auto">
-        <ul className="space-y-1 px-2">
-          {visibleNavItems.map((item) => (
-            <li key={item.to}>
-              <NavLink
-                to={item.to}
-                onClick={onClose}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                    isActive
-                      ? 'bg-brand-teal text-white'
-                      : 'text-white/80 hover:bg-white/10'
-                  }`
-                }
-              >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+        {visibleGroups.map((group) => (
+          <div key={group.title} className="mb-4">
+            <div className="px-4 mb-1.5 text-xs uppercase tracking-wider text-white/40">
+              {group.title}
+            </div>
+            <ul className="space-y-1 px-2">
+              {group.items.map((item) => (
+                <li key={item.to}>
+                  <NavLink
+                    to={item.to}
+                    onClick={onClose}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                        isActive
+                          ? 'bg-brand-teal text-white'
+                          : 'text-white/80 hover:bg-white/10'
+                      }`
+                    }
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
 
         {/* Domain filter shortcuts */}
         <div className="mt-6 px-4">

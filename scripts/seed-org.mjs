@@ -1,0 +1,274 @@
+/**
+ * Rebuilds roles, the org hierarchy and contacts from the single authoritative
+ * source: public/templates/tafkidim-veanshei-kesher-2026.xlsx
+ *   sheet "תפקידים שכן טוב"  → roles + reporting lines
+ *   sheet "אנשי קשר חשובים"  → contacts
+ *
+ * Deviation from the sheet, per explicit instruction: HQ roles (מטה / ועד מנהל)
+ * carry no area — the sheet lists "ירושלים" for them, but HQ is not a region.
+ *
+ * Usage: node scripts/seed-org.mjs
+ */
+import { cert, initializeApp, getApps } from 'firebase-admin/app'
+import { getFirestore } from 'firebase-admin/firestore'
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
+import { execFileSync } from 'child_process'
+
+const SA_PATH = process.env.FIREBASE_SERVICE_ACCOUNT_PATH
+  ?? '/root/.claude/uploads/8ffa83cb-c50c-5072-9f83-eeaa819b9bcb/9113bd15-shachentovcrmfirebaseadminsdkfbsvcb312d1804d.json'
+if (getApps().length === 0) {
+  initializeApp({ credential: cert(JSON.parse(readFileSync(resolve(SA_PATH), 'utf8'))) })
+}
+const db = getFirestore()
+
+const XLSX = 'public/templates/tafkidim-veanshei-kesher-2026.xlsx'
+
+/** Section header in the sheet → the level stored on the role. */
+const SECTIONS = {
+  'מטה - ועד מנהל': 'ועד מנהל',
+  'מטה': 'מטה',
+  'סניפי חלוקת מזון - חוץ': 'סניף חוץ',
+  'סניפי חלוקת מזון - ירושלים': 'סניף ירושלים',
+  'בתי קפה נודדים': 'בתי קפה נודדים',
+  'טוסטר': 'טוסטר',
+  'סניפי ופרוייקטים עיתיים': 'סניפים עיתיים',
+}
+const HQ_LEVELS = new Set(['ועד מנהל', 'מטה'])
+
+const STATUS = (raw) => {
+  const s = (raw || '').trim()
+  if (s.startsWith('יציב')) return 'מאויש'
+  if (s.startsWith('דחוף')) return 'חסר'
+  if (s.startsWith('בינוני')) return 'חלקי'
+  if (s.startsWith('בחפיפה')) return 'חלקי'
+  return s ? 'אחר' : 'חסר'
+}
+const PRIORITY = (raw) => {
+  const s = (raw || '').trim()
+  if (s.startsWith('דחוף')) return 'דחוף'
+  if (s.startsWith('בינוני')) return 'בינוני'
+  return 'רגיל'
+}
+
+function readSheet(name, maxCol) {
+  const py = `
+import openpyxl, json, sys
+wb = openpyxl.load_workbook(${JSON.stringify(XLSX)}, data_only=True)
+ws = wb[${JSON.stringify(name)}]
+rows = [[('' if c is None else str(c).strip()) for c in r]
+        for r in ws.iter_rows(min_col=1, max_col=${maxCol}, values_only=True)]
+print(json.dumps([r for r in rows if any(r)], ensure_ascii=False))
+`
+  return JSON.parse(execFileSync('python3', ['-c', py], { encoding: 'utf8', maxBuffer: 1 << 24 }))
+}
+
+/** A phone lands in whichever column follows the name, so detect by shape. */
+const isPhone = (v) => /^[\d\-+()‏‎ ,./]{7,}$/.test(v || '')
+const isEmail = (v) => (v || '').includes('@')
+
+function parseRoles() {
+  const rows = readSheet('תפקידים שכן טוב', 7)
+  const roles = []
+  let level = null
+  let current = null   // the role a bare extra-holder row belongs to
+
+  for (const row of rows) {
+    const [c0, ...rest] = row
+    if (c0 === 'תפקיד') continue
+    if (SECTIONS[c0] && !rest.some(Boolean)) { level = SECTIONS[c0]; current = null; continue }
+    if (!level) continue
+
+    const cells = row.filter(Boolean)
+    // A row whose first cell names a role starts a new role; otherwise it is an
+    // additional holder of the role above (the sheet lists one holder per line).
+    const startsRole = !!c0
+    const scan = startsRole ? row.slice(1) : row
+    const holderRaw = scan.find((v) => v && !isPhone(v) && !isEmail(v) && !STATUS_WORD(v)) ?? ''
+    const phone = scan.find(isPhone) ?? ''
+    const email = scan.find(isEmail) ?? ''
+    const statusRaw = cells.find(STATUS_WORD) ?? ''
+    const notes = cells.slice(cells.indexOf(statusRaw) + 1).filter((v) => v !== statusRaw).join(' · ')
+
+    if (startsRole) {
+      current = { roleName: c0, level, holders: [] }
+      roles.push(current)
+      // The area column is only meaningful for branches.
+      const area = HQ_LEVELS.has(level) ? '' : (scan[0] && !isPhone(scan[0]) && !isEmail(scan[0]) && !STATUS_WORD(scan[0]) ? scan[0] : '')
+      current.area = area
+      const holder = holderRaw === area ? (scan.slice(1).find((v) => v && !isPhone(v) && !isEmail(v) && !STATUS_WORD(v)) ?? '') : holderRaw
+      current.holders.push({ holder: cleanHolder(holder), phone, email, statusRaw, notes })
+    } else if (current) {
+      current.holders.push({ holder: cleanHolder(holderRaw), phone, email, statusRaw, notes })
+    }
+  }
+  return roles
+}
+
+const STATUS_WORD = (v) => /^(יציב|דחוף|בינוני|אחר|בחפיפה)/.test((v || '').trim())
+const cleanHolder = (v) => (v === 'חסר' ? '' : (v || '').trim())
+
+// ── Reporting lines ─────────────────────────────────────────────────────────
+// Keyed by role name so they survive re-numbering.
+const CEO = 'מנכ"ל'
+const PARENT_BY_ROLE = {
+  // מטה reports into the board member who owns the area
+  'רכז תרומות': 'רכזת תרומות ופרוייקטים מיוחדים',
+}
+const PARENT_BY_LEVEL = {
+  'ועד מנהל': CEO,
+  'מטה': CEO,
+  'סניף ירושלים': 'מנהל סניפי מזון ירושלים',
+  'סניף חוץ': 'מנהל סניפי חוץ',
+  'בתי קפה נודדים': 'מנהל בתי קפה נודדים',
+  'טוסטר': 'מנהל מועדוני נוער',
+  'סניפים עיתיים': CEO,
+}
+
+/**
+ * The sheet has no "מנהל סניפי חוץ" row, but external branches are supposed to
+ * report to one. Added as a vacant board role so the tree matches the org.
+ */
+const SYNTHETIC = [{
+  roleName: 'מנהל סניפי חוץ', level: 'ועד מנהל', area: '',
+  holders: [{ holder: '', phone: '', email: '', statusRaw: 'דחוף', notes: 'לא מופיע בקובץ התפקידים — נוסף כדי שסניפי החוץ יהיו כפופים אליו' }],
+}]
+
+async function seedRoles() {
+  const parsed = [...parseRoles(), ...SYNTHETIC]
+
+  const old = await db.collection('roles').get()
+  let batch = db.batch()
+  old.docs.forEach((d) => batch.delete(d.ref))
+  await batch.commit()
+
+  // First pass: allocate ids so parents can be resolved by role name.
+  const idByRoleName = new Map()
+  const docs = []
+  const counters = {}
+  const prefix = { 'ועד מנהל': 'BOARD', 'מטה': 'HQ', 'סניף חוץ': 'BRC', 'סניף ירושלים': 'BRJ', 'בתי קפה נודדים': 'CAFE', 'טוסטר': 'TOAST', 'סניפים עיתיים': 'ETIM' }
+
+  for (const role of parsed) {
+    for (const h of role.holders) {
+      const p = prefix[role.level] ?? 'ROLE'
+      counters[p] = (counters[p] ?? 0) + 1
+      const id = `${p}-${String(counters[p]).padStart(2, '0')}`
+      if (!idByRoleName.has(role.roleName)) idByRoleName.set(role.roleName, id)
+      docs.push({ id, role, h })
+    }
+  }
+
+  let seeded = 0
+  for (const { id, role, h } of docs) {
+    const parentName = PARENT_BY_ROLE[role.roleName] ?? PARENT_BY_LEVEL[role.level]
+    const reportsTo = role.roleName === CEO ? null : (idByRoleName.get(parentName) ?? idByRoleName.get(CEO))
+    const data = {
+      id,
+      roleName: role.roleName,
+      level: role.level,
+      area: role.area ?? '',
+      holderName: h.holder,
+      status: h.holder ? STATUS(h.statusRaw) : 'חסר',
+      priority: PRIORITY(h.statusRaw),
+      email: h.email,
+      phone: h.phone,
+      linkedTaskIds: [],
+      affectsTasks: false,
+      delegatedTo: null,
+      notes: h.notes ?? '',
+    }
+    if (reportsTo) data.reportsTo = reportsTo
+    await db.collection('roles').doc(id).set(data)
+    seeded++
+  }
+
+  const byLevel = {}
+  parsed.forEach((r) => { byLevel[r.level] = (byLevel[r.level] ?? 0) + r.holders.length })
+  console.log(`✓ ${seeded} roles seeded (was ${old.size})`)
+  console.log('  by level:', JSON.stringify(byLevel))
+  return idByRoleName
+}
+
+// ── Contacts ────────────────────────────────────────────────────────────────
+
+async function seedContacts() {
+  const rows = readSheet('אנשי קשר חשובים', 7)
+  const old = await db.collection('contacts').get()
+  const batch = db.batch()
+  old.docs.forEach((d) => batch.delete(d.ref))
+  await batch.commit()
+
+  // Explicit header list: a supplier row can also be a lone first cell (the
+  // sheet lists several suppliers by name only), so "single cell" is not a
+  // reliable test for a section break.
+  const HEADERS = new Set([
+    'אנשי קשר כללי',
+    'ספקים פרוייקט סלי מזון',
+    'ספקים ארבעת המינים',
+    'אנשי קשר מועדוני נוער',
+    'תורמים קבועים',
+  ])
+
+  let category = 'כללי'
+  let n = 0
+  const missing = []
+
+  for (const row of rows) {
+    const [company, roleTitle, person, phone, email, owner, cadence] = row
+    // Section headers sit in column B for every group after the first.
+    const header = row.find((c) => HEADERS.has(c))
+    if (header) { category = header; continue }
+    if (!company) continue
+    if (company === 'שם חברה') continue
+
+    n++
+    const id = `CT-${String(n).padStart(3, '0')}`
+    const phoneClean = (phone || '').replace(/[‎‏]/g, '').trim()
+    const gaps = []
+    if (!phoneClean && !email) gaps.push('חסרים פרטי קשר')
+    else if (!phoneClean) gaps.push('חסר טלפון')
+    if (gaps.length) missing.push(`${category} — ${company}`)
+
+    const CONTACT_TYPE = {
+      'ספקים פרוייקט סלי מזון': 'ספק',
+      'ספקים ארבעת המינים': 'ספק',
+      'תורמים קבועים': 'תורם',
+    }
+    await db.collection('contacts').doc(id).set({
+      id,
+      name: person || company,
+      type: CONTACT_TYPE[category] ?? 'מטה',
+      domainTags: [],
+      organization: company,
+      role: roleTitle || '',
+      category,
+      phone: phoneClean,
+      email: email || '',
+      ownerInOrg: owner || '',
+      cadence: cadence || '',
+      notes: gaps.join(' · '),
+      needsInfo: gaps.length > 0,
+      createdBy: 'seed',
+    })
+  }
+
+  console.log(`✓ ${n} contacts seeded (was ${old.size})`)
+  if (missing.length) {
+    console.log(`\n⚠ ${missing.length} contacts missing phone/email — flagged with needsInfo:`)
+    missing.forEach((m) => console.log(`   ${m}`))
+  }
+}
+
+async function main() {
+  console.log('=== Rebuilding org + contacts from the roles sheet ===\n')
+  await seedRoles()
+  console.log('')
+  await seedContacts()
+
+  const all = await db.collection('roles').get()
+  const roots = all.docs.filter((d) => !d.data().reportsTo)
+  console.log(`\nroots: ${roots.map((d) => `${d.id} ${d.data().roleName}`).join(', ') || '(none)'}`)
+  process.exit(0)
+}
+
+main().catch((err) => { console.error('Error:', err); process.exit(1) })

@@ -39,6 +39,14 @@ export interface Contact {
   phone: string
   email: string
   notes: string
+  /** Columns carried over from the roles/contacts sheet. */
+  organization?: string
+  role?: string
+  category?: string
+  ownerInOrg?: string
+  cadence?: string
+  /** Set when the sheet had no phone or email for this contact. */
+  needsInfo?: boolean
 }
 
 export interface AppUser {
@@ -74,7 +82,7 @@ export interface HistoryEntry {
   changedAt: Timestamp
 }
 
-export type RoleLevel = 'מטה' | 'סניף חוץ' | 'סניף ירושלים' | 'בתי קפה נודדים' | 'טוסטר' | 'סניפים עיתיים' | 'יריד'
+export type RoleLevel = 'ועד מנהל' | 'מטה' | 'סניף חוץ' | 'סניף ירושלים' | 'בתי קפה נודדים' | 'טוסטר' | 'סניפים עיתיים' | 'יריד'
 export type RoleStatus = 'מאויש' | 'חסר' | 'חלקי' | 'בסיכון' | 'אחר'
 export type RolePriority = 'רגיל' | 'בינוני' | 'דחוף'
 export type VolunteerStatus = 'יציב' | 'חוסר מתמשך' | 'חוסר קריטי'
@@ -126,7 +134,7 @@ export interface OrgRole {
   portalBranchId?: string
 }
 
-export const ROLE_LEVELS: RoleLevel[] = ['מטה', 'סניף חוץ', 'סניף ירושלים', 'בתי קפה נודדים', 'טוסטר', 'סניפים עיתיים', 'יריד']
+export const ROLE_LEVELS: RoleLevel[] = ['ועד מנהל', 'מטה', 'סניף חוץ', 'סניף ירושלים', 'בתי קפה נודדים', 'טוסטר', 'סניפים עיתיים', 'יריד']
 export const ROLE_STATUS_LABELS: RoleStatus[] = ['מאויש', 'חסר', 'חלקי', 'בסיכון', 'אחר']
 export const ROLE_PRIORITY_LABELS: RolePriority[] = ['רגיל', 'בינוני', 'דחוף']
 
