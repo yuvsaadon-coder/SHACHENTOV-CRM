@@ -17,6 +17,34 @@ const FIELD_LABELS: Record<string, string> = {
   c6: 'מצב הרוח הכללי', c7: 'במה המטה יכול לעזור', c8: 'יעד מתנדבים',
 }
 
+/** Supplier fields are stored as `{ rating, notes }` — render them, never JSON.stringify. */
+function isRating(v: unknown): v is { rating?: string; notes?: string } {
+  return typeof v === 'object' && v !== null && ('rating' in v || 'notes' in v)
+}
+
+function FieldValue({ value }: { value: unknown }) {
+  if (isRating(value)) {
+    const rating = value.rating?.trim()
+    const notes = value.notes?.trim()
+    if (!rating && !notes) return <span className="text-gray-400">—</span>
+    return (
+      <span>
+        {rating && (
+          <span className="inline-flex items-center gap-1">
+            <span className="font-medium" style={{ color: '#141348' }}>{rating}/5</span>
+            <span style={{ color: '#189A9F' }}>{'★'.repeat(Number(rating) || 0)}</span>
+          </span>
+        )}
+        {notes && (
+          <span className="block text-gray-600 mt-0.5">{notes}</span>
+        )}
+      </span>
+    )
+  }
+  const text = String(value ?? '').trim()
+  return text ? <span>{text}</span> : <span className="text-gray-400">—</span>
+}
+
 function ReportAccordion({ report }: { report: QuarterlyReport }) {
   const [open, setOpen] = useState(false)
   const title = `${QUARTER_LABELS[report.quarter]} ${report.year}`
@@ -37,12 +65,10 @@ function ReportAccordion({ report }: { report: QuarterlyReport }) {
       {open && (
         <div className="px-4 py-3 bg-gray-50 space-y-2 border-t border-gray-100">
           {Object.entries(report.data).map(([k, v]) => (
-            <div key={k} className="flex gap-3 text-sm">
-              <span className="text-gray-500 shrink-0 w-40">{FIELD_LABELS[k] ?? k}:</span>
-              <span style={{ color: '#141348' }}>
-                {typeof v === 'object' && v !== null
-                  ? JSON.stringify(v)
-                  : String(v ?? '—')}
+            <div key={k} className="flex gap-3 text-sm items-start">
+              <span className="text-gray-500 shrink-0 w-36 leading-relaxed">{FIELD_LABELS[k] ?? k}:</span>
+              <span className="flex-1 min-w-0 break-words leading-relaxed" style={{ color: '#141348' }}>
+                <FieldValue value={v} />
               </span>
             </div>
           ))}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { doc, updateDoc, addDoc, collection, deleteDoc } from 'firebase/firestore'
+import { doc, updateDoc, addDoc, collection, deleteDoc, deleteField } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import type { OrgRole, RoleLevel, RoleStatus, RolePriority } from '../../types'
 import { ROLE_LEVELS, ROLE_STATUS_LABELS, ROLE_PRIORITY_LABELS } from '../../types'
@@ -50,9 +50,19 @@ export function RoleEditModal({ role, allRoles, onClose }: Props) {
     setSaving(true)
     setError(null)
     try {
-      const data: Record<string, unknown> = { ...form }
-      if (!data.reportsTo) delete data.reportsTo
+      // Firestore rejects `undefined` values — reportsTo / portalBranchId are
+      // undefined whenever "— ללא —" is picked in their dropdowns.
+      const OPTIONAL_KEYS = ['reportsTo', 'portalBranchId'] as const
+      const data: Record<string, unknown> = {}
+      for (const [key, value] of Object.entries(form)) {
+        if (value !== undefined) data[key] = value
+      }
+
       if (role) {
+        // On update, clearing a field must remove it rather than leave the old value.
+        for (const key of OPTIONAL_KEYS) {
+          if (data[key] === undefined) data[key] = deleteField()
+        }
         await updateDoc(doc(db, 'roles', role.id), data)
       } else {
         await addDoc(collection(db, 'roles'), data)

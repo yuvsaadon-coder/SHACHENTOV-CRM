@@ -9,6 +9,7 @@ const navItems = [
   { to: '/roles', label: 'איוש תפקידים', icon: '🏢', adminOnly: false },
   { to: '/orgchart', label: 'מבנה ארגוני', icon: '🌳', adminOnly: false },
   { to: '/branches', label: 'סניפים', icon: '🏪', adminOnly: false },
+  { to: '/reports', label: 'דיווחים רבעוניים', icon: '📈', adminOnly: false },
   { to: '/knowledge', label: 'ספריית ידע', icon: '📚', adminOnly: false },
   { to: '/hq-knowledge', label: 'מאגר ידע מטה', icon: '🗃️', adminOnly: false },
   { to: '/hq-chat', label: "צ'אטבוט מטה", icon: '🤖', adminOnly: false },

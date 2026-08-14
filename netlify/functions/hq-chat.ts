@@ -28,15 +28,33 @@ interface RequestBody {
   question: string
 }
 
+const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' }
+const fail = (statusCode: number, error: string) => ({
+  statusCode,
+  headers: JSON_HEADERS,
+  body: JSON.stringify({ error }),
+})
+
 export const handler: Handler = async (event) => {
-  if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' }
+  try {
+    return await chat(event)
+  } catch (e: unknown) {
+    // Any uncaught throw would otherwise become a bodyless 500 that the UI
+    // reports as a bare status code, which is what "the bot doesn't answer" looks like.
+    const detail = e instanceof Error ? e.message : String(e)
+    return fail(500, `שגיאה בשרת הצ׳אטבוט: ${detail}`)
+  }
+}
+
+const chat: Handler = async (event) => {
+  if (event.httpMethod !== 'POST') return fail(405, 'Method Not Allowed')
 
   const authHeader = event.headers['authorization'] ?? ''
   const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
-  if (!idToken) return { statusCode: 401, body: JSON.stringify({ error: 'Missing token' }) }
+  if (!idToken) return fail(401, 'לא מחובר — התחבר מחדש ונסה שוב.')
 
   try { initFirebase() } catch {
-    return { statusCode: 500, body: JSON.stringify({ error: 'Firebase not configured' }) }
+    return fail(500, 'משתנה הסביבה FIREBASE_SERVICE_ACCOUNT חסר או שגוי ב-Netlify.')
   }
 
   let uid: string
@@ -44,13 +62,13 @@ export const handler: Handler = async (event) => {
     const decoded = await getAuth().verifyIdToken(idToken)
     uid = decoded.uid
   } catch {
-    return { statusCode: 401, body: JSON.stringify({ error: 'Invalid token' }) }
+    return fail(401, 'ההתחברות פגה — רענן את הדף והתחבר מחדש.')
   }
 
   const db = getFirestore()
   const userDoc = await db.collection('users').doc(uid).get()
   if (userDoc.exists && (userDoc.data() as { role?: string }).role === 'coordinator') {
-    return { statusCode: 403, body: JSON.stringify({ error: 'Coordinators use the portal chat' }) }
+    return fail(403, 'רכזים משתמשים בצ׳אטבוט של הפורטל.')
   }
 
   const body = JSON.parse(event.body ?? '{}') as Partial<RequestBody>
@@ -66,9 +84,19 @@ export const handler: Handler = async (event) => {
   }
 
   const sections: string[] = []
+  const sourceWarnings: string[] = []
+
+  /** One unavailable source must not take the whole answer down with it. */
+  async function collect(label: string, fn: () => Promise<void>) {
+    try {
+      await fn()
+    } catch (e: unknown) {
+      sourceWarnings.push(`${label}: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
 
   // 1. HQ knowledge
-  if (scopes.includes('hq')) {
+  if (scopes.includes('hq')) await collect('מאגר מטה', async () => {
     let hqQuery = db.collection('hq_knowledge').limit(50)
     if (domainFilter) {
       hqQuery = db.collection('hq_knowledge').where('domain', 'in', [domainFilter, 'all']).limit(50)
@@ -81,10 +109,10 @@ export const handler: Handler = async (event) => {
       })
       sections.push(`מאגר ידע מטה:\n${lines.join('\n')}`)
     }
-  }
+  })
 
   // 2. Research / professional articles
-  if (scopes.includes('research')) {
+  if (scopes.includes('research')) await collect('מחקר מקצועי', async () => {
     const researchSnap = await db.collection('knowledge_articles').limit(40).get()
     if (!researchSnap.empty) {
       const lines = researchSnap.docs.map((d) => {
@@ -99,10 +127,10 @@ export const handler: Handler = async (event) => {
       })
       sections.push(`ספריית מחקר ומידע מקצועי:\n${lines.join('\n')}`)
     }
-  }
+  })
 
   // 3. Global coordinator-platform knowledge (branchId == 'global')
-  if (scopes.includes('global')) {
+  if (scopes.includes('global')) await collect('ידע כלל-ארגוני', async () => {
     const globalSnap = await db
       .collection('knowledgeItems')
       .where('branchId', '==', 'global')
@@ -121,17 +149,17 @@ export const handler: Handler = async (event) => {
       })
       sections.push(`ידע כלל-ארגוני (פלטפורמת רכזים):\n${lines.join('\n')}`)
     }
-  }
+  })
 
-  // 4. Branch-specific knowledge (branchId != 'global')
-  if (scopes.includes('branch')) {
-    const branchSnap = await db
-      .collection('knowledgeItems')
-      .where('branchId', '!=', 'global')
-      .limit(30)
-      .get()
-    if (!branchSnap.empty) {
-      const lines = branchSnap.docs.map((d) => {
+  // 4. Branch-specific knowledge. A Firestore `!=` filter skips documents that
+  // have no branchId at all, so read the collection and filter in memory instead.
+  if (scopes.includes('branch')) await collect('ידע סניפי', async () => {
+    const allSnap = await db.collection('knowledgeItems').limit(200).get()
+    const branchDocs = allSnap.docs.filter(
+      (d) => (d.data() as { branchId?: string }).branchId !== 'global'
+    ).slice(0, 30)
+    if (branchDocs.length > 0) {
+      const lines = branchDocs.map((d) => {
         const data = d.data() as {
           title?: string; content?: string; branchId?: string
           type?: string; checklistItems?: string[]
@@ -144,7 +172,7 @@ export const handler: Handler = async (event) => {
       })
       sections.push(`ידע סניפי (רמת סניף):\n${lines.join('\n')}`)
     }
-  }
+  })
 
   const knowledgeBlock = sections.length > 0
     ? sections.join('\n\n')
@@ -166,7 +194,12 @@ ${knowledgeBlock}
 אם אין מידע רלוונטי במאגר הידע — אמור זאת בכנות: "אין לי מידע על זה במקורות שנבחרו." אל תנסה לספק מידע כללי שאינו מבוסס על המסמכים לעיל.`
 
   const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return { statusCode: 500, body: JSON.stringify({ error: 'Missing API key' }) }
+  if (!apiKey) return fail(500, 'משתנה הסביבה ANTHROPIC_API_KEY חסר ב-Netlify.')
+
+  const turns = messages
+    .filter((m) => typeof m.content === 'string' && m.content.trim().length > 0)
+    .map((m) => ({ role: m.role, content: m.content }))
+  if (turns.length === 0) return fail(400, 'לא נשלחה שאלה.')
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -176,24 +209,37 @@ ${knowledgeBlock}
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1200,
+      model: 'claude-opus-5',
+      max_tokens: 2000,
       system: systemPrompt,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      messages: turns,
     }),
   })
 
   if (!response.ok) {
-    const err = await response.text()
-    return { statusCode: 502, body: JSON.stringify({ error: `Anthropic API error: ${err}` }) }
+    const raw = await response.text()
+    let detail = raw
+    try {
+      detail = (JSON.parse(raw) as { error?: { message?: string } }).error?.message ?? raw
+    } catch { /* keep raw text */ }
+    return fail(502, `שגיאת Anthropic API (${response.status}): ${detail}`)
   }
 
-  const result = await response.json() as { content: { type: string; text: string }[] }
-  const reply = result.content.find((c) => c.type === 'text')?.text ?? 'לא התקבלה תשובה.'
+  const result = await response.json() as {
+    stop_reason?: string
+    content: { type: string; text?: string }[]
+  }
+  if (result.stop_reason === 'refusal') {
+    return fail(502, 'המודל סירב לענות על השאלה הזו. נסח אותה מחדש.')
+  }
+  const text = result.content.find((c) => c.type === 'text')?.text
+  const reply = text?.trim()
+    ? text + (sourceWarnings.length ? `\n\n⚠️ מקורות שלא נטענו: ${sourceWarnings.join(' | ')}` : '')
+    : 'לא התקבלה תשובה מהמודל.'
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: JSON_HEADERS,
     body: JSON.stringify({ reply }),
   }
 }

@@ -125,45 +125,49 @@ type ChildColumn =
   | { type: 'single'; key: string; node: TreeNode }
   | { type: 'group';  key: string; area: string; nodes: TreeNode[] }
 
+const groupKey = (n: TreeNode, by: 'level' | 'area') =>
+  (by === 'level' ? n.level : n.area)?.trim() ?? ''
+
+/**
+ * Groups a node's children into columns. Siblings that span more than one level
+ * (e.g. HQ roles + external branches under the CEO) group by level; a set that
+ * shares one level groups by area instead, which is what distinguishes branches.
+ */
 function computeColumns(children: TreeNode[]): ChildColumn[] {
-  const areaCounts = new Map<string, number>()
+  const levels = new Set(children.map((c) => groupKey(c, 'level')).filter(Boolean))
+  const by: 'level' | 'area' = levels.size > 1 ? 'level' : 'area'
+
+  const counts = new Map<string, number>()
   for (const child of children) {
-    const a = child.area?.trim()
-    if (a) areaCounts.set(a, (areaCounts.get(a) || 0) + 1)
+    const k = groupKey(child, by)
+    if (k) counts.set(k, (counts.get(k) || 0) + 1)
   }
 
   const result: ChildColumn[] = []
-  const seenAreas = new Set<string>()
   const groupNodes = new Map<string, TreeNode[]>()
 
   for (const child of children) {
-    const area = child.area?.trim()
-    const isMulti = area && (areaCounts.get(area) || 0) > 1
-
-    if (!isMulti) {
+    const k = groupKey(child, by)
+    if (!k || (counts.get(k) || 0) <= 1) {
       result.push({ type: 'single', key: child.id, node: child })
-    } else {
-      if (!seenAreas.has(area!)) {
-        seenAreas.add(area!)
-        const nodes: TreeNode[] = []
-        groupNodes.set(area!, nodes)
-        result.push({ type: 'group', key: area!, area: area!, nodes })
-      }
-      groupNodes.get(area!)!.push(child)
+      continue
     }
+    if (!groupNodes.has(k)) {
+      const nodes: TreeNode[] = []
+      groupNodes.set(k, nodes)
+      result.push({ type: 'group', key: k, area: k, nodes })
+    }
+    groupNodes.get(k)!.push(child)
   }
 
   return result
 }
 
-function AreaGroupBox({ area, nodes, onEdit, onBranchDetails, collapsedSet, onToggle }: {
-  area: string
-  nodes: TreeNode[]
-  onEdit: (r: OrgRole) => void
-  onBranchDetails: (r: OrgRole) => void
-  collapsedSet: Set<string>
-  onToggle: (id: string) => void
-}) {
+/** Above this many members a group wraps into rows instead of one tall column. */
+const WRAP_AFTER = 3
+const MAX_ROW_WIDTH = 5 * 132
+
+function GroupFrame({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{
       border: '1.5px dashed #CBD5E1',
@@ -183,15 +187,64 @@ function AreaGroupBox({ area, nodes, onEdit, onBranchDetails, collapsedSet, onTo
         color: '#64748B',
         fontWeight: 700,
         letterSpacing: '0.05em',
+        whiteSpace: 'nowrap',
       }}>
-        {area}
+        {label}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
-        {nodes.map(node => (
-          <OrgNode key={node.id} node={node} onEdit={onEdit} onBranchDetails={onBranchDetails} collapsedSet={collapsedSet} onToggle={onToggle} />
-        ))}
-      </div>
+      {children}
     </div>
+  )
+}
+
+function AreaGroupBox({ area, nodes, onEdit, onBranchDetails, collapsedSet, onToggle }: {
+  area: string
+  nodes: TreeNode[]
+  onEdit: (r: OrgRole) => void
+  onBranchDetails: (r: OrgRole) => void
+  collapsedSet: Set<string>
+  onToggle: (id: string) => void
+}) {
+  const render = (node: TreeNode) => (
+    <OrgNode key={node.id} node={node} onEdit={onEdit} onBranchDetails={onBranchDetails} collapsedSet={collapsedSet} onToggle={onToggle} />
+  )
+
+  // A large single-level group (e.g. all 21 Jerusalem coordinators) is split by
+  // area into nested frames so the chart stays wide-and-short rather than a
+  // single column running off the bottom of the screen.
+  const subAreas = new Set(nodes.map((n) => n.area?.trim()).filter(Boolean))
+  if (nodes.length > WRAP_AFTER && subAreas.size > 1 && area !== nodes[0].area?.trim()) {
+    const buckets = new Map<string, TreeNode[]>()
+    for (const n of nodes) {
+      const k = n.area?.trim() || '—'
+      if (!buckets.has(k)) buckets.set(k, [])
+      buckets.get(k)!.push(n)
+    }
+    return (
+      <GroupFrame label={area}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-start', justifyContent: 'center', maxWidth: MAX_ROW_WIDTH }}>
+          {[...buckets].map(([sub, subNodes]) => (
+            <GroupFrame key={sub} label={sub}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+                {subNodes.map(render)}
+              </div>
+            </GroupFrame>
+          ))}
+        </div>
+      </GroupFrame>
+    )
+  }
+
+  const wrap = nodes.length > WRAP_AFTER
+  return (
+    <GroupFrame label={area}>
+      <div
+        style={wrap
+          ? { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start', justifyContent: 'center', maxWidth: MAX_ROW_WIDTH }
+          : { display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}
+      >
+        {nodes.map(render)}
+      </div>
+    </GroupFrame>
   )
 }
 
@@ -353,7 +406,7 @@ export function OrgChartView({ roles, onEdit, onBranchDetails }: Props) {
         </div>
       )}
 
-      <div className="overflow-auto">
+      <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 16rem)' }}>
         <div ref={contentRef} dir="ltr" style={{ padding: 24, minWidth: 'max-content', zoom }}>
           {roots.length === 0 && (
             <div className="text-center py-12 text-gray-400 text-sm" dir="rtl">

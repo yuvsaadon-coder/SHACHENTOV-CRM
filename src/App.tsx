@@ -18,6 +18,7 @@ import { BranchesAdminPage } from './pages/admin/BranchesAdminPage'
 import { SeedPage } from './pages/admin/SeedPage'
 import { KnowledgeAdminPage } from './pages/admin/KnowledgeAdminPage'
 import { BranchesPage } from './pages/BranchesPage'
+import { ReportsPage } from './pages/ReportsPage'
 import { KnowledgeLibraryPage } from './pages/KnowledgeLibraryPage'
 import { HQKnowledgePage } from './pages/HQKnowledgePage'
 import { HQChatPage } from './pages/HQChatPage'
@@ -89,6 +90,7 @@ export default function App() {
             <Route path="roles" element={<RolesPage />} />
             <Route path="orgchart" element={<OrgChartPage />} />
             <Route path="branches" element={<BranchesPage />} />
+            <Route path="reports" element={<ReportsPage />} />
             <Route path="knowledge" element={<KnowledgeLibraryPage />} />
             <Route path="hq-knowledge" element={<HQKnowledgePage />} />
             <Route path="hq-chat" element={<HQChatPage />} />
