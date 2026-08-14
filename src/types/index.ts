@@ -165,7 +165,7 @@ export const DOMAIN_LABELS: Record<Domain, string> = {
 
 export const DOMAIN_OWNERS: Record<Domain, string> = {
   CEO: 'יובל סעדון',
-  JLM: 'כרמל קרופפלד',
+  JLM: 'יובל סעדון',
   SUP: 'שלמה דרורי',
   FIN: 'אילן אמסל',
   DON: 'אפרת בנימין / דלית סין משה',

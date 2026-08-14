@@ -90,6 +90,7 @@ const HQ_FILES = [
 // ── 2. Formats, attached to the task categories that use them ───────────────
 
 const HOLIDAY_FORMATS = [
+  ['צ׳קליסט — סדר פעולות חלוקת חג', '/templates/hagim/tzeklist-chalukat-chag.docx'],
   ['בקשה להצעת מחיר — פסח (יבשים)', '/templates/hagim/pesach-bakasha-hatzaat-mechir.xlsx'],
   ['בקשה להצעת מחיר — ראש השנה (יבשים)', '/templates/hagim/rosh-hashana-bakasha-hatzaat-mechir.xlsx'],
   ['מעקב תיאומים ותחשיב כולל לחג', '/templates/hagim/hagim-teumim-vetachshiv.xlsx'],
@@ -101,6 +102,7 @@ const HOLIDAY_FORMATS = [
 ]
 
 const SEMIANNUAL_FORMATS = [
+  ['צ׳קליסט — סדר פעולות הזמנה חצי-שנתית', '/templates/hatzi-shnatit/tzeklist-hazmana-hatzi-shnatit.docx'],
   ['בקשה להצעת מחיר — יבשים (חצי-שנתית)', '/templates/hatzi-shnatit/bakasha-hatzaat-mechir-yeveshim.xlsx'],
   ['השוואת מחירי ספקים — יבשים', '/templates/hatzi-shnatit/hashvaat-mechirim-yeveshim.xlsx'],
   ['כמויות לפי סניפים', '/templates/hatzi-shnatit/kamuyot-lefi-snifim.xlsx'],
