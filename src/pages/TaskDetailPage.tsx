@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   doc, getDoc, updateDoc, serverTimestamp, setDoc,
   collection, addDoc, onSnapshot, orderBy, query, deleteDoc,
-  where, Timestamp
+  where, Timestamp, increment
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
@@ -177,6 +177,9 @@ export function TaskDetailPage() {
         fileName: file.name, storageUrl: dataUrl,
         uploadedBy: appUser?.name, uploadedAt: serverTimestamp(),
       })
+      // Denormalized onto the task doc so list/kanban cards can show a 📎
+      // count without a subcollection read per card.
+      await updateDoc(doc(db, 'tasks', id), { attachmentCount: increment(1) })
       toast('הקובץ הועלה בהצלחה', 'success')
     } catch {
       toast('שגיאה בהעלאת הקובץ. נסה שוב.', 'error')
@@ -189,6 +192,7 @@ export function TaskDetailPage() {
   const deleteAttachment = async (att: Attachment) => {
     if (!id) return
     await deleteDoc(doc(db, 'tasks', id, 'attachments', att.id))
+    await updateDoc(doc(db, 'tasks', id), { attachmentCount: increment(-1) })
   }
 
   const saveSubTask = async () => {

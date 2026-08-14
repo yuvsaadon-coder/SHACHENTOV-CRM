@@ -188,6 +188,12 @@ async function main() {
       attached++
     }
     perCategory[category] = (perCategory[category] ?? 0) + files.length
+
+    // Denormalized count (seeded + any manual uploads) drives the 📎 badge on
+    // task cards — without it, files attached here are invisible unless
+    // someone opens the task and clicks into the "קבצים" tab.
+    const total = await task.ref.collection('attachments').get()
+    await task.ref.set({ attachmentCount: total.size }, { merge: true })
   }
 
   console.log(`✓ ${attached} file attachments across ${Object.keys(perCategory).length} task categories`)

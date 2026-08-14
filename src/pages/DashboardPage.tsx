@@ -33,19 +33,19 @@ function isOverdue(ts: { toDate: () => Date } | null, status: TaskStatus) {
 
 function taskMatchesPeriod(t: Task, period: PeriodFilter): boolean {
   if (period === 'all') return true
-  if (!t.endDate) return false
+  if (!t.startDate) return false
   const now = new Date()
   const m = now.getMonth()
-  const end = t.endDate.toDate()
+  const start = t.startDate.toDate()
 
   if (period === 'month') {
     switch (t.frequency) {
-      case 'חד-פעמי': return end.getFullYear() === now.getFullYear() && end.getMonth() === m
+      case 'חד-פעמי': return start.getFullYear() === now.getFullYear() && start.getMonth() === m
       case 'חודשי': case 'שוטף': return true
       case 'רבעוני': return [2, 5, 8, 11].includes(m)
       case 'חצי-שנתי': return [5, 11].includes(m)
-      case 'שנתי': case 'לפי חג': return end.getMonth() === m
-      default: return end.getFullYear() === now.getFullYear() && end.getMonth() === m
+      case 'שנתי': case 'לפי חג': return start.getMonth() === m
+      default: return start.getFullYear() === now.getFullYear() && start.getMonth() === m
     }
   }
 
@@ -53,12 +53,12 @@ function taskMatchesPeriod(t: Task, period: PeriodFilter): boolean {
   const q = Math.floor(m / 3)
   const qMonths = [q * 3, q * 3 + 1, q * 3 + 2]
   switch (t.frequency) {
-    case 'חד-פעמי': return end.getFullYear() === now.getFullYear() && qMonths.includes(end.getMonth())
+    case 'חד-פעמי': return start.getFullYear() === now.getFullYear() && qMonths.includes(start.getMonth())
     case 'חודשי': case 'שוטף': return true
     case 'רבעוני': return true
     case 'חצי-שנתי': return [5, 11].some((mo) => qMonths.includes(mo))
-    case 'שנתי': case 'לפי חג': return qMonths.includes(end.getMonth())
-    default: return end.getFullYear() === now.getFullYear() && qMonths.includes(end.getMonth())
+    case 'שנתי': case 'לפי חג': return qMonths.includes(start.getMonth())
+    default: return start.getFullYear() === now.getFullYear() && qMonths.includes(start.getMonth())
   }
 }
 

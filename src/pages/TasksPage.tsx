@@ -29,13 +29,13 @@ async function updateStatus(taskId: string, status: TaskStatus) {
 }
 
 function taskMatchesCurrentMonth(t: Task): boolean {
-  if (!t.endDate) return false
+  if (!t.startDate) return false
   const now = new Date()
   const m = now.getMonth()
-  const end = t.endDate.toDate()
+  const start = t.startDate.toDate()
   switch (t.frequency) {
     case 'חד-פעמי':
-      return end.getFullYear() === now.getFullYear() && end.getMonth() === m
+      return start.getFullYear() === now.getFullYear() && start.getMonth() === m
     case 'חודשי':
     case 'שוטף':
       return true
@@ -45,9 +45,9 @@ function taskMatchesCurrentMonth(t: Task): boolean {
       return [5, 11].includes(m)
     case 'שנתי':
     case 'לפי חג':
-      return end.getMonth() === m
+      return start.getMonth() === m
     default:
-      return end.getFullYear() === now.getFullYear() && end.getMonth() === m
+      return start.getFullYear() === now.getFullYear() && start.getMonth() === m
   }
 }
 
@@ -271,6 +271,11 @@ export function TasksPage() {
                           📋 {subTaskCountByParent[t.id]}
                         </span>
                       )}
+                      {!!t.attachmentCount && (
+                        <span className="mr-1.5 text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                          📎 {t.attachmentCount}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5">
                       <DomainBadge domain={t.domain} />
@@ -320,6 +325,11 @@ export function TasksPage() {
                     {subTaskCountByParent[t.id] && (
                       <span className="mr-1.5 text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
                         📋 {subTaskCountByParent[t.id]}
+                      </span>
+                    )}
+                    {!!t.attachmentCount && (
+                      <span className="mr-1.5 text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                        📎 {t.attachmentCount}
                       </span>
                     )}
                   </div>

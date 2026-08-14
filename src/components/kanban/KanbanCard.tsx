@@ -27,6 +27,11 @@ export function KanbanCard({ task }: { task: Task }) {
         onClick={(e) => e.stopPropagation()}
       >
         {task.title}
+        {!!task.attachmentCount && (
+          <span className="mr-1.5 text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full align-middle">
+            📎 {task.attachmentCount}
+          </span>
+        )}
       </Link>
       <div className="flex items-center justify-between gap-1">
         <DomainBadge domain={task.domain} />

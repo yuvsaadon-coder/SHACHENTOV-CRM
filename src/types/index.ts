@@ -29,6 +29,8 @@ export interface Task {
   updatedBy: string
   parentTaskId?: string
   dependsOn?: string[]
+  /** Denormalized count of tasks/{id}/attachments, kept in sync on upload/delete — lets task cards show a 📎 badge without a subcollection read per card. */
+  attachmentCount?: number
 }
 
 export interface Contact {
