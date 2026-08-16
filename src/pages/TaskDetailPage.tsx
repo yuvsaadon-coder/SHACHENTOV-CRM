@@ -88,14 +88,20 @@ export function TaskDetailPage() {
 
   useEffect(() => {
     if (!id || isNew) return
-    const colRef = (sub: string) => query(collection(db, 'tasks', id, sub), orderBy('createdAt', 'desc'))
-    const u1 = onSnapshot(colRef('comments'), (s) =>
+    // Each subcollection orders by its own timestamp field — Comment.createdAt,
+    // Attachment.uploadedAt, HistoryEntry.changedAt. Firestore's orderBy
+    // silently drops any document missing the ordered field, so ordering all
+    // three by 'createdAt' (a field only Comment has) made attachments and
+    // history invisible even though the documents existed and read fine.
+    const colRef = (sub: string, field: string) =>
+      query(collection(db, 'tasks', id, sub), orderBy(field, 'desc'))
+    const u1 = onSnapshot(colRef('comments', 'createdAt'), (s) =>
       setComments(s.docs.map((d) => ({ id: d.id, ...d.data() } as Comment)))
     )
-    const u2 = onSnapshot(colRef('attachments'), (s) =>
+    const u2 = onSnapshot(colRef('attachments', 'uploadedAt'), (s) =>
       setAttachments(s.docs.map((d) => ({ id: d.id, ...d.data() } as Attachment)))
     )
-    const u3 = onSnapshot(colRef('history'), (s) =>
+    const u3 = onSnapshot(colRef('history', 'changedAt'), (s) =>
       setHistory(s.docs.map((d) => ({ id: d.id, ...d.data() } as HistoryEntry)))
     )
     return () => { u1(); u2(); u3() }
