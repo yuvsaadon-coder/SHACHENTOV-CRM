@@ -28,14 +28,14 @@ async function updateStatus(taskId: string, status: TaskStatus) {
   await updateDoc(doc(db, 'tasks', taskId), { status, updatedAt: serverTimestamp() })
 }
 
-function taskMatchesCurrentMonth(t: Task): boolean {
+function taskMatchesMonth(t: Task, ref: Date): boolean {
   if (!t.startDate) return false
-  const now = new Date()
-  const m = now.getMonth()
+  const y = ref.getFullYear()
+  const m = ref.getMonth()
   const start = t.startDate.toDate()
   switch (t.frequency) {
     case 'חד-פעמי':
-      return start.getFullYear() === now.getFullYear() && start.getMonth() === m
+      return start.getFullYear() === y && start.getMonth() === m
     case 'חודשי':
     case 'שוטף':
       return true
@@ -47,8 +47,12 @@ function taskMatchesCurrentMonth(t: Task): boolean {
     case 'לפי חג':
       return start.getMonth() === m
     default:
-      return start.getFullYear() === now.getFullYear() && start.getMonth() === m
+      return start.getFullYear() === y && start.getMonth() === m
   }
+}
+
+function addMonths(d: Date, n: number): Date {
+  return new Date(d.getFullYear(), d.getMonth() + n, 1)
 }
 
 export function TasksPage() {
@@ -58,6 +62,11 @@ export function TasksPage() {
   const [view, setView] = useState<ViewMode>('list')
   const [search, setSearch] = useState('')
   const [monthFilter, setMonthFilter] = useState(true)
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date())
+  const isCurrentMonth = useMemo(() => {
+    const now = new Date()
+    return selectedMonth.getFullYear() === now.getFullYear() && selectedMonth.getMonth() === now.getMonth()
+  }, [selectedMonth])
 
   const domainFilter = searchParams.get('domain') as Domain | null
   const statusFilter = searchParams.get('status') as TaskStatus | null
@@ -80,7 +89,7 @@ export function TasksPage() {
   const filtered = useMemo(() => {
     return tasks.filter((t) => {
       if (t.parentTaskId) return false
-      if (monthFilter && !taskMatchesCurrentMonth(t)) return false
+      if (monthFilter && !taskMatchesMonth(t, selectedMonth)) return false
       if (domainFilter && t.domain !== domainFilter) return false
       if (statusFilter && t.status !== statusFilter) return false
       if (freqFilter && t.frequency !== freqFilter) return false
@@ -95,7 +104,7 @@ export function TasksPage() {
       }
       return true
     })
-  }, [tasks, monthFilter, domainFilter, statusFilter, freqFilter, responsibleFilter, search])
+  }, [tasks, monthFilter, selectedMonth, domainFilter, statusFilter, freqFilter, responsibleFilter, search])
 
   const setFilter = (key: string, val: string | null) => {
     const p = new URLSearchParams(searchParams)
@@ -197,7 +206,7 @@ export function TasksPage() {
             </button>
           )}
 
-          {/* Current month quick filter */}
+          {/* Month filter + navigation */}
           <button
             onClick={() => setMonthFilter(m => !m)}
             className={`px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
@@ -206,12 +215,42 @@ export function TasksPage() {
                 : 'border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
-            📅 החודש הנוכחי
+            📅 סינון לפי חודש
           </button>
+
+          {monthFilter && (
+            <div className="flex items-center gap-0.5 border border-gray-200 rounded-lg px-1 py-0.5">
+              <button
+                onClick={() => setSelectedMonth((m) => addMonths(m, -1))}
+                className="px-1.5 py-0.5 text-gray-500 hover:text-brand-navy hover:bg-gray-50 rounded"
+                aria-label="חודש קודם"
+              >
+                ‹
+              </button>
+              <span className="text-xs font-medium text-brand-navy min-w-[92px] text-center select-none">
+                {selectedMonth.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' })}
+              </span>
+              <button
+                onClick={() => setSelectedMonth((m) => addMonths(m, 1))}
+                className="px-1.5 py-0.5 text-gray-500 hover:text-brand-navy hover:bg-gray-50 rounded"
+                aria-label="חודש הבא"
+              >
+                ›
+              </button>
+              {!isCurrentMonth && (
+                <button
+                  onClick={() => setSelectedMonth(new Date())}
+                  className="text-xs text-brand-teal hover:underline px-1.5"
+                >
+                  היום
+                </button>
+              )}
+            </div>
+          )}
 
           {hasAnyFilter && (
             <button
-              onClick={() => { setSearchParams({}); setSearch(''); setMonthFilter(false) }}
+              onClick={() => { setSearchParams({}); setSearch(''); setMonthFilter(false); setSelectedMonth(new Date()) }}
               className="text-xs text-gray-500 hover:text-red-500 underline"
             >
               נקה מסננים
@@ -357,7 +396,7 @@ export function TasksPage() {
       )}
 
       {view === 'kanban' && <KanbanView tasks={filtered} />}
-      {view === 'gantt' && <GanttView tasks={filtered} singleMonth={monthFilter ? new Date() : undefined} />}
+      {view === 'gantt' && <GanttView tasks={filtered} singleMonth={monthFilter ? selectedMonth : undefined} />}
     </div>
   )
 }
