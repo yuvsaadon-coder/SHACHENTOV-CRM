@@ -4,6 +4,7 @@ import { AppLayout } from './components/layout/AppLayout'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { TasksPage } from './pages/TasksPage'
+import { PersonalTasksPage } from './pages/PersonalTasksPage'
 import { TaskDetailPage } from './pages/TaskDetailPage'
 import { ContactsPage } from './pages/ContactsPage'
 import { RolesPage } from './pages/RolesPage'
@@ -87,6 +88,7 @@ export default function App() {
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="tasks" element={<TasksPage />} />
             <Route path="tasks/:id" element={<TaskDetailPage />} />
+            <Route path="my-tasks" element={<PersonalTasksPage />} />
             <Route path="contacts" element={<ContactsPage />} />
             <Route path="roles" element={<RolesPage />} />
             <Route path="orgchart" element={<OrgChartPage />} />

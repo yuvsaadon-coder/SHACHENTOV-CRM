@@ -86,6 +86,11 @@ service cloud.firestore {
       match /chatSessions/{sessionId} {
         allow read, write: if isAuthed() && request.auth.uid == uid;
       }
+
+      // Personal to-dos — private to their owner, not part of the org tasks.
+      match /personalTasks/{taskId} {
+        allow read, write: if isAuthed() && request.auth.uid == uid;
+      }
     }
   }
 }

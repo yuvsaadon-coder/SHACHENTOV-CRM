@@ -60,6 +60,20 @@ export interface AppUser {
   active: boolean
 }
 
+// Private per-user to-dos, kept in users/{uid}/personalTasks — not part of the
+// org-wide `tasks` collection, so they never show up on the Gantt/Kanban/task
+// list and aren't tied to a domain, category, or anyone else.
+export interface PersonalTask {
+  id: string
+  title: string
+  notes: string
+  done: boolean
+  recurring: boolean
+  dueDate: Timestamp | null
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
 export interface Comment {
   id: string
   text: string
