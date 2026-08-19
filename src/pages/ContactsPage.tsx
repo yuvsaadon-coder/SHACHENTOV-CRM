@@ -5,15 +5,25 @@ import { Spinner } from '../components/ui/Spinner'
 import { exportContacts } from '../utils/export'
 import type { ContactType } from '../types'
 
+const ROLE_CONTACT_CATEGORY = 'רכזי סניפים ופעילי עמותה'
+type Section = 'all' | 'general' | 'roles'
+
 export function ContactsPage() {
   const { contacts, loading } = useContacts()
   const { tasks } = useTasks()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<ContactType | ''>('')
+  const [section, setSection] = useState<Section>('all')
   const [selected, setSelected] = useState<string | null>(null)
+
+  const generalCount = useMemo(() => contacts.filter((c) => c.category !== ROLE_CONTACT_CATEGORY).length, [contacts])
+  const roleCount = useMemo(() => contacts.filter((c) => c.category === ROLE_CONTACT_CATEGORY).length, [contacts])
 
   const filtered = useMemo(() => {
     return contacts.filter((c) => {
+      const isRoleContact = c.category === ROLE_CONTACT_CATEGORY
+      if (section === 'general' && isRoleContact) return false
+      if (section === 'roles' && !isRoleContact) return false
       if (typeFilter && c.type !== typeFilter) return false
       if (search) {
         const q = search.toLowerCase()
@@ -21,7 +31,7 @@ export function ContactsPage() {
       }
       return true
     })
-  }, [contacts, search, typeFilter])
+  }, [contacts, search, typeFilter, section])
 
   const selectedContact = selected ? contacts.find((c) => c.id === selected) : null
   const contactTasks = selectedContact
@@ -43,6 +53,27 @@ export function ContactsPage() {
             ייצוא CSV
           </button>
         </div>
+        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs w-fit">
+          <button
+            onClick={() => setSection('all')}
+            className={`px-3 py-1.5 transition-colors ${section === 'all' ? 'bg-brand-navy text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+          >
+            הכל ({contacts.length})
+          </button>
+          <button
+            onClick={() => setSection('general')}
+            className={`px-3 py-1.5 transition-colors border-r border-gray-200 ${section === 'general' ? 'bg-brand-navy text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+          >
+            אנשי קשר כלליים ({generalCount})
+          </button>
+          <button
+            onClick={() => setSection('roles')}
+            className={`px-3 py-1.5 transition-colors border-r border-gray-200 ${section === 'roles' ? 'bg-brand-navy text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+          >
+            רכזי סניפים ופעילי עמותה ({roleCount})
+          </button>
+        </div>
+
         <div className="flex gap-2">
           <input
             type="text"
@@ -68,6 +99,7 @@ export function ContactsPage() {
             <thead className="bg-brand-teal050 text-brand-navy border-b border-gray-100">
               <tr>
                 <th className="px-4 py-2.5 text-right font-medium">שם</th>
+                <th className="px-4 py-2.5 text-right font-medium">תפקיד / חברה</th>
                 <th className="px-4 py-2.5 text-right font-medium">סוג</th>
                 <th className="px-4 py-2.5 text-right font-medium">טלפון</th>
                 <th className="px-4 py-2.5 text-right font-medium">אימייל</th>
@@ -83,6 +115,7 @@ export function ContactsPage() {
                   }`}
                 >
                   <td className="px-4 py-2.5 font-medium text-brand-navy">{c.name}</td>
+                  <td className="px-4 py-2.5 text-gray-500">{c.role || c.organization || '—'}</td>
                   <td className="px-4 py-2.5">
                     <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded">{c.type}</span>
                   </td>
@@ -91,7 +124,7 @@ export function ContactsPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">אין תוצאות</td></tr>
+                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">אין תוצאות</td></tr>
               )}
             </tbody>
           </table>
@@ -110,6 +143,12 @@ export function ContactsPage() {
           </div>
 
           <div className="space-y-3 text-sm">
+            {(selectedContact.role || selectedContact.organization) && (
+              <div>
+                <div className="text-xs text-gray-400">תפקיד / חברה</div>
+                <div>{selectedContact.role || selectedContact.organization}</div>
+              </div>
+            )}
             {selectedContact.phone && (
               <div>
                 <div className="text-xs text-gray-400">טלפון</div>

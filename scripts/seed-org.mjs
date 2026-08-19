@@ -276,6 +276,45 @@ async function seedContacts() {
     console.log(`\n⚠ ${missing.length} contacts missing phone/email — flagged with needsInfo:`)
     missing.forEach((m) => console.log(`   ${m}`))
   }
+
+  await seedRoleContacts(n)
+}
+
+// Branch coordinators and org activists (role holders from "תפקידים שכן טוב")
+// belong in the Contacts tab too, so they can be found and reached without
+// leaving the page — but as their own labeled section, distinct from the
+// suppliers/donors/general contacts above which come from a different sheet.
+const ROLE_CONTACT_CATEGORY = 'רכזי סניפים ופעילי עמותה'
+
+async function seedRoleContacts(startIndex) {
+  const parsed = parseRoles()
+  let n = startIndex
+  let created = 0
+  for (const role of parsed) {
+    for (const h of role.holders) {
+      if (!h.holder) continue // vacant role — no person to list as a contact
+      n++
+      const id = `RC-${String(n).padStart(3, '0')}`
+      await db.collection('contacts').doc(id).set({
+        id,
+        name: h.holder,
+        type: 'מטה',
+        domainTags: [],
+        organization: 'שכן טוב',
+        role: role.roleName,
+        category: ROLE_CONTACT_CATEGORY,
+        phone: h.phone,
+        email: h.email,
+        ownerInOrg: '',
+        cadence: '',
+        notes: h.notes ?? '',
+        needsInfo: !h.phone && !h.email,
+        createdBy: 'seed',
+      })
+      created++
+    }
+  }
+  console.log(`✓ ${created} role-holder contacts seeded under "${ROLE_CONTACT_CATEGORY}"`)
 }
 
 async function main() {
