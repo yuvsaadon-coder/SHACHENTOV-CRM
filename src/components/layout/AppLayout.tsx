@@ -4,12 +4,20 @@ import { Sidebar } from './Sidebar'
 
 export function AppLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebarCollapsed') === '1')
+
+  const toggleCollapsed = () => {
+    setCollapsed((c) => {
+      localStorage.setItem('sidebarCollapsed', c ? '0' : '1')
+      return !c
+    })
+  }
 
   return (
     <div className="flex min-h-screen bg-[#F7FAFA] font-sans">
       {/* Desktop sidebar */}
       <div className="hidden md:block shrink-0">
-        <Sidebar />
+        <Sidebar collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
       </div>
 
       {/* Mobile drawer overlay */}

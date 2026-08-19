@@ -72,6 +72,23 @@ print(json.dumps([r for r in rows if any(r)], ensure_ascii=False))
 // free text like 'מעל גיל 23', which then got misread as the holder's name.)
 const clean = (v) => (v === 'חסר' ? '' : (v || '').trim())
 
+// The sheet's "אזור הפעילות" column is only filled on the first row of a
+// section (a merged-cell convention) and, even there, only says the city
+// ("ירושלים") — the actual branch/neighborhood that should group coordinators
+// in the org chart (גילה, רמות, בקעה...) lives only in the free-text role
+// name. Extract it from there for the levels where it matters.
+const NAME_AREA_SPLIT = {
+  'סניף ירושלים': 'ירושלים',
+  'טוסטר': 'נוער',
+  'בתי קפה נודדים': 'נודד',
+}
+function branchAreaFromName(level, roleName) {
+  const marker = NAME_AREA_SPLIT[level]
+  if (!marker) return ''
+  const [, rest] = roleName.split(marker)
+  return rest ? rest.replace(/^[\s-]+/, '').trim() : ''
+}
+
 function parseRoles() {
   const rows = readSheet('תפקידים שכן טוב', 7)
   const roles = []
@@ -91,7 +108,10 @@ function parseRoles() {
     const startsRole = !!roleName
     if (startsRole) {
       // The area column is only meaningful for branches — HQ roles are not a region.
-      current = { roleName, level, area: HQ_LEVELS.has(level) ? '' : clean(area), holders: [] }
+      const resolvedArea = HQ_LEVELS.has(level)
+        ? ''
+        : (branchAreaFromName(level, roleName) || clean(area))
+      current = { roleName, level, area: resolvedArea, holders: [] }
       roles.push(current)
     }
     if (!current) continue

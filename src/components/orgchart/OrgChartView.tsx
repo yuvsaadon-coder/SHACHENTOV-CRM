@@ -147,6 +147,16 @@ function computeColumns(children: TreeNode[]): ChildColumn[] {
   const groupNodes = new Map<string, TreeNode[]>()
 
   for (const child of children) {
+    // Board members are individual leadership roles, each with their own
+    // subtree — bundling several of them into one shared "ועד מנהל" frame
+    // (which grouping-by-level would otherwise do whenever the board sits
+    // alongside other levels under the CEO) makes every board member's
+    // subordinates visually read as reporting to the board as a whole
+    // instead of to that specific person, so they always render individually.
+    if (child.level === 'ועד מנהל') {
+      result.push({ type: 'single', key: child.id, node: child })
+      continue
+    }
     const k = groupKey(child, by)
     if (!k || (counts.get(k) || 0) <= 1) {
       result.push({ type: 'single', key: child.id, node: child })

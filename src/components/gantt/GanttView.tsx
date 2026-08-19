@@ -127,7 +127,7 @@ export function GanttView({ tasks, singleMonth }: Props) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedDomain, setSelectedDomain] = useState<Domain | null>(null)
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null)
-  const [myTasksOnly, setMyTasksOnly] = useState(true)
+  const [myTasksOnly, setMyTasksOnly] = useState(false)
 
   const baseTasks = useMemo(() => {
     const topLevel = tasks.filter(t => !t.parentTaskId)
