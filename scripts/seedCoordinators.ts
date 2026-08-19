@@ -202,7 +202,9 @@ async function main() {
       await db.collection('users').doc(uid).set(
         {
           name: coord.name,
-          phone: coord.phone,
+          // Digits only — this is the coordinator's login password, and a
+          // dash in it invites someone to think it's part of the value.
+          phone: phoneToPassword(coord.phone),
           role: 'coordinator',
         },
         { merge: true }
