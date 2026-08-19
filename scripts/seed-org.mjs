@@ -237,7 +237,9 @@ async function seedContacts() {
     // Section headers sit in column B for every group after the first.
     const header = row.find((c) => HEADERS.has(c))
     if (header) { category = header; continue }
-    if (!company) continue
+    // A row is a contact if it names a company OR a person — e.g. "שמוליק
+    // אלקלעי, מנהל חשבונות" has no company cell at all, only a role + person.
+    if (!company && !person) continue
     if (company === 'שם חברה') continue
 
     n++

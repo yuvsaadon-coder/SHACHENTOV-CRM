@@ -10,7 +10,7 @@ import type { PersonalTask } from '../types'
 
 export function PersonalTasksPage() {
   const { appUser } = useAuth()
-  const { personalTasks, loading } = usePersonalTasks(appUser?.uid)
+  const { personalTasks, loading, error } = usePersonalTasks(appUser?.uid)
   const [title, setTitle] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [recurring, setRecurring] = useState(false)
@@ -47,6 +47,18 @@ export function PersonalTasksPage() {
   }
 
   if (loading) return <Spinner size="lg" />
+
+  if (error) {
+    return (
+      <div className="max-w-2xl bg-red-50 border border-red-100 text-red-700 rounded-xl p-4 text-sm">
+        <div className="font-medium mb-1">לא ניתן לטעון את המשימות האישיות</div>
+        <div className="text-red-500 text-xs">{error}</div>
+        <div className="text-red-500 text-xs mt-2">
+          ייתכן שכללי ה-Firestore המעודכנים (הרשאה ל-personalTasks) עדיין לא פורסמו ב-Firebase Console.
+        </div>
+      </div>
+    )
+  }
 
   const open = personalTasks.filter((t) => !t.done)
   const done = personalTasks.filter((t) => t.done)
