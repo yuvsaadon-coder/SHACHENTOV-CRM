@@ -220,7 +220,12 @@ ${knowledgeBlock}
       // budget regardless of what it's doing, and Opus was routinely
       // pushing this past that limit ("Gateway Timeout").
       model: 'claude-sonnet-5',
-      max_tokens: 2000,
+      // This is a non-streaming call inside a synchronous function with a hard
+      // wall-clock budget — the full completion must finish generating before
+      // anything is returned, so a large max_tokens directly risks a timeout,
+      // not just a long wait. The system prompt already asks for a direct,
+      // concise Hebrew answer, so 900 tokens is generous for that.
+      max_tokens: 900,
       system: systemPrompt,
       messages: turns,
     }),
