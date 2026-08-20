@@ -34,7 +34,6 @@ const navGroups: NavGroup[] = [
       { to: '/knowledge', label: 'ספריית ידע', icon: '📚', adminOnly: false },
       { to: '/hq-chat', label: "צ'אטבוט מטה", icon: '🤖', adminOnly: false },
       { to: '/admin/knowledge', label: 'ניהול ספרייה', icon: '📖', adminOnly: true },
-      { to: '/admin/seed', label: 'סידינג', icon: '🌱', adminOnly: true },
     ],
   },
 ]

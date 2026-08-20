@@ -16,7 +16,6 @@ import { PortalReport } from './pages/portal/PortalReport'
 import { PortalKnowledge } from './pages/portal/PortalKnowledge'
 import { PortalChat } from './pages/portal/PortalChat'
 import { BranchesAdminPage } from './pages/admin/BranchesAdminPage'
-import { SeedPage } from './pages/admin/SeedPage'
 import { KnowledgeAdminPage } from './pages/admin/KnowledgeAdminPage'
 import { ReportQuestionsAdminPage } from './pages/admin/ReportQuestionsAdminPage'
 import { BranchesPage } from './pages/BranchesPage'
@@ -99,7 +98,6 @@ export default function App() {
             <Route path="hq-chat" element={<HQChatPage />} />
             <Route path="admin/hierarchy" element={<HierarchySetupPage />} />
             <Route path="admin/branches" element={<BranchesAdminPage />} />
-            <Route path="admin/seed" element={<SeedPage />} />
             <Route path="admin/knowledge" element={<KnowledgeAdminPage />} />
             <Route path="admin/report-questions" element={<ReportQuestionsAdminPage />} />
           </Route>

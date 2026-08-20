@@ -759,12 +759,8 @@ export function BranchesPage() {
 
       {branches.length === 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
-          <div className="text-2xl mb-2">🌱</div>
-          <div className="font-bold text-yellow-800 mb-1">מסד הנתונים ריק</div>
-          <div className="text-sm text-yellow-700">יש להריץ את הסידינג כדי לטעון את הסניפים והרכזים.</div>
-          <a href="/admin/seed" className="mt-3 inline-block text-sm hover:underline" style={{ color: '#189A9F' }}>
-            → עמוד הסידינג
-          </a>
+          <div className="text-2xl mb-2">🏪</div>
+          <div className="font-bold text-yellow-800 mb-1">אין סניפים להצגה</div>
         </div>
       )}
 
