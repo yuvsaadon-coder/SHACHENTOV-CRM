@@ -63,13 +63,13 @@ export const handler: Handler = async () => {
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-opus-5',
+          model: 'claude-sonnet-5',
           max_tokens: 1,
           messages: [{ role: 'user', content: 'hi' }],
         }),
       })
       if (res.ok) {
-        checks.push({ name: 'ANTHROPIC_API_KEY', ok: true, detail: 'המפתח תקין ו-claude-opus-5 זמין' })
+        checks.push({ name: 'ANTHROPIC_API_KEY', ok: true, detail: 'המפתח תקין ו-claude-sonnet-5 זמין' })
       } else {
         const body = await res.text()
         let detail = body

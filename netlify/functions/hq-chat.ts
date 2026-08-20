@@ -83,96 +83,101 @@ async function chat(event: HandlerEvent): Promise<HandlerResponse> {
     scopes = ['hq', 'research', 'global']
   }
 
-  const sections: string[] = []
   const sourceWarnings: string[] = []
 
   /** One unavailable source must not take the whole answer down with it. */
-  async function collect(label: string, fn: () => Promise<void>) {
+  async function collect(label: string, fn: () => Promise<string | null>): Promise<string | null> {
     try {
-      await fn()
+      return await fn()
     } catch (e: unknown) {
       sourceWarnings.push(`${label}: ${e instanceof Error ? e.message : String(e)}`)
+      return null
     }
   }
 
+  // Netlify kills a synchronous function after a fixed wall-clock budget
+  // regardless of what it's doing, and the four knowledge sources below were
+  // being awaited one after another — each one's latency added directly to
+  // the total instead of overlapping. Running them concurrently keeps the
+  // whole fetch phase roughly as fast as its single slowest source.
+  const fetches: Promise<string | null>[] = []
+
   // 1. HQ knowledge
-  if (scopes.includes('hq')) await collect('מאגר מטה', async () => {
+  if (scopes.includes('hq')) fetches.push(collect('מאגר מטה', async () => {
     let hqQuery = db.collection('hq_knowledge').limit(50)
     if (domainFilter) {
       hqQuery = db.collection('hq_knowledge').where('domain', 'in', [domainFilter, 'all']).limit(50)
     }
     const hqSnap = await hqQuery.get()
-    if (!hqSnap.empty) {
-      const lines = hqSnap.docs.map((d) => {
-        const data = d.data() as { title?: string; content?: string; category?: string }
-        return `— [${data.category ?? ''}] **${data.title ?? ''}**: ${data.content ?? ''}`
-      })
-      sections.push(`מאגר ידע מטה:\n${lines.join('\n')}`)
-    }
-  })
+    if (hqSnap.empty) return null
+    const lines = hqSnap.docs.map((d) => {
+      const data = d.data() as { title?: string; content?: string; category?: string }
+      return `— [${data.category ?? ''}] **${data.title ?? ''}**: ${data.content ?? ''}`
+    })
+    return `מאגר ידע מטה:\n${lines.join('\n')}`
+  }))
 
   // 2. Research / professional articles
-  if (scopes.includes('research')) await collect('מחקר מקצועי', async () => {
+  if (scopes.includes('research')) fetches.push(collect('מחקר מקצועי', async () => {
     const researchSnap = await db.collection('knowledge_articles').limit(40).get()
-    if (!researchSnap.empty) {
-      const lines = researchSnap.docs.map((d) => {
-        const data = d.data() as {
-          titleHe?: string; summary?: string; lang?: string
-          type?: string; checklistItems?: string[]
-        }
-        if (data.type === 'checklist' && data.checklistItems?.length) {
-          return `— **${data.titleHe ?? ''}** (צ׳קליסט): ${data.checklistItems.join(' | ')}`
-        }
-        return `— **${data.titleHe ?? ''}** (${data.lang ?? ''}): ${data.summary ?? ''}`
-      })
-      sections.push(`ספריית מחקר ומידע מקצועי:\n${lines.join('\n')}`)
-    }
-  })
+    if (researchSnap.empty) return null
+    const lines = researchSnap.docs.map((d) => {
+      const data = d.data() as {
+        titleHe?: string; summary?: string; lang?: string
+        type?: string; checklistItems?: string[]
+      }
+      if (data.type === 'checklist' && data.checklistItems?.length) {
+        return `— **${data.titleHe ?? ''}** (צ׳קליסט): ${data.checklistItems.join(' | ')}`
+      }
+      return `— **${data.titleHe ?? ''}** (${data.lang ?? ''}): ${data.summary ?? ''}`
+    })
+    return `ספריית מחקר ומידע מקצועי:\n${lines.join('\n')}`
+  }))
 
   // 3. Global coordinator-platform knowledge (branchId == 'global')
-  if (scopes.includes('global')) await collect('ידע כלל-ארגוני', async () => {
+  if (scopes.includes('global')) fetches.push(collect('ידע כלל-ארגוני', async () => {
     const globalSnap = await db
       .collection('knowledgeItems')
       .where('branchId', '==', 'global')
       .limit(30)
       .get()
-    if (!globalSnap.empty) {
-      const lines = globalSnap.docs.map((d) => {
-        const data = d.data() as {
-          title?: string; content?: string
-          type?: string; checklistItems?: string[]
-        }
-        if (data.type === 'checklist' && data.checklistItems?.length) {
-          return `— **${data.title ?? ''}** (צ׳קליסט): ${data.checklistItems.join(' | ')}`
-        }
-        return `— **${data.title ?? ''}**: ${data.content ?? ''}`
-      })
-      sections.push(`ידע כלל-ארגוני (פלטפורמת רכזים):\n${lines.join('\n')}`)
-    }
-  })
+    if (globalSnap.empty) return null
+    const lines = globalSnap.docs.map((d) => {
+      const data = d.data() as {
+        title?: string; content?: string
+        type?: string; checklistItems?: string[]
+      }
+      if (data.type === 'checklist' && data.checklistItems?.length) {
+        return `— **${data.title ?? ''}** (צ׳קליסט): ${data.checklistItems.join(' | ')}`
+      }
+      return `— **${data.title ?? ''}**: ${data.content ?? ''}`
+    })
+    return `ידע כלל-ארגוני (פלטפורמת רכזים):\n${lines.join('\n')}`
+  }))
 
   // 4. Branch-specific knowledge. A Firestore `!=` filter skips documents that
   // have no branchId at all, so read the collection and filter in memory instead.
-  if (scopes.includes('branch')) await collect('ידע סניפי', async () => {
-    const allSnap = await db.collection('knowledgeItems').limit(200).get()
+  if (scopes.includes('branch')) fetches.push(collect('ידע סניפי', async () => {
+    const allSnap = await db.collection('knowledgeItems').limit(100).get()
     const branchDocs = allSnap.docs.filter(
       (d) => (d.data() as { branchId?: string }).branchId !== 'global'
     ).slice(0, 30)
-    if (branchDocs.length > 0) {
-      const lines = branchDocs.map((d) => {
-        const data = d.data() as {
-          title?: string; content?: string; branchId?: string
-          type?: string; checklistItems?: string[]
-        }
-        const branchNote = data.branchId ? ` [סניף: ${data.branchId}]` : ''
-        if (data.type === 'checklist' && data.checklistItems?.length) {
-          return `— **${data.title ?? ''}**${branchNote} (צ׳קליסט): ${data.checklistItems.join(' | ')}`
-        }
-        return `— **${data.title ?? ''}**${branchNote}: ${data.content ?? ''}`
-      })
-      sections.push(`ידע סניפי (רמת סניף):\n${lines.join('\n')}`)
-    }
-  })
+    if (branchDocs.length === 0) return null
+    const lines = branchDocs.map((d) => {
+      const data = d.data() as {
+        title?: string; content?: string; branchId?: string
+        type?: string; checklistItems?: string[]
+      }
+      const branchNote = data.branchId ? ` [סניף: ${data.branchId}]` : ''
+      if (data.type === 'checklist' && data.checklistItems?.length) {
+        return `— **${data.title ?? ''}**${branchNote} (צ׳קליסט): ${data.checklistItems.join(' | ')}`
+      }
+      return `— **${data.title ?? ''}**${branchNote}: ${data.content ?? ''}`
+    })
+    return `ידע סניפי (רמת סניף):\n${lines.join('\n')}`
+  }))
+
+  const sections = (await Promise.all(fetches)).filter((s): s is string => s !== null)
 
   const knowledgeBlock = sections.length > 0
     ? sections.join('\n\n')
@@ -209,7 +214,12 @@ ${knowledgeBlock}
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-opus-5',
+      // Sonnet answers a knowledge-grounded question like this well and
+      // considerably faster than Opus — latency matters here because a
+      // synchronous Netlify function gets killed on a fixed wall-clock
+      // budget regardless of what it's doing, and Opus was routinely
+      // pushing this past that limit ("Gateway Timeout").
+      model: 'claude-sonnet-5',
       max_tokens: 2000,
       system: systemPrompt,
       messages: turns,
