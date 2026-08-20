@@ -10,7 +10,7 @@ type Mode = 'branch' | 'all'
 export function PortalChat() {
   const { branch } = useOutletContext<PortalOutletContext>()
   const { firebaseUser, appUser } = useAuth()
-  const [mode, setMode] = useState<Mode>('branch')
+  const [mode, setMode] = useState<Mode>('all')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)

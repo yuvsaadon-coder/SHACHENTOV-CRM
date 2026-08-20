@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { DOMAIN_LABELS, DOMAINS, type Domain } from '../../types'
@@ -44,9 +45,29 @@ interface Props {
   onToggleCollapse?: () => void
 }
 
+const STORAGE_KEY = 'sidebarCollapsedGroups'
+
 export function Sidebar({ onClose, collapsed = false, onToggleCollapse }: Props) {
   const { appUser, logOut } = useAuth()
   const navigate = useNavigate()
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      return raw ? new Set(JSON.parse(raw) as string[]) : new Set()
+    } catch {
+      return new Set()
+    }
+  })
+
+  const toggleGroup = (title: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(title)) next.delete(title)
+      else next.add(title)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]))
+      return next
+    })
+  }
 
   const handleLogout = async () => {
     await logOut()
@@ -95,55 +116,74 @@ export function Sidebar({ onClose, collapsed = false, onToggleCollapse }: Props)
 
       {/* Main nav */}
       <nav className="flex-1 py-4 overflow-y-auto overflow-x-hidden">
-        {visibleGroups.map((group) => (
-          <div key={group.title} className="mb-4">
-            {!collapsed && (
-              <div className="px-4 mb-1.5 text-xs uppercase tracking-wider text-white/40">
-                {group.title}
-              </div>
-            )}
-            <ul className="space-y-1 px-2">
-              {group.items.map((item) => (
-                <li key={item.to}>
-                  <NavLink
-                    to={item.to}
-                    onClick={onClose}
-                    title={collapsed ? item.label : undefined}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${collapsed ? 'justify-center' : ''} ${
-                        isActive
-                          ? 'bg-brand-teal text-white'
-                          : 'text-white/80 hover:bg-white/10'
-                      }`
-                    }
-                  >
-                    <span>{item.icon}</span>
-                    {!collapsed && <span>{item.label}</span>}
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+        {visibleGroups.map((group) => {
+          const isGroupCollapsed = collapsedGroups.has(group.title)
+          return (
+            <div key={group.title} className="mb-4">
+              {!collapsed && (
+                <button
+                  onClick={() => toggleGroup(group.title)}
+                  className="w-full flex items-center justify-between px-4 mb-1.5 text-xs uppercase tracking-wider text-white/40 hover:text-white/70 transition-colors"
+                  aria-expanded={!isGroupCollapsed}
+                >
+                  <span>{group.title}</span>
+                  <span className="text-[10px]">{isGroupCollapsed ? '▶' : '▼'}</span>
+                </button>
+              )}
+              {(!isGroupCollapsed || collapsed) && (
+                <ul className="space-y-1 px-2">
+                  {group.items.map((item) => (
+                    <li key={item.to}>
+                      <NavLink
+                        to={item.to}
+                        onClick={onClose}
+                        title={collapsed ? item.label : undefined}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${collapsed ? 'justify-center' : ''} ${
+                            isActive
+                              ? 'bg-brand-teal text-white'
+                              : 'text-white/80 hover:bg-white/10'
+                          }`
+                        }
+                      >
+                        <span>{item.icon}</span>
+                        {!collapsed && <span>{item.label}</span>}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )
+        })}
 
         {/* Domain filter shortcuts */}
         {!collapsed && (
-          <div className="mt-6 px-4">
-            <div className="text-xs uppercase tracking-wider text-white/40 mb-2">תחומים</div>
-            <ul className="space-y-1">
-              {DOMAINS.map((domain) => (
-                <li key={domain}>
-                  <NavLink
-                    to={`/tasks?domain=${domain}`}
-                    onClick={onClose}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-yellow" />
-                    {DOMAIN_LABELS[domain as Domain]}
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
+          <div className="mt-6">
+            <button
+              onClick={() => toggleGroup('תחומים')}
+              className="w-full flex items-center justify-between px-4 mb-2 text-xs uppercase tracking-wider text-white/40 hover:text-white/70 transition-colors"
+              aria-expanded={!collapsedGroups.has('תחומים')}
+            >
+              <span>תחומים</span>
+              <span className="text-[10px]">{collapsedGroups.has('תחומים') ? '▶' : '▼'}</span>
+            </button>
+            {!collapsedGroups.has('תחומים') && (
+              <ul className="space-y-1 px-4">
+                {DOMAINS.map((domain) => (
+                  <li key={domain}>
+                    <NavLink
+                      to={`/tasks?domain=${domain}`}
+                      onClick={onClose}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-yellow" />
+                      {DOMAIN_LABELS[domain as Domain]}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
       </nav>

@@ -89,6 +89,14 @@ function branchAreaFromName(level, roleName) {
   return rest ? rest.replace(/^[\s-]+/, '').trim() : ''
 }
 
+// Rows in the sheet that are no longer part of the org and should not be
+// recreated on re-seed, even though the sheet itself hasn't been updated
+// to drop them yet. Deleting the role in the app alone doesn't stick,
+// since re-running this script rebuilds the whole collection from the sheet.
+const EXCLUDED_ROLE_NAMES = new Set([
+  'רכז פרוייקט שיפוץ בתים',
+])
+
 function parseRoles() {
   const rows = readSheet('תפקידים שכן טוב', 7)
   const roles = []
@@ -98,6 +106,7 @@ function parseRoles() {
   for (const row of rows) {
     const [roleName, area, holder, phone, email, status, notes] = row
     if (roleName === 'תפקיד') continue
+    if (EXCLUDED_ROLE_NAMES.has(roleName)) { current = null; continue }
     if (SECTIONS[roleName] && ![area, holder, phone, email, status, notes].some(Boolean)) {
       level = SECTIONS[roleName]
       current = null

@@ -13,7 +13,7 @@ const SCOPE_OPTIONS: { key: ScopeKey; label: string; description: string }[] = [
   { key: 'branch',   label: 'ידע סניפי',      description: 'ידע שהוזן ברמת הסניפים הספציפיים' },
 ]
 
-const DEFAULT_SCOPES: ScopeKey[] = ['hq', 'research', 'global']
+const DEFAULT_SCOPES: ScopeKey[] = ['hq', 'research', 'global', 'branch']
 
 export function HQChatPage() {
   const { firebaseUser, appUser } = useAuth()
