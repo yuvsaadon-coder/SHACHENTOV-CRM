@@ -159,7 +159,7 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
       let fileUrl: string | undefined = isEdit && keepExistingFile ? initialItem?.fileUrl : undefined
       let fileName: string | undefined = isEdit && keepExistingFile ? initialItem?.fileName : undefined
       if (file) {
-        if (file.size > 500 * 1024) { alert('קובץ גדול מדי — מקסימום 500 KB'); setSaving(false); return }
+        if (file.size > 700 * 1024) { alert('קובץ גדול מדי — מקסימום 700 KB (מגבלת Firestore)'); setSaving(false); return }
         fileUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader()
           reader.onload = (ev) => resolve(ev.target?.result as string)
