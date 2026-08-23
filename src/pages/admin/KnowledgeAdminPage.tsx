@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { collection, doc, setDoc, getDocs, updateDoc, deleteDoc } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../../lib/firebase'
+import { KNOWLEDGE_CATALOG, type CatalogArticle } from '../../data/knowledgeCatalog'
+import { useAuth } from '../../context/AuthContext'
 
 const MAX_FILE_BYTES = 30 * 1024 * 1024
 
@@ -10,8 +12,6 @@ async function uploadKnowledgeFile(file: File, docId: string): Promise<string> {
   await uploadBytes(storageRef, file)
   return getDownloadURL(storageRef)
 }
-import { KNOWLEDGE_CATALOG, type CatalogArticle } from '../../data/knowledgeCatalog'
-import { useAuth } from '../../context/AuthContext'
 
 interface FirestoreArticle {
   id: string
