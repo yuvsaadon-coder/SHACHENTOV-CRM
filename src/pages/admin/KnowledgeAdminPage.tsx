@@ -1,6 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { collection, doc, setDoc, getDocs, updateDoc, deleteDoc } from 'firebase/firestore'
-import { db } from '../../lib/firebase'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { db, storage } from '../../lib/firebase'
+
+const MAX_FILE_BYTES = 30 * 1024 * 1024
+
+async function uploadKnowledgeFile(file: File, docId: string): Promise<string> {
+  const storageRef = ref(storage, `knowledge_articles/${docId}/${file.name}`)
+  await uploadBytes(storageRef, file)
+  return getDownloadURL(storageRef)
+}
 import { KNOWLEDGE_CATALOG, type CatalogArticle } from '../../data/knowledgeCatalog'
 import { useAuth } from '../../context/AuthContext'
 
@@ -117,16 +126,11 @@ function ArticleRow({
 
   const uploadPdf = async (file: File) => {
     if (!file.name.match(/\.(pdf|doc|docx)$/i)) return
-    if (file.size > 500 * 1024) { alert('קובץ גדול מדי — מקסימום 500 KB'); return }
+    if (file.size > MAX_FILE_BYTES) { alert('קובץ גדול מדי — מקסימום 30 MB'); return }
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = (ev) => resolve(ev.target?.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-      })
-      await updateDoc(doc(db, 'knowledge_articles', article.id), { storageUrl: dataUrl, updatedAt: new Date().toISOString() })
-      await setDoc(doc(db, 'knowledgeItems', `research-${article.id}`), { storageUrl: dataUrl }, { merge: true })
+      const storageUrl = await uploadKnowledgeFile(file, article.id)
+      await updateDoc(doc(db, 'knowledge_articles', article.id), { storageUrl, updatedAt: new Date().toISOString() })
+      await setDoc(doc(db, 'knowledgeItems', `research-${article.id}`), { storageUrl }, { merge: true })
       onRefresh()
     } catch {
       // ignore
@@ -322,13 +326,8 @@ function AddArticlePanel({ onClose, onSaved }: { onClose: () => void; onSaved: (
       let storageUrl: string | null = null
 
       if (file && itemType === 'article') {
-        if (file.size > 500 * 1024) { alert('קובץ גדול מדי — מקסימום 500 KB'); setSaving(false); return }
-        storageUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = (ev) => resolve(ev.target?.result as string)
-          reader.onerror = reject
-          reader.readAsDataURL(file)
-        })
+        if (file.size > MAX_FILE_BYTES) { alert('קובץ גדול מדי — מקסימום 30 MB'); setSaving(false); return }
+        storageUrl = await uploadKnowledgeFile(file, id)
       }
 
       const validItems = checklistItems.filter(Boolean)
@@ -471,7 +470,7 @@ function AddArticlePanel({ onClose, onSaved }: { onClose: () => void; onSaved: (
                     onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                   />
                 </label>
-                <p className="text-xs text-gray-400 mt-1">מקסימום 50 MB</p>
+                <p className="text-xs text-gray-400 mt-1">מקסימום 30 MB</p>
               </div>
             </>
           ) : (
