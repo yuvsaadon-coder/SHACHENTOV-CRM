@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react'
-import { useHQKnowledge, useAddHQKnowledge, useDeleteHQKnowledge } from '../hooks/useHQKnowledge'
+import { useHQKnowledge, useAddHQKnowledge, useUpdateHQKnowledge, useDeleteHQKnowledge } from '../hooks/useHQKnowledge'
 import { useAuth } from '../context/AuthContext'
 import {
   DOMAINS, DOMAIN_LABELS, DOMAIN_COLORS,
@@ -18,7 +18,12 @@ function catIcon(id: HQKnowledgeCategory): string {
 
 // ─── Item Card ───────────────────────────────────────────────────────────────
 
-function HQItemCard({ item, isAdmin, onDelete }: { item: HQKnowledgeItem; isAdmin: boolean; onDelete: (id: string) => void }) {
+function HQItemCard({ item, isAdmin, onDelete, onEdit }: {
+  item: HQKnowledgeItem
+  isAdmin: boolean
+  onDelete: (id: string) => void
+  onEdit: (item: HQKnowledgeItem) => void
+}) {
   const [open, setOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const date = item.createdAt?.toDate?.().toLocaleDateString('he-IL') ?? ''
@@ -82,7 +87,7 @@ function HQItemCard({ item, isAdmin, onDelete }: { item: HQKnowledgeItem; isAdmi
             </div>
           )}
           {isAdmin && (
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
               {confirmDelete ? (
                 <>
                   <span className="text-xs text-red-600">למחוק את הפריט הזה?</span>
@@ -100,12 +105,20 @@ function HQItemCard({ item, isAdmin, onDelete }: { item: HQKnowledgeItem; isAdmi
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={handleDelete}
-                  className="text-xs text-red-400 hover:text-red-600 px-2.5 py-1 rounded-lg border border-red-100 hover:border-red-300 transition-colors"
-                >
-                  🗑 מחק פריט
-                </button>
+                <>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onEdit(item) }}
+                    className="text-xs text-brand-teal hover:text-[#147F84] px-2.5 py-1 rounded-lg border border-[#189A9F]/30 hover:border-[#189A9F] transition-colors"
+                  >
+                    ✏️ ערוך
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="text-xs text-red-400 hover:text-red-600 px-2.5 py-1 rounded-lg border border-red-100 hover:border-red-300 transition-colors"
+                  >
+                    🗑 מחק
+                  </button>
+                </>
               )}
             </div>
           )}
@@ -115,19 +128,22 @@ function HQItemCard({ item, isAdmin, onDelete }: { item: HQKnowledgeItem; isAdmi
   )
 }
 
-// ─── Add Modal ────────────────────────────────────────────────────────────────
+// ─── Item Modal (add + edit) ──────────────────────────────────────────────────
 
-function AddModal({ onClose }: { onClose: () => void }) {
+function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; onClose: () => void }) {
   const { addItem } = useAddHQKnowledge()
+  const { updateItem } = useUpdateHQKnowledge()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const isEdit = !!initialItem
 
-  const [domain, setDomain] = useState<Domain | 'all'>('all')
-  const [category, setCategory] = useState<HQKnowledgeCategory>('instructions')
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
+  const [domain, setDomain] = useState<Domain | 'all'>(initialItem?.domain ?? 'all')
+  const [category, setCategory] = useState<HQKnowledgeCategory>(initialItem?.category ?? 'instructions')
+  const [title, setTitle] = useState(initialItem?.title ?? '')
+  const [content, setContent] = useState(initialItem?.content ?? '')
   const [tag, setTag] = useState('')
-  const [tags, setTags] = useState<string[]>([])
+  const [tags, setTags] = useState<string[]>(initialItem?.tags ?? [])
   const [file, setFile] = useState<File | null>(null)
+  const [keepExistingFile, setKeepExistingFile] = useState(true)
   const [saving, setSaving] = useState(false)
 
   const addTag = () => {
@@ -140,8 +156,8 @@ function AddModal({ onClose }: { onClose: () => void }) {
     if (!title.trim()) return
     setSaving(true)
     try {
-      let fileUrl: string | undefined
-      let fileName: string | undefined
+      let fileUrl: string | undefined = isEdit && keepExistingFile ? initialItem?.fileUrl : undefined
+      let fileName: string | undefined = isEdit && keepExistingFile ? initialItem?.fileName : undefined
       if (file) {
         if (file.size > 500 * 1024) { alert('קובץ גדול מדי — מקסימום 500 KB'); setSaving(false); return }
         fileUrl = await new Promise<string>((resolve, reject) => {
@@ -152,12 +168,19 @@ function AddModal({ onClose }: { onClose: () => void }) {
         })
         fileName = file.name
       }
-      await addItem({ domain, category, title: title.trim(), content: content.trim(), tags, fileUrl, fileName })
+      const payload = { domain, category, title: title.trim(), content: content.trim(), tags, fileUrl, fileName }
+      if (isEdit) {
+        await updateItem(initialItem.id, payload)
+      } else {
+        await addItem(payload)
+      }
       onClose()
     } finally {
       setSaving(false)
     }
   }
+
+  const existingFileName = initialItem?.fileName
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
@@ -167,7 +190,9 @@ function AddModal({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-white px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-bold" style={{ color: '#141348' }}>הוסף פריט ידע למטה</h2>
+          <h2 className="font-bold" style={{ color: '#141348' }}>
+            {isEdit ? 'עריכת פריט ידע' : 'הוסף פריט ידע למטה'}
+          </h2>
           <button onClick={onClose} className="text-gray-400 text-2xl leading-none">×</button>
         </div>
 
@@ -232,7 +257,7 @@ function AddModal({ onClose }: { onClose: () => void }) {
           <div>
             <label className="block text-xs text-gray-500 mb-1">תוכן / תיאור</label>
             <textarea
-              rows={5}
+              rows={6}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
@@ -242,18 +267,29 @@ function AddModal({ onClose }: { onClose: () => void }) {
 
           {/* File upload */}
           <div>
-            <label className="block text-xs text-gray-500 mb-1">קובץ מצורף (אופציונלי)</label>
+            <label className="block text-xs text-gray-500 mb-1">קובץ מצורף</label>
+            {isEdit && existingFileName && keepExistingFile && !file && (
+              <div className="flex items-center gap-2 mb-2 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                <span>📎 {existingFileName}</span>
+                <button
+                  onClick={() => setKeepExistingFile(false)}
+                  className="text-red-400 hover:text-red-600 mr-auto"
+                >
+                  הסר
+                </button>
+              </div>
+            )}
             <input
               ref={fileInputRef}
               type="file"
               className="hidden"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              onChange={(e) => { setFile(e.target.files?.[0] ?? null); setKeepExistingFile(false) }}
             />
             <button
               onClick={() => fileInputRef.current?.click()}
               className="text-sm border border-dashed border-gray-300 rounded-lg px-4 py-2 text-gray-500 hover:border-teal-400 hover:text-teal-600 transition-colors w-full text-center"
             >
-              {file ? `📎 ${file.name}` : '📎 בחר קובץ'}
+              {file ? `📎 ${file.name}` : (isEdit ? '📎 החלף קובץ' : '📎 בחר קובץ')}
             </button>
           </div>
 
@@ -293,7 +329,7 @@ function AddModal({ onClose }: { onClose: () => void }) {
             className="flex-1 py-2.5 rounded-xl text-white text-sm font-medium disabled:opacity-40"
             style={{ backgroundColor: '#141348' }}
           >
-            {saving ? 'שומר...' : 'שמור'}
+            {saving ? 'שומר...' : (isEdit ? 'שמור שינויים' : 'שמור')}
           </button>
           <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm border border-gray-200 hover:bg-gray-50">
             ביטול
@@ -312,6 +348,7 @@ export function HQKnowledgePage() {
   const [catFilter, setCatFilter] = useState<HQKnowledgeCategory | ''>('')
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
+  const [editingItem, setEditingItem] = useState<HQKnowledgeItem | null>(null)
 
   const { items, loading } = useHQKnowledge(domainFilter)
   const { deleteItem } = useDeleteHQKnowledge()
@@ -441,7 +478,7 @@ export function HQKnowledgePage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {group.items.map((item) => (
-                  <HQItemCard key={item.id} item={item} isAdmin={isAdmin} onDelete={deleteItem} />
+                  <HQItemCard key={item.id} item={item} isAdmin={isAdmin} onDelete={deleteItem} onEdit={setEditingItem} />
                 ))}
               </div>
             </section>
@@ -449,7 +486,8 @@ export function HQKnowledgePage() {
         </div>
       )}
 
-      {showAdd && <AddModal onClose={() => setShowAdd(false)} />}
+      {showAdd && <ItemModal onClose={() => setShowAdd(false)} />}
+      {editingItem && <ItemModal initialItem={editingItem} onClose={() => setEditingItem(null)} />}
     </div>
   )
 }
