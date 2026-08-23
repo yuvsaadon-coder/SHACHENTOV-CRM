@@ -154,21 +154,21 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
 
   const handleSave = async () => {
     if (!title.trim()) return
+    if (file && file.size > 30 * 1024 * 1024) {
+      alert('קובץ גדול מדי — מקסימום 30 MB')
+      return
+    }
     setSaving(true)
     try {
-      let fileUrl: string | undefined = isEdit && keepExistingFile ? initialItem?.fileUrl : undefined
-      let fileName: string | undefined = isEdit && keepExistingFile ? initialItem?.fileName : undefined
-      if (file) {
-        if (file.size > 700 * 1024) { alert('קובץ גדול מדי — מקסימום 700 KB (מגבלת Firestore)'); setSaving(false); return }
-        fileUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = (ev) => resolve(ev.target?.result as string)
-          reader.onerror = reject
-          reader.readAsDataURL(file)
-        })
-        fileName = file.name
+      const existingFileUrl = isEdit && keepExistingFile && !file ? initialItem?.fileUrl : undefined
+      const existingFileName = isEdit && keepExistingFile && !file ? initialItem?.fileName : undefined
+      const payload = {
+        domain, category,
+        title: title.trim(), content: content.trim(), tags,
+        file: file ?? undefined,
+        fileUrl: existingFileUrl,
+        fileName: existingFileName,
       }
-      const payload = { domain, category, title: title.trim(), content: content.trim(), tags, fileUrl, fileName }
       if (isEdit) {
         await updateItem(initialItem.id, payload)
       } else {
@@ -180,7 +180,7 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
     }
   }
 
-  const existingFileName = initialItem?.fileName
+  const existingAttachmentName = initialItem?.fileName
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
@@ -268,9 +268,9 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
           {/* File upload */}
           <div>
             <label className="block text-xs text-gray-500 mb-1">קובץ מצורף</label>
-            {isEdit && existingFileName && keepExistingFile && !file && (
+            {isEdit && existingAttachmentName && keepExistingFile && !file && (
               <div className="flex items-center gap-2 mb-2 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                <span>📎 {existingFileName}</span>
+                <span>📎 {existingAttachmentName}</span>
                 <button
                   onClick={() => setKeepExistingFile(false)}
                   className="text-red-400 hover:text-red-600 mr-auto"

@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react'
 import { collection, query, where, onSnapshot, addDoc, deleteDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore'
-import { db } from '../lib/firebase'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { db, storage } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import type { HQKnowledgeItem, HQKnowledgeCategory, Domain } from '../types'
+
+async function uploadToStorage(file: File, docId: string): Promise<{ fileUrl: string; fileName: string }> {
+  const storageRef = ref(storage, `hq_knowledge/${docId}/${file.name}`)
+  await uploadBytes(storageRef, file)
+  const fileUrl = await getDownloadURL(storageRef)
+  return { fileUrl, fileName: file.name }
+}
 
 export function useHQKnowledge(domainFilter?: Domain | 'all' | null) {
   const [items, setItems] = useState<HQKnowledgeItem[]>([])
@@ -44,16 +52,21 @@ export function useAddHQKnowledge() {
     category: HQKnowledgeCategory
     title: string
     content: string
-    fileUrl?: string
-    fileName?: string
+    file?: File
     tags: string[]
   }) => {
-    await addDoc(collection(db, 'hq_knowledge'), {
-      ...data,
+    const { file, ...rest } = data
+    // Create the doc first to get its ID, then upload file (if any) using that ID as path prefix
+    const docRef = await addDoc(collection(db, 'hq_knowledge'), {
+      ...rest,
       createdBy: appUser?.name ?? appUser?.uid ?? '',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
+    if (file) {
+      const { fileUrl, fileName } = await uploadToStorage(file, docRef.id)
+      await updateDoc(docRef, { fileUrl, fileName, updatedAt: serverTimestamp() })
+    }
   }
 
   return { addItem }
@@ -65,14 +78,18 @@ export function useUpdateHQKnowledge() {
     category: HQKnowledgeCategory
     title: string
     content: string
+    file?: File
     fileUrl?: string
     fileName?: string
     tags: string[]
   }) => {
-    await updateDoc(doc(db, 'hq_knowledge', id), {
-      ...data,
-      updatedAt: serverTimestamp(),
-    })
+    const { file, ...rest } = data
+    if (file) {
+      const { fileUrl, fileName } = await uploadToStorage(file, id)
+      await updateDoc(doc(db, 'hq_knowledge', id), { ...rest, fileUrl, fileName, updatedAt: serverTimestamp() })
+    } else {
+      await updateDoc(doc(db, 'hq_knowledge', id), { ...rest, updatedAt: serverTimestamp() })
+    }
   }
   return { updateItem }
 }
