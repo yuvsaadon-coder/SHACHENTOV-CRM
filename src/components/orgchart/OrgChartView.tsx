@@ -244,14 +244,9 @@ function AreaGroupBox({ area, nodes, onEdit, onBranchDetails, collapsedSet, onTo
     )
   }
 
-  const wrap = nodes.length > WRAP_AFTER
   return (
     <GroupFrame label={area}>
-      <div
-        style={wrap
-          ? { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start', justifyContent: 'center', maxWidth: MAX_ROW_WIDTH }
-          : { display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}
-      >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
         {nodes.map(render)}
       </div>
     </GroupFrame>

@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react'
-import { useHQKnowledge, useAddHQKnowledge } from '../hooks/useHQKnowledge'
+import { useHQKnowledge, useAddHQKnowledge, useDeleteHQKnowledge } from '../hooks/useHQKnowledge'
 import { useAuth } from '../context/AuthContext'
 import {
   DOMAINS, DOMAIN_LABELS, DOMAIN_COLORS,
@@ -18,14 +18,24 @@ function catIcon(id: HQKnowledgeCategory): string {
 
 // ─── Item Card ───────────────────────────────────────────────────────────────
 
-function HQItemCard({ item }: { item: HQKnowledgeItem }) {
+function HQItemCard({ item, isAdmin, onDelete }: { item: HQKnowledgeItem; isAdmin: boolean; onDelete: (id: string) => void }) {
   const [open, setOpen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const date = item.createdAt?.toDate?.().toLocaleDateString('he-IL') ?? ''
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (confirmDelete) {
+      onDelete(item.id)
+    } else {
+      setConfirmDelete(true)
+    }
+  }
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => { setOpen((o) => !o); setConfirmDelete(false) }}
         className="w-full text-right px-4 py-3.5 hover:bg-gray-50 transition-colors"
       >
         <div className="flex items-start gap-3">
@@ -69,6 +79,34 @@ function HQItemCard({ item }: { item: HQKnowledgeItem }) {
               {item.tags.map((t) => (
                 <span key={t} className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{t}</span>
               ))}
+            </div>
+          )}
+          {isAdmin && (
+            <div className="mt-3 flex items-center gap-2">
+              {confirmDelete ? (
+                <>
+                  <span className="text-xs text-red-600">למחוק את הפריט הזה?</span>
+                  <button
+                    onClick={handleDelete}
+                    className="text-xs font-medium text-white px-2.5 py-1 rounded-lg bg-red-500 hover:bg-red-600"
+                  >
+                    אישור מחיקה
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setConfirmDelete(false) }}
+                    className="text-xs text-gray-500 px-2.5 py-1 rounded-lg border border-gray-200 hover:bg-gray-50"
+                  >
+                    ביטול
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleDelete}
+                  className="text-xs text-red-400 hover:text-red-600 px-2.5 py-1 rounded-lg border border-red-100 hover:border-red-300 transition-colors"
+                >
+                  🗑 מחק פריט
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -276,6 +314,7 @@ export function HQKnowledgePage() {
   const [showAdd, setShowAdd] = useState(false)
 
   const { items, loading } = useHQKnowledge(domainFilter)
+  const { deleteItem } = useDeleteHQKnowledge()
 
   const filtered = useMemo(() => {
     return items.filter((item) => {
@@ -402,7 +441,7 @@ export function HQKnowledgePage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {group.items.map((item) => (
-                  <HQItemCard key={item.id} item={item} />
+                  <HQItemCard key={item.id} item={item} isAdmin={isAdmin} onDelete={deleteItem} />
                 ))}
               </div>
             </section>

@@ -8,7 +8,7 @@ import { Spinner } from '../components/ui/Spinner'
 import { StatusBadge } from '../components/ui/StatusBadge'
 import {
   DOMAIN_LABELS, DOMAINS, STATUS_LABELS, FREQUENCY_LABELS,
-  type Domain, type TaskStatus, type TaskFrequency, type Task,
+  type Domain, type TaskStatus, type TaskFrequency, type Task, type RoleStatus,
 } from '../types'
 import { Link } from 'react-router-dom'
 
@@ -68,6 +68,16 @@ const PERIOD_LABELS: Record<PeriodFilter, string> = {
   quarter: 'הרבעון הנוכחי',
 }
 
+const ALERT_STATUSES: RoleStatus[] = ['חסר', 'חלקי', 'בסיכון']
+
+const ROLE_STATUS_CHIP: Record<RoleStatus, { bg: string; text: string }> = {
+  'מאויש': { bg: '#C6EFCE', text: '#0A6B2E' },
+  'חסר':   { bg: '#FEE2E2', text: '#B91C1C' },
+  'חלקי':  { bg: '#FED7AA', text: '#9A3412' },
+  'בסיכון':{ bg: '#FDC857', text: '#7A5A00' },
+  'אחר':   { bg: '#E4DFEC', text: '#5F497A' },
+}
+
 export function DashboardPage() {
   const { tasks, loading } = useTasks()
   const { roles } = useRoles()
@@ -75,6 +85,9 @@ export function DashboardPage() {
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('month')
   const [domainCollapsed, setDomainCollapsed] = useState(false)
   const [domainFreqFilter, setDomainFreqFilter] = useState<TaskFrequency | ''>('')
+  const [rolesExpanded, setRolesExpanded] = useState(false)
+  const [rolesStatusFilter, setRolesStatusFilter] = useState<RoleStatus | ''>('')
+  const [rolesAreaFilter, setRolesAreaFilter] = useState('')
 
   const periodTasks = useMemo(
     () => (periodFilter === 'all' ? tasks : tasks.filter((t) => taskMatchesPeriod(t, periodFilter))),
@@ -105,11 +118,23 @@ export function DashboardPage() {
     [periodTasks]
   )
 
-  const vacantHQ = useMemo(
-    () => roles.filter((r) => r.level === 'מטה' && r.status === 'חסר').map(applyDelegation),
+  const alertRoles = useMemo(
+    () => roles.filter((r) => (ALERT_STATUSES as string[]).includes(r.status)).map(applyDelegation),
     [roles]
   )
-  const atRiskRoles = useMemo(() => roles.filter((r) => r.status === 'בסיכון'), [roles])
+
+  const alertAreas = useMemo(() => {
+    const areas = new Set(alertRoles.map((r) => r.area).filter(Boolean))
+    return [...areas].sort()
+  }, [alertRoles])
+
+  const filteredAlertRoles = useMemo(() => {
+    return alertRoles.filter((r) => {
+      if (rolesStatusFilter && r.status !== rolesStatusFilter) return false
+      if (rolesAreaFilter && r.area !== rolesAreaFilter) return false
+      return true
+    })
+  }, [alertRoles, rolesStatusFilter, rolesAreaFilter])
 
   const myTasks = useMemo(() => {
     if (!appUser) return []
@@ -282,46 +307,110 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* Roles alerts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl shadow-sm p-4 border border-red-100">
-          <h2 className="font-bold text-red-600 mb-3">
-            🔴 תפקידי מטה חסרים ({vacantHQ.length})
-          </h2>
-          <ul className="space-y-2">
-            {vacantHQ.map((r) => (
-              <li key={r.id} className="flex items-center justify-between gap-2">
-                <span className="text-sm text-brand-navy truncate">{r.roleName}</span>
-                <span className="text-xs bg-orange-50 text-orange-700 border border-orange-100 px-2 py-0.5 rounded shrink-0">
-                  מואצל: {r.delegatedTo}
-                </span>
-              </li>
-            ))}
-            {vacantHQ.length === 0 && (
-              <li className="text-sm text-gray-400">אין חסרים במטה 🎉</li>
+      {/* Roles requiring attention — collapsed by default */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <button
+          onClick={() => setRolesExpanded((e) => !e)}
+          className="w-full flex items-center justify-between px-4 py-3 text-right hover:bg-gray-50 transition-colors rounded-xl"
+        >
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-brand-navy">תפקידים הדורשים טיפול</span>
+            {alertRoles.length > 0 && (
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-600">
+                {alertRoles.length}
+              </span>
             )}
-          </ul>
-          <Link to="/roles" className="mt-3 block text-xs text-brand-teal hover:underline">
-            כל תפקידי האיוש ←
-          </Link>
-        </div>
+          </div>
+          <span className="text-gray-400 text-xs">{rolesExpanded ? '▼' : '▶'}</span>
+        </button>
 
-        <div className="bg-white rounded-xl shadow-sm p-4 border border-yellow-100">
-          <h2 className="font-bold text-yellow-600 mb-3">
-            ⚠ תפקידים בסיכון ({atRiskRoles.length})
-          </h2>
-          <ul className="space-y-2">
-            {atRiskRoles.map((r) => (
-              <li key={r.id} className="flex items-center justify-between gap-2">
-                <span className="text-sm text-brand-navy truncate">{r.roleName}</span>
-                <span className="text-xs text-gray-400 shrink-0">{r.area}</span>
-              </li>
-            ))}
-            {atRiskRoles.length === 0 && (
-              <li className="text-sm text-gray-400">אין תפקידים בסיכון 🎉</li>
+        {rolesExpanded && (
+          <div className="px-4 pb-4 border-t border-gray-100">
+            {/* Status filter chips */}
+            <div className="flex flex-wrap gap-1.5 mt-3 mb-2">
+              <button
+                onClick={() => setRolesStatusFilter('')}
+                className="px-2.5 py-1 rounded-full text-xs font-medium border transition-colors"
+                style={!rolesStatusFilter ? { backgroundColor: '#141348', color: 'white', borderColor: '#141348' } : { borderColor: '#E5E7EB', color: '#6B7280' }}
+              >
+                כל הסטטוסים
+              </button>
+              {ALERT_STATUSES.map((s) => {
+                const chip = ROLE_STATUS_CHIP[s]
+                return (
+                  <button
+                    key={s}
+                    onClick={() => setRolesStatusFilter(rolesStatusFilter === s ? '' : s)}
+                    className="px-2.5 py-1 rounded-full text-xs font-medium border transition-colors"
+                    style={rolesStatusFilter === s
+                      ? { backgroundColor: chip.bg, color: chip.text, borderColor: chip.bg }
+                      : { borderColor: '#E5E7EB', color: '#6B7280' }
+                    }
+                  >
+                    {s} ({alertRoles.filter((r) => r.status === s).length})
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Area filter chips */}
+            {alertAreas.length > 1 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                <button
+                  onClick={() => setRolesAreaFilter('')}
+                  className="px-2.5 py-1 rounded-full text-xs border transition-colors"
+                  style={!rolesAreaFilter ? { backgroundColor: '#189A9F', color: 'white', borderColor: '#189A9F' } : { borderColor: '#E5E7EB', color: '#6B7280' }}
+                >
+                  כל האזורים
+                </button>
+                {alertAreas.map((area) => (
+                  <button
+                    key={area}
+                    onClick={() => setRolesAreaFilter(rolesAreaFilter === area ? '' : area)}
+                    className="px-2.5 py-1 rounded-full text-xs border transition-colors"
+                    style={rolesAreaFilter === area
+                      ? { backgroundColor: '#189A9F', color: 'white', borderColor: '#189A9F' }
+                      : { borderColor: '#E5E7EB', color: '#6B7280' }
+                    }
+                  >
+                    {area}
+                  </button>
+                ))}
+              </div>
             )}
-          </ul>
-        </div>
+
+            {filteredAlertRoles.length === 0 ? (
+              <p className="text-sm text-gray-400 py-2">אין תפקידים הדורשים טיפול 🎉</p>
+            ) : (
+              <ul className="space-y-2 mt-1">
+                {filteredAlertRoles.map((r) => {
+                  const chip = ROLE_STATUS_CHIP[r.status] ?? ROLE_STATUS_CHIP['אחר']
+                  return (
+                    <li key={r.id} className="flex items-center justify-between gap-2 py-1.5 border-b border-gray-50 last:border-0">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-brand-navy truncate">{r.roleName}</div>
+                        {r.area && <div className="text-xs text-gray-400">{r.area} · {r.level}</div>}
+                        {r.delegatedTo && (
+                          <div className="text-xs text-orange-600">מואצל: {r.delegatedTo}</div>
+                        )}
+                      </div>
+                      <span
+                        className="text-xs font-medium px-2 py-0.5 rounded-full shrink-0"
+                        style={{ backgroundColor: chip.bg, color: chip.text }}
+                      >
+                        {r.status}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+
+            <Link to="/roles" className="mt-3 block text-xs text-brand-teal hover:underline">
+              לדף האיוש המלא ←
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   )

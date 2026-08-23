@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import type { HQKnowledgeItem, HQKnowledgeCategory, Domain } from '../types'
@@ -57,4 +57,11 @@ export function useAddHQKnowledge() {
   }
 
   return { addItem }
+}
+
+export function useDeleteHQKnowledge() {
+  const deleteItem = async (id: string) => {
+    await deleteDoc(doc(db, 'hq_knowledge', id))
+  }
+  return { deleteItem }
 }
