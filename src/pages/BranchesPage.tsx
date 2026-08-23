@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { doc, updateDoc, addDoc, collection, serverTimestamp, query, where, getDocs } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAllBranches } from '../hooks/useBranch'
@@ -211,31 +211,35 @@ function CoordinatorSearch({ currentUids, currentNames, onChange }: {
   onChange: (uids: string[], names: string[]) => void
 }) {
   const [search, setSearch] = useState('')
-  const [results, setResults] = useState<AppUser[]>([])
-  const [searching, setSearching] = useState(false)
+  const [allCoordinators, setAllCoordinators] = useState<AppUser[]>([])
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const doSearch = async (term: string) => {
-    if (!term.trim()) { setResults([]); return }
-    setSearching(true)
-    try {
-      const snap = await getDocs(
-        query(collection(db, 'users'), where('role', '==', 'coordinator'))
-      )
-      const all = snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUser))
-      setResults(all.filter((u) =>
-        u.name?.toLowerCase().includes(term.toLowerCase()) ||
-        u.email?.toLowerCase().includes(term.toLowerCase())
-      ))
-    } finally {
-      setSearching(false)
-    }
-  }
+  // Load all coordinator users once on mount
+  useEffect(() => {
+    void (async () => {
+      try {
+        const snap = await getDocs(
+          query(collection(db, 'users'), where('role', '==', 'coordinator'))
+        )
+        setAllCoordinators(snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUser)))
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [])
+
+  const results = allCoordinators.filter((u) => {
+    if (!search.trim()) return true
+    const q = search.toLowerCase()
+    return u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
+  })
 
   const add = (u: AppUser) => {
     if (currentUids.includes(u.uid)) return
     onChange([...currentUids, u.uid], [...currentNames, u.name])
     setSearch('')
-    setResults([])
+    setOpen(false)
   }
 
   const remove = (uid: string) => {
@@ -259,24 +263,31 @@ function CoordinatorSearch({ currentUids, currentNames, onChange }: {
       <div className="relative">
         <input
           value={search}
-          onChange={(e) => { setSearch(e.target.value); void doSearch(e.target.value) }}
-          placeholder="חפש רכז לפי שם..."
-          className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+          onChange={(e) => setSearch(e.target.value)}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder={loading ? 'טוען רכזים...' : 'חפש רכז לפי שם...'}
+          disabled={loading}
+          className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F] disabled:opacity-60"
         />
-        {searching && <span className="absolute left-2 top-1.5 text-xs text-gray-400">...</span>}
-        {results.length > 0 && (
-          <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+        {open && results.length > 0 && (
+          <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
             {results.map((u) => (
               <button
                 key={u.uid}
-                onClick={() => add(u)}
-                className="w-full text-right px-3 py-2 text-xs hover:bg-gray-50 flex justify-between items-center"
+                onMouseDown={() => add(u)}
+                className="w-full text-right px-3 py-2 text-xs hover:bg-gray-50 flex justify-between items-center disabled:opacity-50"
                 disabled={currentUids.includes(u.uid)}
               >
-                <span className="font-medium text-gray-700">{u.name}</span>
+                <span className={`font-medium ${currentUids.includes(u.uid) ? 'text-gray-400' : 'text-gray-700'}`}>{u.name}</span>
                 <span className="text-gray-400">{u.email}</span>
               </button>
             ))}
+          </div>
+        )}
+        {open && !loading && results.length === 0 && (
+          <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 px-3 py-2 text-xs text-gray-400">
+            לא נמצאו רכזים
           </div>
         )}
       </div>
@@ -654,6 +665,7 @@ export function BranchesPage() {
   const [cityFilter, setCityFilter] = useState('')
   const [search, setSearch] = useState('')
   const [addingBranch, setAddingBranch] = useState(false)
+  const [linkingCoordinators, setLinkingCoordinators] = useState(false)
 
   const cities = useMemo(
     () => [...new Set(branches.map((b) => b.city))].sort(),
@@ -703,13 +715,21 @@ export function BranchesPage() {
             <div className="text-sm text-gray-500">סה"כ {totalBaskets.toLocaleString()} סלים לחודש</div>
           )}
         </div>
-        <button
-          onClick={() => setAddingBranch(true)}
-          className="px-4 py-2 text-sm font-medium rounded-lg text-white hover:opacity-90 transition-opacity"
-          style={{ backgroundColor: '#141348' }}
-        >
-          + סניף חדש
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setLinkingCoordinators(true)}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-600"
+          >
+            👤 קישור רכזים
+          </button>
+          <button
+            onClick={() => setAddingBranch(true)}
+            className="px-4 py-2 text-sm font-medium rounded-lg text-white hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: '#141348' }}
+          >
+            + סניף חדש
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -782,6 +802,173 @@ export function BranchesPage() {
       )}
 
       {addingBranch && <AddBranchModal onClose={() => setAddingBranch(false)} />}
+      {linkingCoordinators && (
+        <LinkCoordinatorsModal branches={branches} onClose={() => setLinkingCoordinators(false)} />
+      )}
+    </div>
+  )
+}
+
+// ── Admin: Link coordinators to branches ──────────────────────────────────────
+
+function LinkCoordinatorsModal({ branches, onClose }: { branches: Branch[]; onClose: () => void }) {
+  const [coordinators, setCoordinators] = useState<AppUser[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState<string | null>(null)
+
+  useEffect(() => {
+    void (async () => {
+      const snap = await getDocs(
+        query(collection(db, 'users'), where('role', '==', 'coordinator'))
+      )
+      setCoordinators(snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUser)))
+      setLoading(false)
+    })()
+  }, [])
+
+  // Build a map: coordinatorUid → branchId[]
+  const coordinatorBranchMap = useMemo(() => {
+    const map: Record<string, string[]> = {}
+    for (const b of branches) {
+      for (const uid of (b.coordinatorUids ?? [])) {
+        if (!map[uid]) map[uid] = []
+        map[uid].push(b.id)
+      }
+    }
+    return map
+  }, [branches])
+
+  const unlinked = coordinators.filter((u) => !(coordinatorBranchMap[u.uid]?.length))
+  const linked = coordinators.filter((u) => (coordinatorBranchMap[u.uid]?.length ?? 0) > 0)
+
+  const linkToBranch = async (coordinator: AppUser, branchId: string) => {
+    const branch = branches.find((b) => b.id === branchId)
+    if (!branch) return
+    setSaving(coordinator.uid)
+    const newUids = [...(branch.coordinatorUids ?? []), coordinator.uid]
+    const newNames = [...(branch.coordinatorNames ?? []), coordinator.name]
+    await updateDoc(doc(db, 'branches', branchId), {
+      coordinatorUids: newUids,
+      coordinatorNames: newNames,
+      updatedAt: serverTimestamp(),
+    })
+    setSaving(null)
+  }
+
+  const unlinkFromBranch = async (coordinator: AppUser, branchId: string) => {
+    const branch = branches.find((b) => b.id === branchId)
+    if (!branch) return
+    setSaving(coordinator.uid)
+    const idx = (branch.coordinatorUids ?? []).indexOf(coordinator.uid)
+    const newUids = (branch.coordinatorUids ?? []).filter((_, i) => i !== idx)
+    const newNames = (branch.coordinatorNames ?? []).filter((_, i) => i !== idx)
+    await updateDoc(doc(db, 'branches', branchId), {
+      coordinatorUids: newUids,
+      coordinatorNames: newNames,
+      updatedAt: serverTimestamp(),
+    })
+    setSaving(null)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto"
+        dir="rtl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+          <h2 className="text-lg font-bold" style={{ color: '#141348' }}>קישור רכזים לסניפים</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+        </div>
+
+        {loading ? (
+          <div className="p-8 text-center text-gray-400">טוען רכזים...</div>
+        ) : (
+          <div className="p-5 space-y-6">
+            {unlinked.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-red-600 mb-3">
+                  🔴 רכזים ללא סניף מקושר ({unlinked.length})
+                </h3>
+                <div className="space-y-2">
+                  {unlinked.map((u) => (
+                    <div key={u.uid} className="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-gray-800">{u.name}</div>
+                        <div className="text-xs text-gray-500">{u.email}</div>
+                      </div>
+                      <select
+                        disabled={saving === u.uid}
+                        onChange={(e) => { if (e.target.value) void linkToBranch(u, e.target.value) }}
+                        defaultValue=""
+                        className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#189A9F] bg-white min-w-[140px]"
+                      >
+                        <option value="">— שייך לסניף —</option>
+                        {branches.map((b) => (
+                          <option key={b.id} value={b.id}>{b.name} ({b.city})</option>
+                        ))}
+                      </select>
+                      {saving === u.uid && <span className="text-xs text-gray-400">שומר...</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {linked.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-green-700 mb-3">
+                  🟢 רכזים מקושרים ({linked.length})
+                </h3>
+                <div className="space-y-2">
+                  {linked.map((u) => {
+                    const branchIds = coordinatorBranchMap[u.uid] ?? []
+                    return (
+                      <div key={u.uid} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-800">{u.name}</div>
+                          <div className="text-xs text-gray-500">{u.email}</div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {branchIds.map((bid) => {
+                              const b = branches.find((x) => x.id === bid)
+                              return b ? (
+                                <span key={bid} className="text-xs bg-white text-gray-700 border border-green-200 rounded-full px-2 py-0.5 flex items-center gap-1">
+                                  {b.name}
+                                  <button
+                                    onClick={() => void unlinkFromBranch(u, bid)}
+                                    disabled={saving === u.uid}
+                                    className="text-red-400 hover:text-red-600 leading-none"
+                                  >×</button>
+                                </span>
+                              ) : null
+                            })}
+                          </div>
+                        </div>
+                        <select
+                          disabled={saving === u.uid}
+                          onChange={(e) => { if (e.target.value) void linkToBranch(u, e.target.value) }}
+                          defaultValue=""
+                          className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#189A9F] bg-white min-w-[140px] shrink-0"
+                        >
+                          <option value="">+ הוסף סניף</option>
+                          {branches.filter((b) => !branchIds.includes(b.id)).map((b) => (
+                            <option key={b.id} value={b.id}>{b.name} ({b.city})</option>
+                          ))}
+                        </select>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {coordinators.length === 0 && (
+              <div className="text-center py-8 text-gray-400 text-sm">לא נמצאו משתמשים עם תפקיד רכז במערכת</div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

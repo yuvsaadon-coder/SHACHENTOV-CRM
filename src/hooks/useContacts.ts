@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore'
+import { collection, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import type { Contact } from '../types'
 
@@ -15,5 +15,9 @@ export function useContacts() {
     })
   }, [])
 
-  return { contacts, loading }
+  const updateContact = async (id: string, data: Partial<Omit<Contact, 'id'>>) => {
+    await updateDoc(doc(db, 'contacts', id), { ...data, updatedAt: serverTimestamp() })
+  }
+
+  return { contacts, loading, updateContact }
 }
