@@ -55,6 +55,9 @@ function HQItemCard({ item, isAdmin, onDelete, onEdit }: {
               </span>
               <span className="text-xs text-gray-400">{catLabel(item.category)}</span>
               {date && <span className="text-xs text-gray-300">{date}</span>}
+              {item.visibleToCoordinators && (
+                <span className="text-xs bg-teal-50 text-teal-700 border border-teal-200 px-1.5 py-0.5 rounded-full">משותף לרכזים</span>
+              )}
             </div>
             <div className="font-semibold text-sm" style={{ color: '#141348' }}>{item.title}</div>
             {!open && (
@@ -144,6 +147,7 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
   const [tags, setTags] = useState<string[]>(initialItem?.tags ?? [])
   const [file, setFile] = useState<File | null>(null)
   const [keepExistingFile, setKeepExistingFile] = useState(true)
+  const [visibleToCoordinators, setVisibleToCoordinators] = useState(initialItem?.visibleToCoordinators ?? false)
   const [saving, setSaving] = useState(false)
 
   const addTag = () => {
@@ -168,6 +172,7 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
         file: file ?? undefined,
         fileUrl: existingFileUrl,
         fileName: existingFileName,
+        visibleToCoordinators,
       }
       if (isEdit) {
         await updateItem(initialItem.id, payload)
@@ -267,6 +272,9 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
 
           {/* File upload */}
           <div>
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mb-2">
+              ⚠️ אין להעלות מידע אישי רגיש על משפחות, מוטבים או אנשים פרטיים.
+            </p>
             <label className="block text-xs text-gray-500 mb-1">קובץ מצורף</label>
             {isEdit && existingAttachmentName && keepExistingFile && !file && (
               <div className="flex items-center gap-2 mb-2 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
@@ -320,6 +328,20 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
               </div>
             )}
           </div>
+
+          {/* Visible to coordinators */}
+          <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
+            <input
+              type="checkbox"
+              checked={visibleToCoordinators}
+              onChange={(e) => setVisibleToCoordinators(e.target.checked)}
+              className="w-4 h-4 rounded accent-[#189A9F]"
+            />
+            <div>
+              <div className="text-sm font-medium" style={{ color: '#141348' }}>שתף עם רכזים</div>
+              <div className="text-xs text-gray-400 mt-0.5">הפריט יופיע בספריית הידע של פורטל הרכזים</div>
+            </div>
+          </label>
         </div>
 
         <div className="sticky bottom-0 bg-white px-4 py-3 border-t border-gray-100 flex gap-3">
@@ -347,15 +369,19 @@ export function HQKnowledgePage() {
   const [domainFilter, setDomainFilter] = useState<Domain | 'all'>('all')
   const [catFilter, setCatFilter] = useState<HQKnowledgeCategory | ''>('')
   const [search, setSearch] = useState('')
+  const [coordFilter, setCoordFilter] = useState<'all' | 'shared' | 'hq_only'>('all')
   const [showAdd, setShowAdd] = useState(false)
   const [editingItem, setEditingItem] = useState<HQKnowledgeItem | null>(null)
 
   const { items, loading } = useHQKnowledge(domainFilter)
   const { deleteItem } = useDeleteHQKnowledge()
+  const isAdmin = appUser?.role === 'admin'
 
   const filtered = useMemo(() => {
     return items.filter((item) => {
       if (catFilter && item.category !== catFilter) return false
+      if (coordFilter === 'shared' && !item.visibleToCoordinators) return false
+      if (coordFilter === 'hq_only' && item.visibleToCoordinators) return false
       if (search) {
         const q = search.toLowerCase()
         const hay = [item.title, item.content, ...item.tags].join(' ').toLowerCase()
@@ -363,7 +389,7 @@ export function HQKnowledgePage() {
       }
       return true
     })
-  }, [items, catFilter, search])
+  }, [items, catFilter, coordFilter, search])
 
   // Group filtered by category for display
   const grouped = useMemo(() => {
@@ -376,8 +402,6 @@ export function HQKnowledgePage() {
       .map((c) => ({ ...c, items: map.get(c.id) ?? [] }))
       .filter((g) => g.items.length > 0)
   }, [filtered])
-
-  const isAdmin = appUser?.role === 'admin'
 
   return (
     <div className="space-y-5" dir="rtl">
@@ -446,6 +470,22 @@ export function HQKnowledgePage() {
           </button>
         ))}
       </div>
+
+      {/* Coordinator visibility filter */}
+      {isAdmin && (
+        <div className="flex gap-2">
+          {([['all', 'הכל'], ['shared', '🔗 משותף לרכזים'], ['hq_only', '🔒 מטה בלבד']] as const).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setCoordFilter(key)}
+              className="px-3 py-1.5 rounded-full text-xs border transition-colors"
+              style={coordFilter === key ? { backgroundColor: '#189A9F', color: 'white', borderColor: '#189A9F' } : { borderColor: '#E5E7EB', color: '#374151' }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Search */}
       <input

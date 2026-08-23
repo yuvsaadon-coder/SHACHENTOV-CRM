@@ -313,6 +313,7 @@ export interface HQKnowledgeItem {
   fileUrl?: string
   fileName?: string
   tags: string[]
+  visibleToCoordinators?: boolean
   createdBy: string
   createdAt: Timestamp
   updatedAt: Timestamp

@@ -19,11 +19,12 @@ interface ChatMessage {
   content: string
 }
 
-type ScopeKey = 'hq' | 'research' | 'global' | 'branch'
+type ScopeKey = 'hq' | 'research' | 'global' | 'branch' | 'reports'
 
 interface RequestBody {
   scopes: ScopeKey[]
   domainFilter: string | null
+  branchFilter: string | null
   messages: ChatMessage[]
   question: string
 }
@@ -74,6 +75,7 @@ async function chat(event: HandlerEvent): Promise<HandlerResponse> {
   const body = JSON.parse(event.body ?? '{}') as Partial<RequestBody>
   const messages = body.messages ?? []
   const domainFilter = body.domainFilter ?? null
+  const branchFilter = body.branchFilter ?? null
 
   // Support both new `scopes` array and legacy `scope` string
   let scopes: ScopeKey[]
@@ -177,6 +179,25 @@ async function chat(event: HandlerEvent): Promise<HandlerResponse> {
     return `ידע סניפי (רמת סניף):\n${lines.join('\n')}`
   }))
 
+  // 5. Coordinator quarterly reports
+  if (scopes.includes('reports')) fetches.push(collect('דיווחי רכזים', async () => {
+    let q: FirebaseFirestore.Query = db.collection('quarterlyReports')
+    if (branchFilter) q = q.where('branchId', '==', branchFilter)
+    const snap = await q.limit(40).get()
+    if (snap.empty) return null
+    const lines = snap.docs.map((d) => {
+      const data = d.data() as {
+        branchId?: string; quarter?: string
+        answers?: Record<string, string>; submittedAt?: string
+      }
+      const answersText = Object.entries(data.answers ?? {})
+        .map(([k, v]) => `${k}: ${String(v).slice(0, 200)}`)
+        .join(' | ')
+      return `— [${data.branchId ?? '?'}] ${data.quarter ?? ''}: ${answersText}`
+    })
+    return `דיווחי רכזים:\n${lines.join('\n')}`
+  }))
+
   const sections = (await Promise.all(fetches)).filter((s): s is string => s !== null)
 
   const knowledgeBlock = sections.length > 0
@@ -184,7 +205,7 @@ async function chat(event: HandlerEvent): Promise<HandlerResponse> {
     : 'אין פריטי ידע במקורות שנבחרו עדיין.'
 
   const scopeNote = scopes.map((s) => ({
-    hq: 'מאגר מטה', research: 'מחקר מקצועי', global: 'ידע כלל-ארגוני', branch: 'ידע סניפי',
+    hq: 'מאגר מטה', research: 'מחקר מקצועי', global: 'ידע כלל-ארגוני', branch: 'ידע סניפי', reports: 'דיווחי רכזים',
   }[s])).join(', ')
 
   const domainNote = domainFilter ? ` תעדף מידע הקשור לתחום: ${domainFilter}.` : ''
@@ -214,12 +235,10 @@ ${knowledgeBlock}
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      // Sonnet answers a knowledge-grounded question like this well and
-      // considerably faster than Opus — latency matters here because a
-      // synchronous Netlify function gets killed on a fixed wall-clock
-      // budget regardless of what it's doing, and Opus was routinely
-      // pushing this past that limit ("Gateway Timeout").
-      model: 'claude-sonnet-5',
+      // Haiku is 3-4x faster than Sonnet for knowledge-grounded Q&A — latency
+      // matters here because a synchronous Netlify function is killed after a
+      // fixed wall-clock budget regardless of what it's doing.
+      model: 'claude-haiku-4-5-20251001',
       // This is a non-streaming call inside a synchronous function with a hard
       // wall-clock budget — the full completion must finish generating before
       // anything is returned, so a large max_tokens directly risks a timeout,

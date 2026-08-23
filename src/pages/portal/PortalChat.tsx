@@ -201,6 +201,13 @@ export function PortalChat() {
         <div ref={bottomRef} />
       </div>
 
+      {/* Privacy notice */}
+      <div className="shrink-0 px-4 pt-2 bg-white">
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+          ⚠️ אין להזין מידע אישי רגיש על משפחות, מוטבים או אנשים פרטיים.
+        </p>
+      </div>
+
       {/* Input */}
       <div className="shrink-0 px-4 py-3 bg-white border-t border-gray-100 flex gap-2">
         <textarea

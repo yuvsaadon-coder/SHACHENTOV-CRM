@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
@@ -59,10 +59,17 @@ export function TasksPage() {
   const { tasks, loading } = useTasks()
   const { appUser } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [view, setView] = useState<ViewMode>('list')
-  const [search, setSearch] = useState('')
-  const [monthFilter, setMonthFilter] = useState(true)
-  const [selectedMonth, setSelectedMonth] = useState(() => new Date())
+
+  // All UI state lives in the URL so it survives navigation to/from task detail
+  const view = (searchParams.get('view') as ViewMode) || 'list'
+  const search = searchParams.get('search') || ''
+  const monthFilter = searchParams.get('monthFilter') !== 'false'
+  const selectedMonth = useMemo(() => {
+    const m = searchParams.get('month')
+    if (!m) return new Date()
+    const [y, mo] = m.split('-').map(Number)
+    return new Date(y, mo - 1, 1)
+  }, [searchParams])
   const isCurrentMonth = useMemo(() => {
     const now = new Date()
     return selectedMonth.getFullYear() === now.getFullYear() && selectedMonth.getMonth() === now.getMonth()
@@ -110,7 +117,18 @@ export function TasksPage() {
     const p = new URLSearchParams(searchParams)
     if (val) p.set(key, val)
     else p.delete(key)
-    setSearchParams(p)
+    setSearchParams(p, { replace: true })
+  }
+
+  const setView = (v: ViewMode) => setFilter('view', v === 'list' ? null : v)
+  const setSearch = (s: string) => setFilter('search', s || null)
+  const setMonthFilter = (fn: boolean | ((prev: boolean) => boolean)) => {
+    const next = typeof fn === 'function' ? fn(monthFilter) : fn
+    setFilter('monthFilter', next ? null : 'false')
+  }
+  const setSelectedMonth = (fn: Date | ((prev: Date) => Date)) => {
+    const next = typeof fn === 'function' ? fn(selectedMonth) : fn
+    setFilter('month', `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`)
   }
 
   const hasAnyFilter = !!(domainFilter || statusFilter || freqFilter || responsibleFilter || search || monthFilter)
@@ -250,7 +268,7 @@ export function TasksPage() {
 
           {hasAnyFilter && (
             <button
-              onClick={() => { setSearchParams({}); setSearch(''); setMonthFilter(false); setSelectedMonth(new Date()) }}
+              onClick={() => setSearchParams({}, { replace: true })}
               className="text-xs text-gray-500 hover:text-red-500 underline"
             >
               נקה מסננים

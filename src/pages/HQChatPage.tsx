@@ -2,15 +2,17 @@ import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { DOMAIN_LABELS, DOMAINS, type Domain } from '../types'
 import { useChatHistory } from '../hooks/useChatHistory'
+import { useAllBranches } from '../hooks/useBranch'
 import type { ChatMessage } from '../hooks/useChatHistory'
 
-export type ScopeKey = 'hq' | 'research' | 'global' | 'branch'
+export type ScopeKey = 'hq' | 'research' | 'global' | 'branch' | 'reports'
 
 const SCOPE_OPTIONS: { key: ScopeKey; label: string; description: string }[] = [
   { key: 'hq',       label: 'מאגר מטה',       description: 'ידע ונהלים שנכתבו על ידי צוות המטה' },
   { key: 'research', label: 'מחקר מקצועי',    description: 'מאמרים ומסמכי ידע מהספרייה' },
   { key: 'global',   label: 'ידע כלל-ארגוני', description: 'פריטים משותפים שהוזנו על ידי הרכזים' },
   { key: 'branch',   label: 'ידע סניפי',      description: 'ידע שהוזן ברמת הסניפים הספציפיים' },
+  { key: 'reports',  label: 'דיווחי רכזים',   description: 'דיווחים רבעוניים שהגישו הרכזים' },
 ]
 
 const DEFAULT_SCOPES: ScopeKey[] = ['hq', 'research', 'global', 'branch']
@@ -19,6 +21,7 @@ export function HQChatPage() {
   const { firebaseUser, appUser } = useAuth()
   const [scopes, setScopes] = useState<ScopeKey[]>(DEFAULT_SCOPES)
   const [domainFilter, setDomainFilter] = useState<Domain | ''>('')
+  const [branchFilter, setBranchFilter] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -26,6 +29,7 @@ export function HQChatPage() {
   const [showHistory, setShowHistory] = useState(false)
   const [showScopePanel, setShowScopePanel] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const { branches } = useAllBranches()
 
   const { sessions, saveSession, startNewSession, loadSession } =
     useChatHistory(appUser?.uid, 'hq')
@@ -63,6 +67,7 @@ export function HQChatPage() {
         body: JSON.stringify({
           scopes,
           domainFilter: domainFilter || null,
+          branchFilter: branchFilter || null,
           messages: updatedMessages,
           question,
         }),
@@ -199,6 +204,23 @@ export function HQChatPage() {
           </div>
         )}
 
+        {/* Branch filter — shown when reports scope is active */}
+        {scopes.includes('reports') && (
+          <div className="flex items-center gap-2 pb-1">
+            <span className="text-xs text-gray-500 shrink-0">סניף:</span>
+            <select
+              value={branchFilter}
+              onChange={(e) => setBranchFilter(e.target.value)}
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#189A9F]"
+            >
+              <option value="">כל הסניפים</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Domain filter dropdown */}
         {showDomainFilter && (
           <div className="flex flex-wrap gap-1.5 pb-1">
@@ -304,6 +326,13 @@ export function HQChatPage() {
           </div>
         )}
         <div ref={bottomRef} />
+      </div>
+
+      {/* Privacy notice */}
+      <div className="shrink-0 px-4 pt-2 bg-white">
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+          ⚠️ אין להזין מידע אישי רגיש על משפחות, מוטבים או אנשים פרטיים.
+        </p>
       </div>
 
       {/* Input */}

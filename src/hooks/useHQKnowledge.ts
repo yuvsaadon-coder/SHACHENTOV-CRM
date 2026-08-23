@@ -1,9 +1,25 @@
 import { useEffect, useState } from 'react'
-import { collection, query, where, onSnapshot, addDoc, deleteDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, addDoc, deleteDoc, updateDoc, setDoc, doc, serverTimestamp } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import type { HQKnowledgeItem, HQKnowledgeCategory, Domain } from '../types'
+
+async function syncToCoordinators(docId: string, title: string, content: string, storageUrl?: string) {
+  await setDoc(doc(db, 'knowledgeItems', `hq-${docId}`), {
+    branchId: 'global',
+    type: 'document',
+    title,
+    content,
+    storageUrl: storageUrl ?? null,
+    sourceHQId: docId,
+    createdAt: new Date().toISOString(),
+  }, { merge: true })
+}
+
+async function removeFromCoordinators(docId: string) {
+  await deleteDoc(doc(db, 'knowledgeItems', `hq-${docId}`))
+}
 
 async function uploadToStorage(file: File, docId: string): Promise<{ fileUrl: string; fileName: string }> {
   const storageRef = ref(storage, `hq_knowledge/${docId}/${file.name}`)
@@ -54,18 +70,24 @@ export function useAddHQKnowledge() {
     content: string
     file?: File
     tags: string[]
+    visibleToCoordinators?: boolean
   }) => {
-    const { file, ...rest } = data
-    // Create the doc first to get its ID, then upload file (if any) using that ID as path prefix
+    const { file, visibleToCoordinators, ...rest } = data
     const docRef = await addDoc(collection(db, 'hq_knowledge'), {
       ...rest,
+      visibleToCoordinators: visibleToCoordinators ?? false,
       createdBy: appUser?.name ?? appUser?.uid ?? '',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
+    let fileUrl: string | undefined
     if (file) {
-      const { fileUrl, fileName } = await uploadToStorage(file, docRef.id)
-      await updateDoc(docRef, { fileUrl, fileName, updatedAt: serverTimestamp() })
+      const uploaded = await uploadToStorage(file, docRef.id)
+      fileUrl = uploaded.fileUrl
+      await updateDoc(docRef, { fileUrl: uploaded.fileUrl, fileName: uploaded.fileName, updatedAt: serverTimestamp() })
+    }
+    if (visibleToCoordinators) {
+      await syncToCoordinators(docRef.id, data.title, data.content, fileUrl)
     }
   }
 
@@ -82,13 +104,21 @@ export function useUpdateHQKnowledge() {
     fileUrl?: string
     fileName?: string
     tags: string[]
+    visibleToCoordinators?: boolean
   }) => {
-    const { file, ...rest } = data
+    const { file, visibleToCoordinators, ...rest } = data
+    let fileUrl = rest.fileUrl
     if (file) {
-      const { fileUrl, fileName } = await uploadToStorage(file, id)
-      await updateDoc(doc(db, 'hq_knowledge', id), { ...rest, fileUrl, fileName, updatedAt: serverTimestamp() })
+      const uploaded = await uploadToStorage(file, id)
+      fileUrl = uploaded.fileUrl
+      await updateDoc(doc(db, 'hq_knowledge', id), { ...rest, fileUrl: uploaded.fileUrl, fileName: uploaded.fileName, visibleToCoordinators: visibleToCoordinators ?? false, updatedAt: serverTimestamp() })
     } else {
-      await updateDoc(doc(db, 'hq_knowledge', id), { ...rest, updatedAt: serverTimestamp() })
+      await updateDoc(doc(db, 'hq_knowledge', id), { ...rest, visibleToCoordinators: visibleToCoordinators ?? false, updatedAt: serverTimestamp() })
+    }
+    if (visibleToCoordinators) {
+      await syncToCoordinators(id, data.title, data.content, fileUrl)
+    } else {
+      try { await removeFromCoordinators(id) } catch { /* doc may not exist */ }
     }
   }
   return { updateItem }
