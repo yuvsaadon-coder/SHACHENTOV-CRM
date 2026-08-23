@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   doc, getDoc, updateDoc, serverTimestamp, setDoc,
@@ -8,6 +8,7 @@ import {
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import { useRoles } from '../hooks/useRoles'
 import { StatusBadge } from '../components/ui/StatusBadge'
 import { DomainBadge } from '../components/ui/DomainBadge'
 import { Spinner } from '../components/ui/Spinner'
@@ -27,6 +28,12 @@ export function TaskDetailPage() {
   const navigate = useNavigate()
   const { appUser } = useAuth()
   const { toast } = useToast()
+
+  const { roles } = useRoles()
+  const roleHolderNames = useMemo(
+    () => [...new Set(roles.map((r) => r.holderName).filter(Boolean))].sort(),
+    [roles]
+  )
 
   const [task, setTask] = useState<Task | null>(null)
   const [editing, setEditing] = useState(false)
@@ -317,11 +324,25 @@ export function TaskDetailPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-brand-navy mb-1">אחראי</label>
-                <input
-                  value={form.responsible || ''}
-                  onChange={(e) => setForm({ ...form, responsible: e.target.value })}
+                <select
+                  value={roleHolderNames.includes(form.responsible ?? '') ? (form.responsible ?? '') : '__other__'}
+                  onChange={(e) => {
+                    if (e.target.value !== '__other__') setForm({ ...form, responsible: e.target.value })
+                  }}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
-                />
+                >
+                  <option value="">— בחר אחראי —</option>
+                  {roleHolderNames.map((n) => <option key={n} value={n}>{n}</option>)}
+                  <option value="__other__">אחר (הקלד ידנית)</option>
+                </select>
+                {(!roleHolderNames.includes(form.responsible ?? '') || form.responsible === '__other__') && (
+                  <input
+                    value={form.responsible === '__other__' ? '' : (form.responsible ?? '')}
+                    onChange={(e) => setForm({ ...form, responsible: e.target.value })}
+                    placeholder="שם האחראי..."
+                    className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-brand-navy mb-1">סטטוס</label>
@@ -385,13 +406,73 @@ export function TaskDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-navy mb-1">מעורבים (מופרד בפסיקים)</label>
-                <input
-                  value={(form.involved ?? []).join(', ')}
-                  onChange={(e) => setForm({ ...form, involved: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })}
-                  placeholder="שם א׳, שם ב׳, ..."
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
-                />
+                <label className="block text-sm font-medium text-brand-navy mb-1">מעורבים</label>
+                <div className="space-y-2">
+                  {/* Selected people chips */}
+                  {(form.involved ?? []).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {(form.involved ?? []).map((person) => (
+                        <span
+                          key={person}
+                          className="inline-flex items-center gap-1 text-xs bg-brand-teal050 text-brand-navy border border-[#189A9F]/30 px-2 py-0.5 rounded-full"
+                        >
+                          {person}
+                          <button
+                            type="button"
+                            onClick={() => setForm({ ...form, involved: (form.involved ?? []).filter((p) => p !== person) })}
+                            className="text-gray-400 hover:text-red-500 leading-none"
+                          >×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {/* Dropdown to add from role holders */}
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const v = e.target.value
+                      if (v && !(form.involved ?? []).includes(v)) {
+                        setForm({ ...form, involved: [...(form.involved ?? []), v] })
+                      }
+                    }}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                  >
+                    <option value="">+ הוסף מעורב...</option>
+                    {roleHolderNames
+                      .filter((n) => !(form.involved ?? []).includes(n))
+                      .map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                  {/* Free text for "other" */}
+                  <div className="flex gap-2">
+                    <input
+                      id="involved-custom"
+                      placeholder="אחר — כתוב שם ולחץ הוסף"
+                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          const v = (e.target as HTMLInputElement).value.trim()
+                          if (v && !(form.involved ?? []).includes(v)) {
+                            setForm({ ...form, involved: [...(form.involved ?? []), v] });
+                            (e.target as HTMLInputElement).value = ''
+                          }
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const inp = document.getElementById('involved-custom') as HTMLInputElement
+                        const v = inp?.value.trim()
+                        if (v && !(form.involved ?? []).includes(v)) {
+                          setForm({ ...form, involved: [...(form.involved ?? []), v] })
+                          if (inp) inp.value = ''
+                        }
+                      }}
+                      className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+                    >הוסף</button>
+                  </div>
+                </div>
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-brand-navy mb-1">סדר פעולות / פירוט</label>

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
@@ -13,6 +13,8 @@ import {
   DOMAIN_LABELS, DOMAINS, STATUS_LABELS, FREQUENCY_LABELS,
   type Domain, type TaskStatus, type TaskFrequency, type Task
 } from '../types'
+
+const VIEW_PREF_KEY = (uid: string) => `viewPref_${uid}`
 
 const STATUS_STYLE: Record<TaskStatus, React.CSSProperties> = {
   'בוצע':    { backgroundColor: '#C6EFCE', color: '#0A6B2E' },
@@ -113,6 +115,18 @@ export function TasksPage() {
     })
   }, [tasks, monthFilter, selectedMonth, domainFilter, statusFilter, freqFilter, responsibleFilter, search])
 
+  // On first entry (no URL params), set domain default for domain users and restore saved view
+  useEffect(() => {
+    if (!appUser || searchParams.size > 0) return
+    const p = new URLSearchParams()
+    const isDomainRole = (DOMAINS as readonly string[]).includes(appUser.role)
+    if (isDomainRole) p.set('domain', appUser.role)
+    const savedView = localStorage.getItem(VIEW_PREF_KEY(appUser.uid))
+    if (savedView) p.set('view', savedView)
+    if (p.size > 0) setSearchParams(p, { replace: true })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appUser?.uid])
+
   const setFilter = (key: string, val: string | null) => {
     const p = new URLSearchParams(searchParams)
     if (val) p.set(key, val)
@@ -120,7 +134,10 @@ export function TasksPage() {
     setSearchParams(p, { replace: true })
   }
 
-  const setView = (v: ViewMode) => setFilter('view', v === 'list' ? null : v)
+  const setView = (v: ViewMode) => {
+    if (appUser?.uid) localStorage.setItem(VIEW_PREF_KEY(appUser.uid), v)
+    setFilter('view', v === 'list' ? null : v)
+  }
   const setSearch = (s: string) => setFilter('search', s || null)
   const setMonthFilter = (fn: boolean | ((prev: boolean) => boolean)) => {
     const next = typeof fn === 'function' ? fn(monthFilter) : fn
@@ -212,7 +229,20 @@ export function TasksPage() {
 
           {appUser?.name && (
             <button
-              onClick={() => setFilter('responsible', responsibleFilter === appUser.name ? null : appUser.name)}
+              onClick={() => {
+                const isActive = responsibleFilter === appUser.name
+                if (isActive) {
+                  setFilter('responsible', null)
+                } else {
+                  const p = new URLSearchParams(searchParams)
+                  p.set('responsible', appUser.name)
+                  // When user has a domain role, scope to their domain so they don't see other domains they happen to appear in
+                  if ((DOMAINS as readonly string[]).includes(appUser.role)) {
+                    p.set('domain', appUser.role)
+                  }
+                  setSearchParams(p, { replace: true })
+                }
+              }}
               className={`px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
                 responsibleFilter === appUser.name
                   ? 'border-brand-teal text-white'

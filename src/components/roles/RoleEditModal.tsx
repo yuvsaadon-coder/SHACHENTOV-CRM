@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { doc, updateDoc, addDoc, collection, deleteDoc, deleteField } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
-import type { OrgRole, RoleLevel, RoleStatus, RolePriority } from '../../types'
-import { ROLE_LEVELS, ROLE_STATUS_LABELS, ROLE_PRIORITY_LABELS } from '../../types'
+import type { OrgRole, RoleLevel, RoleStatus, RolePriority, RecruitmentUrgency } from '../../types'
+import { ROLE_LEVELS, ROLE_STATUS_LABELS, ROLE_PRIORITY_LABELS, RECRUITMENT_URGENCY_OPTIONS, RECRUITMENT_NEEDS_STATUS } from '../../types'
 import { useAllBranches } from '../../hooks/useBranch'
 
 interface Props {
@@ -174,6 +174,19 @@ export function RoleEditModal({ role, allRoles, onClose }: Props) {
               </select>
             </div>
           </div>
+
+          {RECRUITMENT_NEEDS_STATUS.includes(form.status) && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">סטטוס גיוס</label>
+              <select
+                value={form.recruitmentUrgency ?? 'לא לגיוס'}
+                onChange={(e) => set('recruitmentUrgency', e.target.value as RecruitmentUrgency)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+              >
+                {RECRUITMENT_URGENCY_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">כפוף ל-</label>

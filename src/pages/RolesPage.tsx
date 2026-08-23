@@ -223,6 +223,17 @@ export function RolesPage() {
                       >
                         {ROLE_STATUS_LABELS.map((s) => <option key={s} value={s}>{s}</option>)}
                       </select>
+                      {role.recruitmentUrgency && role.recruitmentUrgency !== 'לא לגיוס' && (
+                        <div className="mt-1">
+                          <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${
+                            role.recruitmentUrgency === 'לגיוס - קריטי' ? 'bg-red-100 text-red-700 border-red-300' :
+                            role.recruitmentUrgency === 'לגיוס - דחוף' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+                            'bg-yellow-50 text-yellow-800 border-yellow-200'
+                          }`}>
+                            🔍 {role.recruitmentUrgency}
+                          </span>
+                        </div>
+                      )}
                       {role.delegatedTo && (
                         <div className="mt-1.5">
                           <span className="text-xs bg-orange-50 text-orange-700 border border-orange-200 px-1.5 py-0.5 rounded">

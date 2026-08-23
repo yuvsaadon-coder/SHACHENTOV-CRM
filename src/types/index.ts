@@ -63,11 +63,22 @@ export interface AppUser {
 // Private per-user to-dos, kept in users/{uid}/personalTasks — not part of the
 // org-wide `tasks` collection, so they never show up on the Gantt/Kanban/task
 // list and aren't tied to a domain, category, or anyone else.
+export type PersonalTaskStatus = 'לא בוצע' | 'בהמתנה' | 'בעבודה' | 'חסומה' | 'בוצע'
+export const PERSONAL_TASK_STATUSES: PersonalTaskStatus[] = ['לא בוצע', 'בהמתנה', 'בעבודה', 'חסומה', 'בוצע']
+export const PERSONAL_TASK_STATUS_STYLE: Record<PersonalTaskStatus, { backgroundColor: string; color: string }> = {
+  'לא בוצע': { backgroundColor: '#F3F4F6', color: '#4B5563' },
+  'בהמתנה':  { backgroundColor: '#FEF3C7', color: '#92400E' },
+  'בעבודה':  { backgroundColor: '#189A9F', color: '#ffffff' },
+  'חסומה':   { backgroundColor: '#FEE2E2', color: '#991B1B' },
+  'בוצע':    { backgroundColor: '#C6EFCE', color: '#0A6B2E' },
+}
+
 export interface PersonalTask {
   id: string
   title: string
   notes: string
   done: boolean
+  status?: PersonalTaskStatus
   recurring: boolean
   dueDate: Timestamp | null
   createdAt: Timestamp
@@ -101,6 +112,9 @@ export interface HistoryEntry {
 export type RoleLevel = 'ועד מנהל' | 'מטה' | 'סניף חוץ' | 'סניף ירושלים' | 'בתי קפה נודדים' | 'טוסטר' | 'סניפים עיתיים' | 'יריד'
 export type RoleStatus = 'מאויש' | 'חסר' | 'חלקי' | 'בסיכון' | 'אחר'
 export type RolePriority = 'רגיל' | 'בינוני' | 'דחוף'
+export type RecruitmentUrgency = 'לא לגיוס' | 'לגיוס - בינוני' | 'לגיוס - דחוף' | 'לגיוס - קריטי'
+export const RECRUITMENT_URGENCY_OPTIONS: RecruitmentUrgency[] = ['לא לגיוס', 'לגיוס - בינוני', 'לגיוס - דחוף', 'לגיוס - קריטי']
+export const RECRUITMENT_NEEDS_STATUS: RoleStatus[] = ['חסר', 'חלקי', 'בסיכון']
 export type VolunteerStatus = 'יציב' | 'חוסר מתמשך' | 'חוסר קריטי'
 
 export const FOOD_BRANCH_LEVELS: RoleLevel[] = ['סניף חוץ', 'סניף ירושלים']
@@ -139,6 +153,7 @@ export interface OrgRole {
   holderName: string
   status: RoleStatus
   priority: RolePriority
+  recruitmentUrgency?: RecruitmentUrgency
   email: string
   phone: string
   linkedTaskIds: string[]
