@@ -23,9 +23,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user)
       if (user) {
-        const snap = await getDoc(doc(db, 'users', user.uid))
-        if (snap.exists()) {
-          setAppUser({ uid: user.uid, ...snap.data() } as AppUser)
+        try {
+          const snap = await getDoc(doc(db, 'users', user.uid))
+          if (snap.exists()) {
+            setAppUser({ uid: user.uid, ...snap.data() } as AppUser)
+          }
+        } catch {
+          // Firestore permissions error — still unblock the loading state
         }
       } else {
         setAppUser(null)
