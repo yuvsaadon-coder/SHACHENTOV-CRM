@@ -390,11 +390,33 @@ function BranchEditPanel({ branch, onClose }: { branch: Branch; onClose: () => v
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-500 mb-1">תדירות חלוקה</label>
-              <select value={form.distributionFrequency ?? ''} onChange={(e) => setForm({ ...form, distributionFrequency: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]">
-                <option value="">—</option>
-                {DIST_FREQ_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
+              {(() => {
+                const isOther = form.distributionFrequency !== '' && !DIST_FREQ_OPTIONS.includes(form.distributionFrequency)
+                const selectVal = isOther ? 'אחר' : (form.distributionFrequency ?? '')
+                return (
+                  <div className="space-y-1">
+                    <select
+                      value={selectVal}
+                      onChange={(e) => {
+                        if (e.target.value === 'אחר') setForm({ ...form, distributionFrequency: '' })
+                        else setForm({ ...form, distributionFrequency: e.target.value })
+                      }}
+                      className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+                    >
+                      <option value="">—</option>
+                      {DIST_FREQ_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                    {(selectVal === 'אחר' || isOther) && (
+                      <input
+                        placeholder="פרט תדירות..."
+                        value={isOther ? form.distributionFrequency : ''}
+                        onChange={(e) => setForm({ ...form, distributionFrequency: e.target.value })}
+                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+                      />
+                    )}
+                  </div>
+                )
+              })()}
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">יום חלוקה</label>

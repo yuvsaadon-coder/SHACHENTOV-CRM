@@ -98,17 +98,25 @@ const BRANCH_TYPE_LABELS: Record<string, string> = {
   cafe_youth: 'בתי קפה ומועדוני נוער',
 }
 
+type PageTab = 'reports' | 'coverage'
+
 export function ReportsPage() {
   const { reports, loading, error } = useAllQuarterlyReports()
   const { branches } = useAllBranches()
   const { labelByKey } = useAllReportQuestions()
 
+  const [tab, setTab] = useState<PageTab>('reports')
   const [branchId, setBranchId] = useState('')
   const [quarter, setQuarter] = useState<QuarterLabel | ''>('')
   const [year, setYear] = useState<number | ''>('')
   const [branchType, setBranchType] = useState('')
   const [city, setCity] = useState('')
   const [search, setSearch] = useState('')
+
+  // Coverage tab state
+  const currentYear = new Date().getFullYear()
+  const [covQuarter, setCovQuarter] = useState<QuarterLabel>('Q1')
+  const [covYear, setCovYear] = useState<number>(currentYear)
 
   const branchMap = useMemo(
     () => Object.fromEntries(branches.map((b) => [b.id, b])),
@@ -152,6 +160,18 @@ export function ReportsPage() {
   const clearAll = () => {
     setBranchId(''); setQuarter(''); setYear(''); setBranchType(''); setCity(''); setSearch('')
   }
+
+  // Coverage: which branches reported for covQuarter/covYear
+  const covReportedIds = useMemo(() => {
+    return new Set(
+      reports
+        .filter((r) => r.quarter === covQuarter && r.year === covYear)
+        .map((r) => r.branchId)
+    )
+  }, [reports, covQuarter, covYear])
+
+  const covReported = useMemo(() => branches.filter((b) => covReportedIds.has(b.id)), [branches, covReportedIds])
+  const covMissing = useMemo(() => branches.filter((b) => !covReportedIds.has(b.id)), [branches, covReportedIds])
 
   const exportCsv = () => {
     const keys = [...new Set(filtered.flatMap((r) => Object.keys(r.data)))]
@@ -213,76 +233,185 @@ export function ReportsPage() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold" style={{ color: '#141348' }}>סינון</h2>
-          {activeFilters > 0 && (
-            <button onClick={clearAll} className="text-xs text-gray-500 hover:text-red-500">
-              נקה סינון ({activeFilters})
-            </button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <select value={branchId} onChange={(e) => setBranchId(e.target.value)} className={selectClass}>
-            <option value="">כל הסניפים</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-
-          <select value={city} onChange={(e) => setCity(e.target.value)} className={selectClass}>
-            <option value="">כל הערים</option>
-            {cities.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-
-          <select value={branchType} onChange={(e) => setBranchType(e.target.value)} className={selectClass}>
-            <option value="">כל סוגי הסניפים</option>
-            {Object.entries(BRANCH_TYPE_LABELS).map(([k, label]) => (
-              <option key={k} value={k}>{label}</option>
-            ))}
-          </select>
-
-          <select
-            value={quarter}
-            onChange={(e) => setQuarter(e.target.value as QuarterLabel | '')}
-            className={selectClass}
+      {/* Tab toggle */}
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
+        {([['reports', '📄 דיווחים'], ['coverage', '📊 כיסוי רבעוני']] as [PageTab, string][]).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+            style={tab === key
+              ? { backgroundColor: 'white', color: '#141348', boxShadow: '0 1px 3px rgba(0,0,0,0.12)' }
+              : { color: '#6B7280' }}
           >
-            <option value="">כל הרבעונים</option>
-            {QUARTERS.map((q) => (
-              <option key={q} value={q}>{QUARTER_LABELS[q]}</option>
-            ))}
-          </select>
-
-          <select
-            value={year}
-            onChange={(e) => setYear(e.target.value ? Number(e.target.value) : '')}
-            className={selectClass}
-          >
-            <option value="">כל השנים</option>
-            {years.map((y) => <option key={y} value={y}>{y}</option>)}
-          </select>
-
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="חיפוש חופשי בתוכן הדיווחים..."
-            className={selectClass}
-          />
-        </div>
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* Results */}
-      {filtered.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-sm text-gray-400">
-          {reports.length === 0 ? 'עדיין לא הוגשו דיווחים רבעוניים' : 'אין דיווחים התואמים את הסינון'}
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map((r) => (
-            <ReportCard key={r.id} report={r} branch={branchMap[r.branchId]} labelByKey={labelByKey} />
-          ))}
+      {tab === 'reports' && (
+        <>
+          {/* Filters */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold" style={{ color: '#141348' }}>סינון</h2>
+              {activeFilters > 0 && (
+                <button onClick={clearAll} className="text-xs text-gray-500 hover:text-red-500">
+                  נקה סינון ({activeFilters})
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <select value={branchId} onChange={(e) => setBranchId(e.target.value)} className={selectClass}>
+                <option value="">כל הסניפים</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+
+              <select value={city} onChange={(e) => setCity(e.target.value)} className={selectClass}>
+                <option value="">כל הערים</option>
+                {cities.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+
+              <select value={branchType} onChange={(e) => setBranchType(e.target.value)} className={selectClass}>
+                <option value="">כל סוגי הסניפים</option>
+                {Object.entries(BRANCH_TYPE_LABELS).map(([k, label]) => (
+                  <option key={k} value={k}>{label}</option>
+                ))}
+              </select>
+
+              <select
+                value={quarter}
+                onChange={(e) => setQuarter(e.target.value as QuarterLabel | '')}
+                className={selectClass}
+              >
+                <option value="">כל הרבעונים</option>
+                {QUARTERS.map((q) => (
+                  <option key={q} value={q}>{QUARTER_LABELS[q]}</option>
+                ))}
+              </select>
+
+              <select
+                value={year}
+                onChange={(e) => setYear(e.target.value ? Number(e.target.value) : '')}
+                className={selectClass}
+              >
+                <option value="">כל השנים</option>
+                {years.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="חיפוש חופשי בתוכן הדיווחים..."
+                className={selectClass}
+              />
+            </div>
+          </div>
+
+          {/* Results */}
+          {filtered.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-sm text-gray-400">
+              {reports.length === 0 ? 'עדיין לא הוגשו דיווחים רבעוניים' : 'אין דיווחים התואמים את הסינון'}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filtered.map((r) => (
+                <ReportCard key={r.id} report={r} branch={branchMap[r.branchId]} labelByKey={labelByKey} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === 'coverage' && (
+        <div className="space-y-4">
+          {/* Quarter/Year picker */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-wrap gap-3 items-center">
+            <span className="text-sm font-semibold" style={{ color: '#141348' }}>בחר רבעון:</span>
+            <select
+              value={covQuarter}
+              onChange={(e) => setCovQuarter(e.target.value as QuarterLabel)}
+              className={selectClass}
+            >
+              {QUARTERS.map((q) => (
+                <option key={q} value={q}>{QUARTER_LABELS[q]}</option>
+              ))}
+            </select>
+            <select
+              value={covYear}
+              onChange={(e) => setCovYear(Number(e.target.value))}
+              className={selectClass}
+            >
+              {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            <span className="text-xs text-gray-500">
+              {covReported.length} מתוך {branches.length} סניפים דיווחו
+            </span>
+          </div>
+
+          {/* Coverage bars */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <div className="flex gap-2 mb-3 text-xs text-gray-500 items-center">
+              <span className="w-3 h-3 rounded-full bg-green-400 inline-block"></span> דיווחו ({covReported.length})
+              <span className="w-3 h-3 rounded-full bg-red-300 inline-block mr-2"></span> לא דיווחו ({covMissing.length})
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-3 mb-4 overflow-hidden">
+              <div
+                className="bg-green-400 h-full rounded-full transition-all"
+                style={{ width: branches.length > 0 ? `${Math.round(covReported.length / branches.length * 100)}%` : '0%' }}
+              />
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              {/* Did NOT report */}
+              <div>
+                <h3 className="text-sm font-semibold text-red-600 mb-2">
+                  🔴 לא דיווחו ({covMissing.length})
+                </h3>
+                {covMissing.length === 0 ? (
+                  <div className="text-xs text-gray-400 py-3 text-center">כל הסניפים דיווחו!</div>
+                ) : (
+                  <div className="space-y-1">
+                    {covMissing.map((b) => (
+                      <div key={b.id} className="flex items-center justify-between px-3 py-2 bg-red-50 rounded-lg border border-red-100 text-sm">
+                        <span className="font-medium text-gray-800">{b.name}</span>
+                        <span className="text-xs text-gray-500">{b.city}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Reported */}
+              <div>
+                <h3 className="text-sm font-semibold text-green-700 mb-2">
+                  🟢 דיווחו ({covReported.length})
+                </h3>
+                {covReported.length === 0 ? (
+                  <div className="text-xs text-gray-400 py-3 text-center">אין דיווחים עדיין לרבעון זה</div>
+                ) : (
+                  <div className="space-y-1">
+                    {covReported.map((b) => {
+                      const rep = reports.find((r) => r.branchId === b.id && r.quarter === covQuarter && r.year === covYear)
+                      return (
+                        <div key={b.id} className="flex items-center justify-between px-3 py-2 bg-green-50 rounded-lg border border-green-100 text-sm">
+                          <span className="font-medium text-gray-800">{b.name}</span>
+                          <span className="text-xs text-gray-500">
+                            {rep?.submittedAt?.toDate?.().toLocaleDateString('he-IL') ?? b.city}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

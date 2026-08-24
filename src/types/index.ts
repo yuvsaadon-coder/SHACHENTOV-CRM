@@ -119,7 +119,7 @@ export type VolunteerStatus = 'יציב' | 'חוסר מתמשך' | 'חוסר ק�
 
 export const FOOD_BRANCH_LEVELS: RoleLevel[] = ['סניף חוץ', 'סניף ירושלים']
 export const VOLUNTEER_STATUS_OPTIONS: VolunteerStatus[] = ['יציב', 'חוסר מתמשך', 'חוסר קריטי']
-export const DIST_FREQ_OPTIONS = ['יומי', 'שבועי', 'שלוש בשבוע', 'דו-שבועי', 'חודשי']
+export const DIST_FREQ_OPTIONS = ['יומי', 'שבועי', 'שלוש בשבוע', 'דו-שבועי', 'חודשי', 'חגים', 'אחר']
 
 export interface SeasonalPeriod {
   name: string
