@@ -4,6 +4,7 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useTasks } from '../hooks/useTasks'
 import { useAuth } from '../context/AuthContext'
+import { useRecurringTaskReset } from '../hooks/useRecurringTaskReset'
 import { exportTasks } from '../utils/export'
 import { Spinner } from '../components/ui/Spinner'
 import { DomainBadge } from '../components/ui/DomainBadge'
@@ -61,6 +62,9 @@ export function TasksPage() {
   const { tasks, loading } = useTasks()
   const { appUser } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
+
+  // Auto-reset recurring tasks when their cycle rolls over (admin only)
+  useRecurringTaskReset(tasks, appUser?.role === 'admin')
 
   // All UI state lives in the URL so it survives navigation to/from task detail
   const view = (searchParams.get('view') as ViewMode) || 'list'
