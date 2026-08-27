@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --background: #f8f9fb;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-border: #e5e7eb;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --primary: #1d4ed8;
+  --primary-foreground: #ffffff;
+  --primary-light: #eff6ff;
+  --secondary: #0d9488;
+  --secondary-foreground: #ffffff;
+  --accent: #f59e0b;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --success: #16a34a;
+  --warning: #d97706;
+  --border: #e5e7eb;
+  --input: #ffffff;
+  --ring: #3b82f6;
+  --radius: 0.5rem;
+  --sidebar-width: 240px;
+  --font-sans: 'Heebo', 'Arial Hebrew', 'David', sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-border: var(--border);
+  --font-sans: var(--font-sans);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* RTL scroll area */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track { background: var(--muted); }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+/* Status badge colors */
+.status-active { background: #dcfce7; color: #15803d; }
+.status-pending { background: #fef9c3; color: #a16207; }
+.status-rejected { background: #fee2e2; color: #b91c1c; }
+.status-alumni { background: #ede9fe; color: #7c3aed; }
+.status-candidate { background: #e0f2fe; color: #0369a1; }
+
+/* Engagement badge colors */
+.engage-high { background: #dcfce7; color: #15803d; }
+.engage-medium { background: #fef9c3; color: #a16207; }
+.engage-low { background: #fee2e2; color: #b91c1c; }
+.engage-none { background: #f3f4f6; color: #6b7280; }
+
+/* Kanban board */
+.kanban-column {
+  min-height: 500px;
+  background: #f9fafb;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.kanban-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: box-shadow 0.15s;
+}
+.kanban-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.kanban-card.dragging { box-shadow: 0 8px 24px rgba(0,0,0,0.15); opacity: 0.9; }
+
+/* Data table */
+.data-table th {
+  background: var(--muted);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted-foreground);
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--primary-light); }
+
+/* Form builder */
+.field-palette-item {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  cursor: grab;
+  transition: all 0.15s;
+}
+.field-palette-item:hover { border-color: var(--primary); background: var(--primary-light); }
+
+/* Sidebar */
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.15s;
+  cursor: pointer;
+  text-decoration: none;
+}
+.sidebar-nav-item:hover { background: var(--primary-light); color: var(--primary); }
+.sidebar-nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+.sidebar-nav-item svg { flex-shrink: 0; }
+
+/* Utility: text truncation */
+.truncate-rtl {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+}
+
+/* Print styles */
+@media print {
+  .no-print { display: none !important; }
+}
