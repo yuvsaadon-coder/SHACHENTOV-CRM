@@ -1,0 +1,110 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helper functions ──────────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && request.auth.token.role == 'SuperAdmin';
+    }
+
+    function isProgramManager() {
+      return isSignedIn() && request.auth.token.role == 'ProgramManager';
+    }
+
+    function managedPrograms() {
+      return request.auth.token.programIds;
+    }
+
+    // ─── Profiles ──────────────────────────────────────────────────────────────
+
+    match /profiles/{profileId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSuperAdmin() || isProgramManager();
+      allow delete: if isSuperAdmin();
+    }
+
+    // ─── Organizations ─────────────────────────────────────────────────────────
+
+    match /organizations/{orgId} {
+      allow read: if isSignedIn();
+      allow write: if isSuperAdmin() || isProgramManager();
+    }
+
+    // ─── Programs ──────────────────────────────────────────────────────────────
+
+    match /programs/{programId} {
+      allow read: if isSignedIn();
+      allow write: if isSuperAdmin();
+
+      // Cohorts sub-collection
+      match /cohorts/{cohortId} {
+        allow read: if isSignedIn();
+        allow write: if isSuperAdmin()
+          || (isProgramManager() && programId in managedPrograms());
+      }
+    }
+
+    // ─── Enrollments ───────────────────────────────────────────────────────────
+
+    match /enrollments/{enrollmentId} {
+      allow read: if isSignedIn();
+      allow create: if isSuperAdmin()
+        || (isProgramManager() && resource == null);
+      allow update: if isSuperAdmin()
+        || (isProgramManager() && request.resource.data.programId in managedPrograms());
+      allow delete: if isSuperAdmin();
+    }
+
+    // ─── Forms ─────────────────────────────────────────────────────────────────
+
+    match /forms/{formId} {
+      allow read: if isSignedIn();
+      allow write: if isSuperAdmin()
+        || (isProgramManager() && (
+          !exists(/databases/$(database)/documents/forms/$(formId))
+          || resource.data.programId in managedPrograms()
+        ));
+
+      // Submissions: authenticated users can read; public submissions go through API route
+      match /submissions/{subId} {
+        allow read: if isSignedIn();
+        allow create: if true; // validated server-side via API token check
+        allow update, delete: if isSuperAdmin();
+      }
+    }
+
+    // ─── Segments ──────────────────────────────────────────────────────────────
+
+    match /segments/{segmentId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // ─── Broadcasts ────────────────────────────────────────────────────────────
+
+    match /broadcasts/{broadcastId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn(); // created via API route
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // ─── Users ─────────────────────────────────────────────────────────────────
+
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isSuperAdmin());
+      allow write: if isSuperAdmin();
+    }
+
+    // ─── Taxonomy (read-only for all authenticated users) ──────────────────────
+
+    match /taxonomy/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isSuperAdmin();
+    }
+  }
+}
