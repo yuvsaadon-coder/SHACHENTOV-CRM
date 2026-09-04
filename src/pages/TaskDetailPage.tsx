@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import {
   doc, getDoc, updateDoc, serverTimestamp, setDoc,
   collection, addDoc, onSnapshot, orderBy, query, deleteDoc,
@@ -15,6 +15,14 @@ import { Spinner } from '../components/ui/Spinner'
 import type { Task, Comment, Attachment, HistoryEntry, TaskStatus } from '../types'
 import { DOMAIN_LABELS, STATUS_LABELS, FREQUENCY_LABELS } from '../types'
 
+const STATUS_STYLE: Record<string, React.CSSProperties> = {
+  'בוצע':    { backgroundColor: '#C6EFCE', color: '#0A6B2E' },
+  'בעבודה':  { backgroundColor: '#189A9F', color: '#ffffff' },
+  'בהמתנה':  { backgroundColor: '#FDC857', color: '#7A5A00' },
+  'לא בוצע': { backgroundColor: '#F3F4F6', color: '#4B5563' },
+  'אחר':     { backgroundColor: '#E4DFEC', color: '#5F497A' },
+}
+
 function toDateValue(ts: unknown): string {
   if (!ts) return ''
   if (ts && typeof (ts as { toDate?: unknown }).toDate === 'function') {
@@ -26,6 +34,7 @@ function toDateValue(ts: unknown): string {
 export function TaskDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const { appUser } = useAuth()
   const { toast } = useToast()
 
@@ -242,12 +251,34 @@ export function TaskDetailPage() {
     }
   }
 
+  const backUrl = `/tasks${(location.state as { backSearch?: string })?.backSearch ?? ''}`
+
+  const updateStatusInline = async (newStatus: TaskStatus) => {
+    if (!id || !task) return
+    try {
+      await addDoc(collection(db, 'tasks', id, 'history'), {
+        field: 'status',
+        oldValue: task.status ?? '',
+        newValue: newStatus,
+        changedBy: appUser?.name,
+        changedAt: serverTimestamp(),
+      })
+      await updateDoc(doc(db, 'tasks', id), {
+        status: newStatus, updatedAt: serverTimestamp(), updatedBy: appUser?.name,
+      })
+      setTask({ ...task, status: newStatus })
+      toast('סטטוס עודכן', 'success')
+    } catch {
+      toast('שגיאה בעדכון סטטוס', 'error')
+    }
+  }
+
   if (!isNew && !task) return <Spinner size="lg" />
 
   return (
     <div className="space-y-4 max-w-4xl">
       <div className="flex items-center gap-3 flex-wrap">
-        <Link to="/tasks" className="text-brand-teal hover:underline text-sm">← משימות</Link>
+        <Link to={backUrl} className="text-brand-teal hover:underline text-sm">← משימות</Link>
         {parentTask && (
           <>
             <span className="text-gray-300">/</span>
@@ -261,7 +292,18 @@ export function TaskDetailPage() {
           {task?.title || 'משימה חדשה'}
         </h1>
         {task && <DomainBadge domain={task.domain} />}
-        {task && <StatusBadge status={task.status} />}
+        {task && canEdit ? (
+          <select
+            value={task.status}
+            onChange={(e) => updateStatusInline(e.target.value as TaskStatus)}
+            className="text-xs font-medium px-2 py-1 rounded border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-teal"
+            style={STATUS_STYLE[task.status]}
+          >
+            {STATUS_LABELS.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        ) : (
+          task && <StatusBadge status={task.status} />
+        )}
         {canEdit && !editing && (
           <button
             onClick={() => setEditing(true)}

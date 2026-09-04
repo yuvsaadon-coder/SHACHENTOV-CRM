@@ -1,5 +1,5 @@
 import { useMemo, useEffect } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useLocation } from 'react-router-dom'
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useTasks } from '../hooks/useTasks'
@@ -62,6 +62,7 @@ export function TasksPage() {
   const { tasks, loading } = useTasks()
   const { appUser } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
+  const location = useLocation()
 
   // Auto-reset recurring tasks when their cycle rolls over (admin only)
   useRecurringTaskReset(tasks, appUser?.role === 'admin')
@@ -354,7 +355,7 @@ export function TasksPage() {
                     className={`border-b border-gray-50 hover:bg-brand-teal050 transition-colors ${i % 2 === 0 ? '' : 'bg-gray-50/30'}`}
                   >
                     <td className="px-4 py-2.5">
-                      <Link to={`/tasks/${t.id}`} className="font-medium text-brand-navy hover:underline">
+                      <Link to={`/tasks/${t.id}`} state={{ backSearch: location.search }} className="font-medium text-brand-navy hover:underline">
                         {t.title}
                       </Link>
                       {subTaskCountByParent[t.id] && (
@@ -410,7 +411,7 @@ export function TasksPage() {
               <div key={t.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex-1 min-w-0">
-                    <Link to={`/tasks/${t.id}`} className="font-medium text-brand-navy hover:underline text-sm leading-snug">
+                    <Link to={`/tasks/${t.id}`} state={{ backSearch: location.search }} className="font-medium text-brand-navy hover:underline text-sm leading-snug">
                       {t.title}
                     </Link>
                     {subTaskCountByParent[t.id] && (
