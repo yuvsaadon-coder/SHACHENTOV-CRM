@@ -54,9 +54,6 @@ export function KanbanCard({ task }: { task: Task }) {
           </span>
         )}
       </div>
-      {task.responsible && (
-        <div className="text-xs text-gray-400 mt-1 truncate">{task.responsible}</div>
-      )}
       <div className="mt-2" onPointerDown={stopDrag}>
         <select
           value={task.status}

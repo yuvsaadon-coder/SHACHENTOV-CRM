@@ -37,7 +37,6 @@ function PromoteModal({ task, uid, onClose }: { task: PersonalTask; uid: string;
         startDate: null,
         endDate: null,
         holidayAnchor: null,
-        responsible: '',
         involved: [],
         activator: null,
         contactRefs: [],

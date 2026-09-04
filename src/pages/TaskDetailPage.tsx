@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import {
   doc, getDoc, updateDoc, serverTimestamp, setDoc,
@@ -8,7 +8,6 @@ import {
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { useRoles } from '../hooks/useRoles'
 import { StatusBadge } from '../components/ui/StatusBadge'
 import { DomainBadge } from '../components/ui/DomainBadge'
 import { Spinner } from '../components/ui/Spinner'
@@ -38,12 +37,6 @@ export function TaskDetailPage() {
   const { appUser } = useAuth()
   const { toast } = useToast()
 
-  const { roles } = useRoles()
-  const roleTitles = useMemo(
-    () => [...new Set(roles.map((r) => r.roleName).filter(Boolean))].sort(),
-    [roles]
-  )
-
   const [task, setTask] = useState<Task | null>(null)
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState<Partial<Task>>({})
@@ -57,8 +50,8 @@ export function TaskDetailPage() {
   const [subTasks, setSubTasks] = useState<Task[]>([])
   const [parentTask, setParentTask] = useState<Task | null>(null)
   const [showNewSub, setShowNewSub] = useState(false)
-  const [subForm, setSubForm] = useState<{ title: string; responsible: string; status: TaskStatus }>({
-    title: '', responsible: '', status: 'לא בוצע',
+  const [subForm, setSubForm] = useState<{ title: string; status: TaskStatus }>({
+    title: '', status: 'לא בוצע',
   })
   const [savingSub, setSavingSub] = useState(false)
 
@@ -224,7 +217,6 @@ export function TaskDetailPage() {
       const newId = `TASK-${Date.now()}`
       await setDoc(doc(db, 'tasks', newId), {
         title: subForm.title.trim(),
-        responsible: subForm.responsible.trim(),
         status: subForm.status,
         parentTaskId: id,
         domain: task.domain,
@@ -244,7 +236,7 @@ export function TaskDetailPage() {
         createdBy: appUser?.name || '',
         updatedBy: appUser?.name || '',
       })
-      setSubForm({ title: '', responsible: '', status: 'לא בוצע' })
+      setSubForm({ title: '', status: 'לא בוצע' })
       setShowNewSub(false)
     } finally {
       setSavingSub(false)
@@ -365,28 +357,6 @@ export function TaskDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-navy mb-1">אחראי</label>
-                <select
-                  value={roleTitles.includes(form.responsible ?? '') ? (form.responsible ?? '') : '__other__'}
-                  onChange={(e) => {
-                    if (e.target.value !== '__other__') setForm({ ...form, responsible: e.target.value })
-                  }}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
-                >
-                  <option value="">— בחר אחראי —</option>
-                  {roleTitles.map((n) => <option key={n} value={n}>{n}</option>)}
-                  <option value="__other__">אחר (הקלד ידנית)</option>
-                </select>
-                {(!roleTitles.includes(form.responsible ?? '') || form.responsible === '__other__') && (
-                  <input
-                    value={form.responsible === '__other__' ? '' : (form.responsible ?? '')}
-                    onChange={(e) => setForm({ ...form, responsible: e.target.value })}
-                    placeholder="שם תפקיד..."
-                    className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
-                  />
-                )}
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-brand-navy mb-1">סטטוס</label>
                 <select
                   value={form.status || 'לא בוצע'}
@@ -468,27 +438,10 @@ export function TaskDetailPage() {
                       ))}
                     </div>
                   )}
-                  {/* Dropdown to add from role holders */}
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      const v = e.target.value
-                      if (v && !(form.involved ?? []).includes(v)) {
-                        setForm({ ...form, involved: [...(form.involved ?? []), v] })
-                      }
-                    }}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
-                  >
-                    <option value="">+ הוסף מעורב...</option>
-                    {roleTitles
-                      .filter((n) => !(form.involved ?? []).includes(n))
-                      .map((n) => <option key={n} value={n}>{n}</option>)}
-                  </select>
-                  {/* Free text for "other" */}
                   <div className="flex gap-2">
                     <input
                       id="involved-custom"
-                      placeholder="אחר — כתוב שם תפקיד ולחץ הוסף"
+                      placeholder="כתוב שם תפקיד ולחץ הוסף"
                       className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
@@ -555,7 +508,6 @@ export function TaskDetailPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Field label="קטגוריה" value={task?.category} />
-              <Field label="אחראי" value={task?.responsible} />
               <Field label="מעורבים" value={task?.involved?.join(', ')} />
               <Field label="תדירות" value={task?.frequency} />
               <Field label="תאריך התחלה" value={task?.startDate?.toDate().toLocaleDateString('he-IL')} />
@@ -599,12 +551,6 @@ export function TaskDetailPage() {
                 placeholder="כותרת תת-משימה *"
                 className="flex-1 min-w-[160px] border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
               />
-              <input
-                value={subForm.responsible}
-                onChange={(e) => setSubForm({ ...subForm, responsible: e.target.value })}
-                placeholder="אחראי"
-                className="w-36 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
-              />
               <select
                 value={subForm.status}
                 onChange={(e) => setSubForm({ ...subForm, status: e.target.value as TaskStatus })}
@@ -629,7 +575,6 @@ export function TaskDetailPage() {
                   {st.title}
                 </Link>
                 <div className="flex items-center gap-2 shrink-0">
-                  {st.responsible && <span className="text-xs text-gray-400">{st.responsible}</span>}
                   <StatusBadge status={st.status} />
                 </div>
               </li>

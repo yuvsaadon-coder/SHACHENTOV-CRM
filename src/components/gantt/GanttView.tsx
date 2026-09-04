@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { Task, Domain } from '../../types'
 import { DOMAIN_COLORS, DOMAIN_LABELS, DOMAINS } from '../../types'
 import { getTextColor } from '../../utils/color'
-import { useAuth } from '../../context/AuthContext'
 
-type FilterMode = 'domain' | 'person'
 type TimelineMode = 'monthly' | 'quarterly'
 type DisplayTask = Task & { displayStart: Date; displayEnd: Date }
 
@@ -121,21 +119,11 @@ interface Props {
 
 export function GanttView({ tasks, singleMonth }: Props) {
   const navigate = useNavigate()
-  const { appUser } = useAuth()
-  const [filterMode, setFilterMode] = useState<FilterMode>('domain')
   const [timelineMode, setTimelineMode] = useState<TimelineMode>('monthly')
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedDomain, setSelectedDomain] = useState<Domain | null>(null)
-  const [selectedPerson, setSelectedPerson] = useState<string | null>(null)
-  const [myTasksOnly, setMyTasksOnly] = useState(false)
 
-  const baseTasks = useMemo(() => {
-    const topLevel = tasks.filter(t => !t.parentTaskId)
-    if (!myTasksOnly || !appUser?.name) return topLevel
-    return topLevel.filter(t =>
-      t.responsible === appUser.name || (t.involved ?? []).includes(appUser.name)
-    )
-  }, [tasks, myTasksOnly, appUser])
+  const baseTasks = useMemo(() => tasks.filter(t => !t.parentTaskId), [tasks])
 
   const year = singleMonth ? singleMonth.getFullYear() : selectedYear
   const month = singleMonth ? singleMonth.getMonth() : 0
@@ -154,17 +142,10 @@ export function GanttView({ tasks, singleMonth }: Props) {
 
   const tasksWithDates = useMemo(() => baseTasks.filter(t => t.endDate), [baseTasks])
 
-  const persons = useMemo(
-    () => [...new Set(tasksWithDates.map(t => t.responsible).filter(r => r.length > 0))].sort(),
-    [tasksWithDates]
-  )
-
   const displayTasks = useMemo(() => {
-    let result = allDisplayTasks
-    if (filterMode === 'domain' && selectedDomain) result = result.filter(t => t.domain === selectedDomain)
-    if (filterMode === 'person' && selectedPerson) result = result.filter(t => t.responsible === selectedPerson)
-    return result
-  }, [allDisplayTasks, filterMode, selectedDomain, selectedPerson])
+    if (selectedDomain) return allDisplayTasks.filter(t => t.domain === selectedDomain)
+    return allDisplayTasks
+  }, [allDisplayTasks, selectedDomain])
 
   if (allDisplayTasks.length === 0) {
     return (
@@ -240,10 +221,7 @@ export function GanttView({ tasks, singleMonth }: Props) {
             style={{ backgroundColor: color }}
             title={DOMAIN_LABELS[t.domain]}
           />
-          <div className="min-w-0">
-            <div className="text-xs truncate group-hover:underline" style={{ color: '#141348' }}>{t.title}</div>
-            <div className="text-xs truncate" style={{ color: '#8A9A9A' }}>{t.responsible}</div>
-          </div>
+          <div className="text-xs truncate group-hover:underline" style={{ color: '#141348' }}>{t.title}</div>
         </div>
         <div className="flex-1 relative h-full">
           <div
@@ -260,18 +238,6 @@ export function GanttView({ tasks, singleMonth }: Props) {
     <div className="space-y-3">
       {/* Controls */}
       <div className="flex flex-wrap gap-3 items-center">
-        {/* My tasks toggle */}
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
-          <button
-            onClick={() => setMyTasksOnly(false)}
-            className={`px-3 py-1.5 transition-colors ${!myTasksOnly ? 'bg-brand-navy text-white' : 'text-gray-600 hover:bg-gray-50'}`}
-          >כל המשימות</button>
-          <button
-            onClick={() => setMyTasksOnly(true)}
-            className={`px-3 py-1.5 transition-colors border-r border-gray-200 ${myTasksOnly ? 'bg-brand-navy text-white' : 'text-gray-600 hover:bg-gray-50'}`}
-          >המשימות שלי</button>
-        </div>
-
         {/* Timeline controls — hidden in single-month mode */}
         {!singleMonth && (
           <>
@@ -294,56 +260,25 @@ export function GanttView({ tasks, singleMonth }: Props) {
           </>
         )}
 
-        {/* Filter mode toggle */}
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
-          <button
-            onClick={() => { setFilterMode('domain'); setSelectedPerson(null) }}
-            className={`px-3 py-1.5 transition-colors ${filterMode === 'domain' ? 'bg-gray-200 text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}
-          >סנן לפי תחום</button>
-          <button
-            onClick={() => { setFilterMode('person'); setSelectedDomain(null) }}
-            className={`px-3 py-1.5 transition-colors border-r border-gray-200 ${filterMode === 'person' ? 'bg-gray-200 text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}
-          >סנן לפי אחראי</button>
-        </div>
-
         {/* Domain chips */}
-        {filterMode === 'domain' && (
-          <div className="flex flex-wrap gap-1.5">
-            <button
-              onClick={() => setSelectedDomain(null)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${!selectedDomain ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-            >הכל</button>
-            {DOMAINS.filter(d => tasksWithDates.some(t => t.domain === d)).map(d => {
-              const bg = DOMAIN_COLORS[d]
-              const isActive = selectedDomain === d
-              return (
-                <button
-                  key={d}
-                  onClick={() => setSelectedDomain(isActive ? null : d)}
-                  className="px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity"
-                  style={{ backgroundColor: bg, color: getTextColor(bg), opacity: isActive || !selectedDomain ? 1 : 0.45, outline: isActive ? '2px solid #141348' : undefined, outlineOffset: '2px' }}
-                >{DOMAIN_LABELS[d]} ({tasksWithDates.filter(t => t.domain === d).length})</button>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Person chips */}
-        {filterMode === 'person' && (
-          <div className="flex flex-wrap gap-1.5">
-            <button
-              onClick={() => setSelectedPerson(null)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${!selectedPerson ? 'bg-brand-teal text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-            >הכל ({tasksWithDates.length})</button>
-            {persons.map(person => (
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => setSelectedDomain(null)}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${!selectedDomain ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+          >הכל</button>
+          {DOMAINS.filter(d => tasksWithDates.some(t => t.domain === d)).map(d => {
+            const bg = DOMAIN_COLORS[d]
+            const isActive = selectedDomain === d
+            return (
               <button
-                key={person}
-                onClick={() => setSelectedPerson(selectedPerson === person ? null : person)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${selectedPerson === person ? 'bg-brand-navy text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-              >{person} ({tasksWithDates.filter(t => t.responsible === person).length})</button>
-            ))}
-          </div>
-        )}
+                key={d}
+                onClick={() => setSelectedDomain(isActive ? null : d)}
+                className="px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity"
+                style={{ backgroundColor: bg, color: getTextColor(bg), opacity: isActive || !selectedDomain ? 1 : 0.45, outline: isActive ? '2px solid #141348' : undefined, outlineOffset: '2px' }}
+              >{DOMAIN_LABELS[d]} ({tasksWithDates.filter(t => t.domain === d).length})</button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Chart — single unified Gantt */}

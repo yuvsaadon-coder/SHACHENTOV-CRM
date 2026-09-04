@@ -17,7 +17,6 @@ export interface Task {
   startDate: Timestamp | null
   endDate: Timestamp | null
   holidayAnchor: string | null
-  responsible: string
   involved: string[]
   activator: string | null
   contactRefs: string[]

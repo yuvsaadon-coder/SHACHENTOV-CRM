@@ -4,7 +4,6 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useTasks } from '../hooks/useTasks'
 import { useAuth } from '../context/AuthContext'
-import { useRoles } from '../hooks/useRoles'
 import { useRecurringTaskReset } from '../hooks/useRecurringTaskReset'
 import { exportTasks } from '../utils/export'
 import { Spinner } from '../components/ui/Spinner'
@@ -62,7 +61,6 @@ function addMonths(d: Date, n: number): Date {
 export function TasksPage() {
   const { tasks, loading } = useTasks()
   const { appUser } = useAuth()
-  const { roles } = useRoles()
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
 
@@ -87,12 +85,6 @@ export function TasksPage() {
   const domainFilter = searchParams.get('domain') as Domain | null
   const statusFilter = searchParams.get('status') as TaskStatus | null
   const freqFilter = searchParams.get('freq') as TaskFrequency | null
-  const responsibleFilter = searchParams.get('responsible')
-
-  const roleTitles = useMemo(
-    () => [...new Set(roles.map((r) => r.roleName).filter(Boolean))].sort(),
-    [roles]
-  )
 
   const subTaskCountByParent = useMemo(() => {
     const map: Record<string, number> = {}
@@ -109,18 +101,16 @@ export function TasksPage() {
       if (domainFilter && t.domain !== domainFilter) return false
       if (statusFilter && t.status !== statusFilter) return false
       if (freqFilter && t.frequency !== freqFilter) return false
-      if (responsibleFilter && t.responsible !== responsibleFilter) return false
       if (search) {
         const q = search.toLowerCase()
         return (
           t.title.toLowerCase().includes(q) ||
-          t.responsible.toLowerCase().includes(q) ||
           t.category.toLowerCase().includes(q)
         )
       }
       return true
     })
-  }, [tasks, monthFilter, selectedMonth, domainFilter, statusFilter, freqFilter, responsibleFilter, search])
+  }, [tasks, monthFilter, selectedMonth, domainFilter, statusFilter, freqFilter, search])
 
   // On first entry (no URL params), set domain default for domain users and restore saved view
   useEffect(() => {
@@ -155,7 +145,7 @@ export function TasksPage() {
     setFilter('month', `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`)
   }
 
-  const hasAnyFilter = !!(domainFilter || statusFilter || freqFilter || responsibleFilter || search || monthFilter)
+  const hasAnyFilter = !!(domainFilter || statusFilter || freqFilter || search || monthFilter)
 
   if (loading) return <Spinner size="lg" />
 
@@ -222,18 +212,6 @@ export function TasksPage() {
               <option key={f} value={f}>{f}</option>
             ))}
           </select>
-
-          <select
-            value={responsibleFilter || ''}
-            onChange={(e) => setFilter('responsible', e.target.value || null)}
-            className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
-          >
-            <option value="">כל האחראים</option>
-            {roleTitles.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-
 
           {/* Month filter + navigation */}
           <button
@@ -318,7 +296,6 @@ export function TasksPage() {
                   <th className="px-4 py-2.5 text-right font-medium">משימה</th>
                   <th className="px-4 py-2.5 text-right font-medium">תחום</th>
                   <th className="px-4 py-2.5 text-right font-medium">קטגוריה</th>
-                  <th className="px-4 py-2.5 text-right font-medium">אחראי</th>
                   <th className="px-4 py-2.5 text-right font-medium">תדירות</th>
                   <th className="px-4 py-2.5 text-right font-medium">סיום</th>
                   <th className="px-4 py-2.5 text-right font-medium">סטטוס</th>
@@ -349,7 +326,6 @@ export function TasksPage() {
                       <DomainBadge domain={t.domain} />
                     </td>
                     <td className="px-4 py-2.5 text-gray-600">{t.category}</td>
-                    <td className="px-4 py-2.5 text-gray-600">{t.responsible}</td>
                     <td className="px-4 py-2.5 text-gray-500">{t.frequency}</td>
                     <td className="px-4 py-2.5 text-gray-500">
                       {t.endDate ? t.endDate.toDate().toLocaleDateString('he-IL') : '—'}
@@ -369,7 +345,7 @@ export function TasksPage() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
                       אין משימות להצגה
                     </td>
                   </tr>
@@ -414,7 +390,6 @@ export function TasksPage() {
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 mt-1">
                   <DomainBadge domain={t.domain} />
                   {t.category && <span>{t.category}</span>}
-                  <span>{t.responsible}</span>
                   <span>{t.frequency}</span>
                   {t.endDate && <span>סיום: {t.endDate.toDate().toLocaleDateString('he-IL')}</span>}
                 </div>

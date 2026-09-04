@@ -77,7 +77,6 @@ function TaskRow({ task }: { task: Task }) {
       <div className="min-w-0 flex-1">
         <div className="text-sm font-medium text-brand-navy group-hover:underline truncate">{task.title}</div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          {task.responsible && <span className="text-xs text-gray-400">{task.responsible}</span>}
           {task.endDate && (
             <span className="text-xs text-gray-400">
               {task.endDate.toDate().toLocaleDateString('he-IL')}
@@ -106,9 +105,6 @@ function CompactRow({ task }: { task: Task }) {
     >
       <StatusSelect task={task} />
       <span className="text-sm text-brand-navy truncate flex-1 min-w-0 group-hover:underline">{task.title}</span>
-      {task.responsible && (
-        <span className="text-xs text-gray-400 shrink-0 hidden sm:block max-w-[120px] truncate">{task.responsible}</span>
-      )}
       <span
         style={{ backgroundColor: domainColor, color: getTextColor(domainColor) }}
         className="text-xs px-1.5 py-0.5 rounded shrink-0 font-medium"
@@ -182,14 +178,10 @@ export function CalendarView({ tasks }: { tasks: Task[] }) {
   }
 
   const displayTasks = useMemo(() => {
-    let filtered = tasks
     if (myTasksOnly && appUser?.name) {
-      filtered = filtered.filter(t =>
-        t.responsible === appUser.name ||
-        (t.involved ?? []).includes(appUser.name)
-      )
+      return tasks.filter(t => (t.involved ?? []).includes(appUser.name))
     }
-    return filtered
+    return tasks
   }, [tasks, myTasksOnly, appUser])
 
   const monthTasks = useMemo(() => {

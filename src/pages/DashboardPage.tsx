@@ -138,9 +138,7 @@ export function DashboardPage() {
 
   const myTasks = useMemo(() => {
     if (!appUser) return []
-    return periodTasks.filter(
-      (t) => t.responsible === appUser.name || t.involved.includes(appUser.name)
-    )
+    return periodTasks.filter((t) => (t.involved ?? []).includes(appUser.name))
   }, [periodTasks, appUser])
 
   if (loading) return <Spinner size="lg" />
