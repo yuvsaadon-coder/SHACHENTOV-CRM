@@ -4,6 +4,7 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useTasks } from '../hooks/useTasks'
 import { useAuth } from '../context/AuthContext'
+import { useRoles } from '../hooks/useRoles'
 import { useRecurringTaskReset } from '../hooks/useRecurringTaskReset'
 import { exportTasks } from '../utils/export'
 import { Spinner } from '../components/ui/Spinner'
@@ -61,6 +62,7 @@ function addMonths(d: Date, n: number): Date {
 export function TasksPage() {
   const { tasks, loading } = useTasks()
   const { appUser } = useAuth()
+  const { roles } = useRoles()
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
 
@@ -87,9 +89,9 @@ export function TasksPage() {
   const freqFilter = searchParams.get('freq') as TaskFrequency | null
   const responsibleFilter = searchParams.get('responsible')
 
-  const persons = useMemo(
-    () => [...new Set(tasks.filter((t) => !t.parentTaskId && t.responsible).map((t) => t.responsible))].sort(),
-    [tasks]
+  const roleTitles = useMemo(
+    () => [...new Set(roles.map((r) => r.roleName).filter(Boolean))].sort(),
+    [roles]
   )
 
   const subTaskCountByParent = useMemo(() => {
@@ -227,37 +229,11 @@ export function TasksPage() {
             className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
           >
             <option value="">כל האחראים</option>
-            {persons.map((p) => (
+            {roleTitles.map((p) => (
               <option key={p} value={p}>{p}</option>
             ))}
           </select>
 
-          {appUser?.name && (
-            <button
-              onClick={() => {
-                const isActive = responsibleFilter === appUser.name
-                if (isActive) {
-                  setFilter('responsible', null)
-                } else {
-                  const p = new URLSearchParams(searchParams)
-                  p.set('responsible', appUser.name)
-                  // When user has a domain role, scope to their domain so they don't see other domains they happen to appear in
-                  if ((DOMAINS as readonly string[]).includes(appUser.role)) {
-                    p.set('domain', appUser.role)
-                  }
-                  setSearchParams(p, { replace: true })
-                }
-              }}
-              className={`px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-                responsibleFilter === appUser.name
-                  ? 'border-brand-teal text-white'
-                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
-              style={responsibleFilter === appUser.name ? { backgroundColor: '#189A9F' } : {}}
-            >
-              👤 המשימות שלי
-            </button>
-          )}
 
           {/* Month filter + navigation */}
           <button

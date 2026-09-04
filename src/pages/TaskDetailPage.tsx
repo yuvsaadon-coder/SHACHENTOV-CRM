@@ -39,8 +39,8 @@ export function TaskDetailPage() {
   const { toast } = useToast()
 
   const { roles } = useRoles()
-  const roleHolderNames = useMemo(
-    () => [...new Set(roles.map((r) => r.holderName).filter(Boolean))].sort(),
+  const roleTitles = useMemo(
+    () => [...new Set(roles.map((r) => r.roleName).filter(Boolean))].sort(),
     [roles]
   )
 
@@ -367,21 +367,21 @@ export function TaskDetailPage() {
               <div>
                 <label className="block text-sm font-medium text-brand-navy mb-1">אחראי</label>
                 <select
-                  value={roleHolderNames.includes(form.responsible ?? '') ? (form.responsible ?? '') : '__other__'}
+                  value={roleTitles.includes(form.responsible ?? '') ? (form.responsible ?? '') : '__other__'}
                   onChange={(e) => {
                     if (e.target.value !== '__other__') setForm({ ...form, responsible: e.target.value })
                   }}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
                 >
                   <option value="">— בחר אחראי —</option>
-                  {roleHolderNames.map((n) => <option key={n} value={n}>{n}</option>)}
+                  {roleTitles.map((n) => <option key={n} value={n}>{n}</option>)}
                   <option value="__other__">אחר (הקלד ידנית)</option>
                 </select>
-                {(!roleHolderNames.includes(form.responsible ?? '') || form.responsible === '__other__') && (
+                {(!roleTitles.includes(form.responsible ?? '') || form.responsible === '__other__') && (
                   <input
                     value={form.responsible === '__other__' ? '' : (form.responsible ?? '')}
                     onChange={(e) => setForm({ ...form, responsible: e.target.value })}
-                    placeholder="שם האחראי..."
+                    placeholder="שם תפקיד..."
                     className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
                   />
                 )}
@@ -480,7 +480,7 @@ export function TaskDetailPage() {
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
                   >
                     <option value="">+ הוסף מעורב...</option>
-                    {roleHolderNames
+                    {roleTitles
                       .filter((n) => !(form.involved ?? []).includes(n))
                       .map((n) => <option key={n} value={n}>{n}</option>)}
                   </select>
@@ -488,7 +488,7 @@ export function TaskDetailPage() {
                   <div className="flex gap-2">
                     <input
                       id="involved-custom"
-                      placeholder="אחר — כתוב שם ולחץ הוסף"
+                      placeholder="אחר — כתוב שם תפקיד ולחץ הוסף"
                       className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
