@@ -8,6 +8,16 @@ Firebase authorization rules.
 Start with [RESULTS.md](RESULTS.md) for the final counts and scope, and
 [FAILURES.md](FAILURES.md) for the indexed explanation of every failing case.
 [test-manifest.json](test-manifest.json) lists every executed case exactly once.
+[MANUAL-VERIFICATION.md](MANUAL-VERIFICATION.md) lists every requirement that is
+**not** covered by an automated test (deployed-environment evidence, human
+judgment, or an owner decision still pending) — read it before assuming "tests
+pass" means "requirements fully verified."
+
+**This suite is a gating requirement for any change to this repository**, human
+or agent-authored — the repository maintainer is not a software engineer, so
+the AI working here is responsible for running this suite unprompted. See the
+repository-root [`CLAUDE.md`](../../CLAUDE.md) for the exact rule every
+contributor/agent must follow before considering work complete.
 
 ## Run
 
