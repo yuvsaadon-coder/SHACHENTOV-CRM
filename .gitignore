@@ -24,3 +24,8 @@ dist/
 
 # Firebase service account — never commit
 serviceAccountKey.json
+
+# Local requirement-suite emulators
+firebase-debug.log
+firestore-debug.log
+storage-debug.log

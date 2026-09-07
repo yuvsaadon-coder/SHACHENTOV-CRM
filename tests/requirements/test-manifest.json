@@ -1,0 +1,3642 @@
+{
+  "applicationBaseline": "60548f8",
+  "kind": "observed-runtime-results",
+  "summary": {
+    "total": 439,
+    "passed": 282,
+    "failed": 157
+  },
+  "cases": [
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E01.contact-link-controls shows independently seeded task/contact link controls",
+      "fullName": "TEST-E01.contact-link-controls shows independently seeded task/contact link controls",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E01.private-task-and-logout protects private task deep links after logout",
+      "fullName": "TEST-E01.private-task-and-logout protects private task deep links after logout",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E01.task-create-reader creates an HQ task and reads it from the actual task list",
+      "fullName": "TEST-E01.task-create-reader creates an HQ task and reads it from the actual task list",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E02.branch-link seeded coordinator branch link reaches portal home",
+      "fullName": "TEST-E02.branch-link seeded coordinator branch link reaches portal home",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E02.question-to-form admin question appears in actual portal report form",
+      "fullName": "TEST-E02.question-to-form admin question appears in actual portal report form",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E02.role-drilldown opens seeded role and preserves edited holder after reopen",
+      "fullName": "TEST-E02.role-drilldown opens seeded role and preserves edited holder after reopen",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E02.shared-knowledge-reader shared HQ item reaches portal knowledge filtering",
+      "fullName": "TEST-E02.shared-knowledge-reader shared HQ item reaches portal knowledge filtering",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E03.branch-chat-context sends actual portal chat request and renders deterministic reply",
+      "fullName": "TEST-E03.branch-chat-context sends actual portal chat request and renders deterministic reply",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E03.foreign-chat-denial demonstrates authorized branch positive control before foreign denial",
+      "fullName": "TEST-E03.foreign-chat-denial demonstrates authorized branch positive control before foreign denial",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E03.login-and-selection uses exact coordinator UID and branch picker selection",
+      "fullName": "TEST-E03.login-and-selection uses exact coordinator UID and branch picker selection",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E03.report-to-coverage submits portal report and observes HQ coverage",
+      "fullName": "TEST-E03.report-to-coverage submits portal report and observes HQ coverage",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E03.shared-knowledge production-written mirror item is visible in portal",
+      "fullName": "TEST-E03.shared-knowledge production-written mirror item is visible in portal",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E04.contact-reconnect observes contact updates after page reconnect",
+      "fullName": "TEST-E04.contact-reconnect observes contact updates after page reconnect",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E04.identity-transition separates HQ and coordinator surfaces in one browser",
+      "fullName": "TEST-E04.identity-transition separates HQ and coordinator surfaces in one browser",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E04.report-reconnect observes report updates after page reconnect",
+      "fullName": "TEST-E04.report-reconnect observes report updates after page reconnect",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-E04.task-detail-live updates an open task detail from another client",
+      "fullName": "TEST-E04.task-detail-live updates an open task detail from another client",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-N05.actual-dialog-focus focuses first control in real contact dialog",
+      "fullName": "TEST-N05.actual-dialog-focus focuses first control in real contact dialog",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-N05.dialog-escape-close closes real contact dialog with Escape",
+      "fullName": "TEST-N05.dialog-escape-close closes real contact dialog with Escape",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-N05.dialog-tab-wrap keeps focus inside real contact dialog",
+      "fullName": "TEST-N05.dialog-tab-wrap keeps focus inside real contact dialog",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-N05.kanban-keyboard changes native Kanban status select with keyboard",
+      "fullName": "TEST-N05.kanban-keyboard changes native Kanban status select with keyboard",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-N05.orgcard-keyboard opens org card details with keyboard activation",
+      "fullName": "TEST-N05.orgcard-keyboard opens org card details with keyboard activation",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-N05.rtl-critical-controls keeps core pages and portal forms RTL",
+      "fullName": "TEST-N05.rtl-critical-controls keeps core pages and portal forms RTL",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-T05.cancelled-drop keeps Kanban status after a real cancelled drag",
+      "fullName": "TEST-T05.cancelled-drop keeps Kanban status after a real cancelled drag",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-T05.pointer-move moves a Kanban card with real pointer drag",
+      "fullName": "TEST-T05.pointer-move moves a Kanban card with real pointer drag",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/e01-e04-n05.spec.ts",
+      "name": "TEST-T05.same-column-drop keeps Kanban status after dropping on the current column",
+      "fullName": "TEST-T05.same-column-drop keeps Kanban status after dropping on the current column",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/error-paths.spec.ts",
+      "name": "TEST-C01.failed-delete-actionable.browser (G)",
+      "fullName": "TEST-C01.failed-delete-actionable.browser (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/error-paths.spec.ts",
+      "name": "TEST-C01.failed-save-actionable.browser (G)",
+      "fullName": "TEST-C01.failed-save-actionable.browser (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/error-paths.spec.ts",
+      "name": "TEST-T05.failed-write-observable.browser (G)",
+      "fullName": "TEST-T05.failed-write-observable.browser (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/H02-H06-H07.spec.ts",
+      "name": "TEST-H02.branch-switch-no-session-mixing (G)",
+      "fullName": "TEST-H02.branch-switch-no-session-mixing (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/H02-H06-H07.spec.ts",
+      "name": "TEST-H06.branch-analysis-context (A)",
+      "fullName": "TEST-H06.branch-analysis-context (A)",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/H02-H06-H07.spec.ts",
+      "name": "TEST-H06.challenge-content (G)",
+      "fullName": "TEST-H06.challenge-content (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/H02-H06-H07.spec.ts",
+      "name": "TEST-H06.missing-roster-context (G)",
+      "fullName": "TEST-H06.missing-roster-context (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/H02-H06-H07.spec.ts",
+      "name": "TEST-H06.reply-rendering (A)",
+      "fullName": "TEST-H06.reply-rendering (A)",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/H02-H06-H07.spec.ts",
+      "name": "TEST-H06.year-disambiguation (G)",
+      "fullName": "TEST-H06.year-disambiguation (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/H02-H06-H07.spec.ts",
+      "name": "TEST-H07.save-failure-visible (G)",
+      "fullName": "TEST-H07.save-failure-visible (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K01.domain-default (G)",
+      "fullName": "TEST-K01.domain-default (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K01.explicit-filters-and-edit (A)",
+      "fullName": "TEST-K01.explicit-filters-and-edit (A)",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K02.local-create-checklist-modal (G)",
+      "fullName": "TEST-K02.local-create-checklist-modal (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K02.local-create-document-modal (G)",
+      "fullName": "TEST-K02.local-create-document-modal (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K02.local-create-valid-nonempty-checklist (A)",
+      "fullName": "TEST-K02.local-create-valid-nonempty-checklist (A)",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K02.local-create-with-sparse-fields (G)",
+      "fullName": "TEST-K02.local-create-with-sparse-fields (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K03.current-size-boundaries (C)",
+      "fullName": "TEST-K03.current-size-boundaries (C)",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K03.hq-storage-success (A)",
+      "fullName": "TEST-K03.hq-storage-success (A)",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K03.local-storage-contract (G)",
+      "fullName": "TEST-K03.local-storage-contract (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K03.partial-upload-recovery (G)",
+      "fullName": "TEST-K03.partial-upload-recovery (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K04.delete-current-retrieval (G)",
+      "fullName": "TEST-K04.delete-current-retrieval (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K04.old-bearer-url-current (C)",
+      "fullName": "TEST-K04.old-bearer-url-current (C)",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K04.produced-mirror-tag-filter (G)",
+      "fullName": "TEST-K04.produced-mirror-tag-filter (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K04.unshare-current-retrieval (G)",
+      "fullName": "TEST-K04.unshare-current-retrieval (G)",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K05.mirror-write-failure-recovery (G)",
+      "fullName": "TEST-K05.mirror-write-failure-recovery (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K05.retry-recovery (A)",
+      "fullName": "TEST-K05.retry-recovery (A)",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K06.research-item-reaches-open-library (G)",
+      "fullName": "TEST-K06.research-item-reaches-open-library (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K07.error-visibility (G)",
+      "fullName": "TEST-K07.error-visibility (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K07.research-write-roundtrip (A)",
+      "fullName": "TEST-K07.research-write-roundtrip (A)",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K07.retry-idempotency (G)",
+      "fullName": "TEST-K07.retry-idempotency (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+      "name": "TEST-K07.second-write-failure (G)",
+      "fullName": "TEST-K07.second-write-failure (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K08.spec.ts",
+      "name": "TEST-K08.current-title-only-request (C)",
+      "fullName": "TEST-K08.current-title-only-request (C)",
+      "result": "passed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "browser",
+      "file": "tests/requirements/browser/knowledge/K08.spec.ts",
+      "name": "TEST-K08.document-content-grounding (G)",
+      "fullName": "TEST-K08.document-content-grounding (G)",
+      "result": "failed",
+      "evidence": "artifacts/browser-closure.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/__harness-smoke.test.tsx",
+      "name": "delivers a listener error",
+      "fullName": "harness smoke check (infrastructure, not a requirement test) delivers a listener error",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/__harness-smoke.test.tsx",
+      "name": "delivers a pushed snapshot to a real production hook",
+      "fullName": "harness smoke check (infrastructure, not a requirement test) delivers a pushed snapshot to a real production hook",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a01-session-route-authority.test.tsx",
+      "name": "TEST-A01.login-error-then-retry (A) — wrong password shows error message then a correct retry lands on /dashboard",
+      "fullName": "TEST-A01 — session/route authority (V, family=A) TEST-A01.login-error-then-retry (A) — wrong password shows error message then a correct retry lands on /dashboard",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a01-session-route-authority.test.tsx",
+      "name": "TEST-A01.login-logout-route-guard (A) — anonymous /tasks/task-fin bounces to /login, successful HQ login lands on /dashboard, logout re-denies /tasks",
+      "fullName": "TEST-A01 — session/route authority (V, family=A) TEST-A01.login-logout-route-guard (A) — anonymous /tasks/task-fin bounces to /login, successful HQ login lands on /dashboard, logout re-denies /tasks",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a02-role-portal-crm-boundaries.test.tsx",
+      "name": "TEST-A02.coord-cannot-render-crm (A) — coord-a directly visiting /tasks is redirected out of CRM by RequireAuth",
+      "fullName": "TEST-A02 — role/portal-vs-CRM boundaries (V, family=A) TEST-A02.coord-cannot-render-crm (A) — coord-a directly visiting /tasks is redirected out of CRM by RequireAuth",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a02-role-portal-crm-boundaries.test.tsx",
+      "name": "TEST-A02.hq-cannot-render-portal (A) — hq-fin directly visiting /portal/home is redirected to /dashboard by RequireCoordinator",
+      "fullName": "TEST-A02 — role/portal-vs-CRM boundaries (V, family=A) TEST-A02.hq-cannot-render-portal (A) — hq-fin directly visiting /portal/home is redirected to /dashboard by RequireCoordinator",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a02-role-portal-crm-boundaries.test.tsx",
+      "name": "TEST-A02.portal-index-defaults-to-portal-home (A) — coord-a at /portal lands on /portal/home",
+      "fullName": "TEST-A02 — role/portal-vs-CRM boundaries (V, family=A) TEST-A02.portal-index-defaults-to-portal-home (A) — coord-a at /portal lands on /portal/home",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a02-role-portal-crm-boundaries.test.tsx",
+      "name": "TEST-A02.portal-login-alias-to-login (A) — /portal/login always redirects to /login, even when signed out",
+      "fullName": "TEST-A02 — role/portal-vs-CRM boundaries (V, family=A) TEST-A02.portal-login-alias-to-login (A) — /portal/login always redirects to /login, even when signed out",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a02-role-portal-crm-boundaries.test.tsx",
+      "name": "TEST-A02.root-redirect-coord (A) — signed-in coord-a at \"/\" lands on /portal/home",
+      "fullName": "TEST-A02 — role/portal-vs-CRM boundaries (V, family=A) TEST-A02.root-redirect-coord (A) — signed-in coord-a at \"/\" lands on /portal/home",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a02-role-portal-crm-boundaries.test.tsx",
+      "name": "TEST-A02.root-redirect-hq (A) — signed-in hq-fin at \"/\" lands on /dashboard",
+      "fullName": "TEST-A02 — role/portal-vs-CRM boundaries (V, family=A) TEST-A02.root-redirect-hq (A) — signed-in hq-fin at \"/\" lands on /dashboard",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a02-role-portal-crm-boundaries.test.tsx",
+      "name": "TEST-A02.unknown-path-anonymous-goes-to-login (A) — signed-out unknown path is not treated as authenticated",
+      "fullName": "TEST-A02 — role/portal-vs-CRM boundaries (V, family=A) TEST-A02.unknown-path-anonymous-goes-to-login (A) — signed-out unknown path is not treated as authenticated",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a02-role-portal-crm-boundaries.test.tsx",
+      "name": "TEST-A02.unknown-path-smartredirect-coord (A) — coord-a at unknown path lands on /portal/home via SmartRedirect",
+      "fullName": "TEST-A02 — role/portal-vs-CRM boundaries (V, family=A) TEST-A02.unknown-path-smartredirect-coord (A) — coord-a at unknown path lands on /portal/home via SmartRedirect",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a02-role-portal-crm-boundaries.test.tsx",
+      "name": "TEST-A02.unknown-path-smartredirect-hq (A) — hq-fin at unknown path lands on /dashboard via SmartRedirect",
+      "fullName": "TEST-A02 — role/portal-vs-CRM boundaries (V, family=A) TEST-A02.unknown-path-smartredirect-hq (A) — hq-fin at unknown path lands on /dashboard via SmartRedirect",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a03-domain-default-filters.test.tsx",
+      "name": "TEST-A03.contacts.own-domain-default (G) — hq-fin at /contacts must default to only FIN-tagged contacts, not every domain",
+      "fullName": "TEST-A03 — domain-default filters (V, family=G) TEST-A03.contacts.own-domain-default (G) — hq-fin at /contacts must default to only FIN-tagged contacts, not every domain",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a03-domain-default-filters.test.tsx",
+      "name": "TEST-A03.tasks.admin-starts-with-all (A) — admin at /tasks with no URL state is NOT auto-scoped to a domain",
+      "fullName": "TEST-A03 — domain-default filters (V, family=G) TEST-A03.tasks.admin-starts-with-all (A) — admin at /tasks with no URL state is NOT auto-scoped to a domain",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a03-domain-default-filters.test.tsx",
+      "name": "TEST-A03.tasks.filters-survive-navigation (A) — a user-selected status filter is preserved across a detail → back round-trip",
+      "fullName": "TEST-A03 — domain-default filters (V, family=G) TEST-A03.tasks.filters-survive-navigation (A) — a user-selected status filter is preserved across a detail → back round-trip",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a03-domain-default-filters.test.tsx",
+      "name": "TEST-A03.tasks.own-domain-default (A) — hq-fin at /tasks with no URL state gets domain=FIN applied automatically",
+      "fullName": "TEST-A03 — domain-default filters (V, family=G) TEST-A03.tasks.own-domain-default (A) — hq-fin at /tasks with no URL state gets domain=FIN applied automatically",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a03-domain-default-filters.test.tsx",
+      "name": "TEST-A03.tasks.own-domain-default-with-unrelated-query (G) — hq-fin at /tasks?view=kanban STILL should default to FIN per E03",
+      "fullName": "TEST-A03 — domain-default filters (V, family=G) TEST-A03.tasks.own-domain-default-with-unrelated-query (G) — hq-fin at /tasks?view=kanban STILL should default to FIN per E03",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a04-authcontext-profile-race.test.tsx",
+      "name": "TEST-A04.a-transition-to-profile-missing (G) — after A is authenticated, transitioning to a Firebase user whose profile document does not exist must clear appUser",
+      "fullName": "TEST-A04 — AuthContext profile-resolution race (V, family=G) TEST-A04.a-transition-to-profile-missing (G) — after A is authenticated, transitioning to a Firebase user whose profile document does not exist must clear appUser",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a04-authcontext-profile-race.test.tsx",
+      "name": "TEST-A04.b-profile-read-rejected (G) — when B is authenticated but B's profile read is rejected (permission-denied), A's previously loaded profile must not remain in effect",
+      "fullName": "TEST-A04 — AuthContext profile-resolution race (V, family=G) TEST-A04.b-profile-read-rejected (G) — when B is authenticated but B's profile read is rejected (permission-denied), A's previously loaded profile must not remain in effect",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a04-authcontext-profile-race.test.tsx",
+      "name": "TEST-A04.late-a-resolves-after-b-signin (G) — when A profile getDoc resolves after B has signed in, appUser must reflect B (not A)",
+      "fullName": "TEST-A04 — AuthContext profile-resolution race (V, family=G) TEST-A04.late-a-resolves-after-b-signin (G) — when A profile getDoc resolves after B has signed in, appUser must reflect B (not A)",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a04-authcontext-profile-race.test.tsx",
+      "name": "TEST-A04.late-a-resolves-after-logout (G) — a logout that races before A resolves must not leave A displayed as the current profile",
+      "fullName": "TEST-A04 — AuthContext profile-resolution race (V, family=G) TEST-A04.late-a-resolves-after-logout (G) — a logout that races before A resolves must not leave A displayed as the current profile",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "positive control: admin-a sees each admin surface",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) positive control: admin-a sees each admin surface",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "positive control: coord-a reaches CoordinatorPortal at /portal/home",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) positive control: coord-a reaches CoordinatorPortal at /portal/home",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "positive control: hq-fin sees CRM dashboard at /dashboard",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) positive control: hq-fin sees CRM dashboard at /dashboard",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.inactive.ui.admin (C): active:false and active:true admins both reach admin surfaces identically",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.inactive.ui.admin (C): active:false and active:true admins both reach admin surfaces identically",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.inactive.ui.crm (C): active:false FIN and active:true FIN both reach the CRM dashboard identically",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.inactive.ui.crm (C): active:false FIN and active:true FIN both reach the CRM dashboard identically",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.inactive.ui.portal (C): active:false and active:true coordinators both reach the portal identically",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.inactive.ui.portal (C): active:false and active:true coordinators both reach the portal identically",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.admin.missing-profile.branches (G): missing-profile identity must not see the admin surface at /admin/branches",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.admin.missing-profile.branches (G): missing-profile identity must not see the admin surface at /admin/branches",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.admin.missing-profile.hierarchy (G): missing-profile identity must not see the admin surface at /admin/hierarchy",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.admin.missing-profile.hierarchy (G): missing-profile identity must not see the admin surface at /admin/hierarchy",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.admin.missing-profile.knowledge (G): missing-profile identity must not see the admin surface at /admin/knowledge",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.admin.missing-profile.knowledge (G): missing-profile identity must not see the admin surface at /admin/knowledge",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.admin.missing-profile.report-questions (G): missing-profile identity must not see the admin surface at /admin/report-questions",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.admin.missing-profile.report-questions (G): missing-profile identity must not see the admin surface at /admin/report-questions",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.admin.missing-role.branches (G): missing-role identity must not see the admin surface at /admin/branches",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.admin.missing-role.branches (G): missing-role identity must not see the admin surface at /admin/branches",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.admin.missing-role.hierarchy (G): missing-role identity must not see the admin surface at /admin/hierarchy",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.admin.missing-role.hierarchy (G): missing-role identity must not see the admin surface at /admin/hierarchy",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.admin.missing-role.knowledge (G): missing-role identity must not see the admin surface at /admin/knowledge",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.admin.missing-role.knowledge (G): missing-role identity must not see the admin surface at /admin/knowledge",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.admin.missing-role.report-questions (G): missing-role identity must not see the admin surface at /admin/report-questions",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.admin.missing-role.report-questions (G): missing-role identity must not see the admin surface at /admin/report-questions",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.admin.unknown-role.branches (G): unknown-role identity must not see the admin surface at /admin/branches",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.admin.unknown-role.branches (G): unknown-role identity must not see the admin surface at /admin/branches",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.admin.unknown-role.hierarchy (G): unknown-role identity must not see the admin surface at /admin/hierarchy",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.admin.unknown-role.hierarchy (G): unknown-role identity must not see the admin surface at /admin/hierarchy",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.admin.unknown-role.knowledge (G): unknown-role identity must not see the admin surface at /admin/knowledge",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.admin.unknown-role.knowledge (G): unknown-role identity must not see the admin surface at /admin/knowledge",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.admin.unknown-role.report-questions (G): unknown-role identity must not see the admin surface at /admin/report-questions",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.admin.unknown-role.report-questions (G): unknown-role identity must not see the admin surface at /admin/report-questions",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.crm.missing-profile (G): missing-profile identity must not see the CRM dashboard at /dashboard",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.crm.missing-profile (G): missing-profile identity must not see the CRM dashboard at /dashboard",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.crm.missing-role (G): missing-role identity must not see the CRM dashboard at /dashboard",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.crm.missing-role (G): missing-role identity must not see the CRM dashboard at /dashboard",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.crm.unknown-role (G): unknown-role identity must not see the CRM dashboard at /dashboard",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.crm.unknown-role (G): unknown-role identity must not see the CRM dashboard at /dashboard",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.portal.missing-profile (G): missing-profile identity must not gain portal authority at /portal/home",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.portal.missing-profile (G): missing-profile identity must not gain portal authority at /portal/home",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.portal.missing-role (A): missing-role identity is denied the coordinator surface at /portal/home",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.portal.missing-role (A): missing-role identity is denied the coordinator surface at /portal/home",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+      "name": "TEST-A05.ui.portal.unknown-role (A): unknown-role identity is denied the coordinator surface at /portal/home",
+      "fullName": "TEST-A05 identity-state matrix (component/V layer) TEST-A05.ui.portal.unknown-role (A): unknown-role identity is denied the coordinator surface at /portal/home",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a06-admin-route-denial.test.tsx",
+      "name": "positive control: admin-a directly opening /admin/branches sees the admin surface (branches)",
+      "fullName": "TEST-A06 non-admin denied at /admin/* routes (component/V layer) positive control: admin-a directly opening /admin/branches sees the admin surface (branches)",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a06-admin-route-denial.test.tsx",
+      "name": "positive control: admin-a directly opening /admin/hierarchy sees the admin surface (hierarchy)",
+      "fullName": "TEST-A06 non-admin denied at /admin/* routes (component/V layer) positive control: admin-a directly opening /admin/hierarchy sees the admin surface (hierarchy)",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a06-admin-route-denial.test.tsx",
+      "name": "positive control: admin-a directly opening /admin/knowledge sees the admin surface (knowledge)",
+      "fullName": "TEST-A06 non-admin denied at /admin/* routes (component/V layer) positive control: admin-a directly opening /admin/knowledge sees the admin surface (knowledge)",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a06-admin-route-denial.test.tsx",
+      "name": "positive control: admin-a directly opening /admin/report-questions sees the admin surface (report-questions)",
+      "fullName": "TEST-A06 non-admin denied at /admin/* routes (component/V layer) positive control: admin-a directly opening /admin/report-questions sees the admin surface (report-questions)",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a06-admin-route-denial.test.tsx",
+      "name": "TEST-A06.ui.branches (G): hq-fin directly opening /admin/branches must not see the admin surface",
+      "fullName": "TEST-A06 non-admin denied at /admin/* routes (component/V layer) TEST-A06.ui.branches (G): hq-fin directly opening /admin/branches must not see the admin surface",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a06-admin-route-denial.test.tsx",
+      "name": "TEST-A06.ui.hierarchy (G): hq-fin directly opening /admin/hierarchy must not see the admin surface",
+      "fullName": "TEST-A06 non-admin denied at /admin/* routes (component/V layer) TEST-A06.ui.hierarchy (G): hq-fin directly opening /admin/hierarchy must not see the admin surface",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a06-admin-route-denial.test.tsx",
+      "name": "TEST-A06.ui.knowledge (G): hq-fin directly opening /admin/knowledge must not see the admin surface",
+      "fullName": "TEST-A06 non-admin denied at /admin/* routes (component/V layer) TEST-A06.ui.knowledge (G): hq-fin directly opening /admin/knowledge must not see the admin surface",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a06-admin-route-denial.test.tsx",
+      "name": "TEST-A06.ui.report-questions (G): hq-fin directly opening /admin/report-questions must not see the admin surface",
+      "fullName": "TEST-A06 non-admin denied at /admin/* routes (component/V layer) TEST-A06.ui.report-questions (G): hq-fin directly opening /admin/report-questions must not see the admin surface",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a07-branch-membership-transitions.test.tsx",
+      "name": "TEST-A07.ui.branch-membership-transitions (A): picker/home follow membership updates and zero-branch exit stays usable",
+      "fullName": "TEST-A07 branch-membership transitions (real CoordinatorPortal + useBranch) TEST-A07.ui.branch-membership-transitions (A): picker/home follow membership updates and zero-branch exit stays usable",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a08-coordinator-login-form.test.tsx",
+      "name": "TEST-A08.normalized-login (C): submits literally trimmed-but-unnormalized name and phone, signs in with returned custom token, then navigates to /portal/home",
+      "fullName": "TEST-A08 coordinator login form (real LoginPage, component/V layer) TEST-A08.normalized-login (C): submits literally trimmed-but-unnormalized name and phone, signs in with returned custom token, then navigates to /portal/home",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/a08-coordinator-login-form.test.tsx",
+      "name": "TEST-A08.recoverable-signin-error (A): non-ok fetch response yields a visible error and does not silently succeed; corrected resubmission then navigates",
+      "fullName": "TEST-A08 coordinator login form (real LoginPage, component/V layer) TEST-A08.recoverable-signin-error (A): non-ok fetch response yields a visible error and does not silently succeed; corrected resubmission then navigates",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
+      "name": "TEST-L01.useAllQuarterlyReports.lifecycle",
+      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.useAllQuarterlyReports.lifecycle",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
+      "name": "TEST-L01.useBranch.lifecycle",
+      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.useBranch.lifecycle",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
+      "name": "TEST-L01.useChatHistory.lifecycle",
+      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.useChatHistory.lifecycle",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
+      "name": "TEST-L01.useContacts.lifecycle",
+      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.useContacts.lifecycle",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
+      "name": "TEST-L01.useContacts.strictmode-lifecycle",
+      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.useContacts.strictmode-lifecycle",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
+      "name": "TEST-L01.useHQKnowledge.lifecycle",
+      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.useHQKnowledge.lifecycle",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
+      "name": "TEST-L01.useKnowledge.lifecycle",
+      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.useKnowledge.lifecycle",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
+      "name": "TEST-L01.usePersonalTasks.lifecycle",
+      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.usePersonalTasks.lifecycle",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
+      "name": "TEST-L01.usePersonalTasks.strictmode-lifecycle",
+      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.usePersonalTasks.strictmode-lifecycle",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
+      "name": "TEST-L01.useQuarterlyReports.lifecycle",
+      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.useQuarterlyReports.lifecycle",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
+      "name": "TEST-L01.useReportQuestions.lifecycle",
+      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.useReportQuestions.lifecycle",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
+      "name": "TEST-L01.useRoles.lifecycle",
+      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.useRoles.lifecycle",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
+      "name": "TEST-L01.useTasks.lifecycle",
+      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.useTasks.lifecycle",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
+      "name": "TEST-L01.useTasks.strictmode-lifecycle",
+      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.useTasks.strictmode-lifecycle",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l02-hook-error-handling.test.tsx",
+      "name": "TEST-L02.useAllQuarterlyReports.error-then-remount-recovers",
+      "fullName": "TEST-L02 hook error handling TEST-L02.useAllQuarterlyReports.error-then-remount-recovers",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l02-hook-error-handling.test.tsx",
+      "name": "TEST-L02.useBranch.error-then-remount-recovers",
+      "fullName": "TEST-L02 hook error handling TEST-L02.useBranch.error-then-remount-recovers",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l02-hook-error-handling.test.tsx",
+      "name": "TEST-L02.useChatHistory.error-then-remount-recovers",
+      "fullName": "TEST-L02 hook error handling TEST-L02.useChatHistory.error-then-remount-recovers",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l02-hook-error-handling.test.tsx",
+      "name": "TEST-L02.useContacts.error-surfaces",
+      "fullName": "TEST-L02 hook error handling TEST-L02.useContacts.error-surfaces",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l02-hook-error-handling.test.tsx",
+      "name": "TEST-L02.useContacts.stale-success-not-presented-as-fresh-after-error",
+      "fullName": "TEST-L02 hook error handling TEST-L02.useContacts.stale-success-not-presented-as-fresh-after-error",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l02-hook-error-handling.test.tsx",
+      "name": "TEST-L02.useHQKnowledge.error-then-remount-recovers",
+      "fullName": "TEST-L02 hook error handling TEST-L02.useHQKnowledge.error-then-remount-recovers",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l02-hook-error-handling.test.tsx",
+      "name": "TEST-L02.useKnowledge.error-then-remount-recovers",
+      "fullName": "TEST-L02 hook error handling TEST-L02.useKnowledge.error-then-remount-recovers",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l02-hook-error-handling.test.tsx",
+      "name": "TEST-L02.usePersonalTasks.error-then-remount-recovers",
+      "fullName": "TEST-L02 hook error handling TEST-L02.usePersonalTasks.error-then-remount-recovers",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l02-hook-error-handling.test.tsx",
+      "name": "TEST-L02.useQuarterlyReports.error-then-remount-recovers",
+      "fullName": "TEST-L02 hook error handling TEST-L02.useQuarterlyReports.error-then-remount-recovers",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l02-hook-error-handling.test.tsx",
+      "name": "TEST-L02.useReportQuestions.error-then-remount-recovers",
+      "fullName": "TEST-L02 hook error handling TEST-L02.useReportQuestions.error-then-remount-recovers",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l02-hook-error-handling.test.tsx",
+      "name": "TEST-L02.useRoles.error-then-remount-recovers",
+      "fullName": "TEST-L02 hook error handling TEST-L02.useRoles.error-then-remount-recovers",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l02-hook-error-handling.test.tsx",
+      "name": "TEST-L02.useTasks.error-then-remount-recovers",
+      "fullName": "TEST-L02 hook error handling TEST-L02.useTasks.error-then-remount-recovers",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l03-identity-scope-transitions.test.tsx",
+      "name": "TEST-L03.useChatHistory.scope-change-clears-session-id",
+      "fullName": "TEST-L03 identity/scope transitions TEST-L03.useChatHistory.scope-change-clears-session-id",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l03-identity-scope-transitions.test.tsx",
+      "name": "TEST-L03.useChatHistory.startNewSession-clears-id",
+      "fullName": "TEST-L03 identity/scope transitions TEST-L03.useChatHistory.startNewSession-clears-id",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l03-identity-scope-transitions.test.tsx",
+      "name": "TEST-L03.useKnowledge.branch-change-no-stale-A-data",
+      "fullName": "TEST-L03 identity/scope transitions TEST-L03.useKnowledge.branch-change-no-stale-A-data",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l03-identity-scope-transitions.test.tsx",
+      "name": "TEST-L03.usePersonalTasks.uid-change-no-stale-A-data",
+      "fullName": "TEST-L03 identity/scope transitions TEST-L03.usePersonalTasks.uid-change-no-stale-A-data",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l03-identity-scope-transitions.test.tsx",
+      "name": "TEST-L03.usePersonalTasks.uid-to-undefined-clears-immediately",
+      "fullName": "TEST-L03 identity/scope transitions TEST-L03.usePersonalTasks.uid-to-undefined-clears-immediately",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l04-writer-timestamps.test.tsx",
+      "name": "TEST-L04.contact-writer.server-timestamp",
+      "fullName": "TEST-L04 writer timestamps TEST-L04.contact-writer.server-timestamp",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l04-writer-timestamps.test.tsx",
+      "name": "TEST-L04.hq-knowledge-writer.mirror-requires-server-timestamp",
+      "fullName": "TEST-L04 writer timestamps TEST-L04.hq-knowledge-writer.mirror-requires-server-timestamp",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l04-writer-timestamps.test.tsx",
+      "name": "TEST-L04.report-question-writer.timestamp-gap",
+      "fullName": "TEST-L04 writer timestamps TEST-L04.report-question-writer.timestamp-gap",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l04-writer-timestamps.test.tsx",
+      "name": "TEST-L04.role-writer.timestamp-gap",
+      "fullName": "TEST-L04 writer timestamps TEST-L04.role-writer.timestamp-gap",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/l04-writer-timestamps.test.tsx",
+      "name": "TEST-L04.role-writer.update-timestamp-gap",
+      "fullName": "TEST-L04 writer timestamps TEST-L04.role-writer.update-timestamp-gap",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r01-cycle-key-literals.test.ts",
+      "name": "TEST-R01.currentCycleKey.half-year-boundary-jun-jul",
+      "fullName": "TEST-R01 currentCycleKey TEST-R01.currentCycleKey.half-year-boundary-jun-jul",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r01-cycle-key-literals.test.ts",
+      "name": "TEST-R01.currentCycleKey.leap-february-boundary",
+      "fullName": "TEST-R01 currentCycleKey TEST-R01.currentCycleKey.leap-february-boundary",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r01-cycle-key-literals.test.ts",
+      "name": "TEST-R01.currentCycleKey.literal-values-september-2026",
+      "fullName": "TEST-R01 currentCycleKey TEST-R01.currentCycleKey.literal-values-september-2026",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r01-cycle-key-literals.test.ts",
+      "name": "TEST-R01.currentCycleKey.month-boundary-sep-oct",
+      "fullName": "TEST-R01 currentCycleKey TEST-R01.currentCycleKey.month-boundary-sep-oct",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r01-cycle-key-literals.test.ts",
+      "name": "TEST-R01.currentCycleKey.year-boundary-dec-jan",
+      "fullName": "TEST-R01 currentCycleKey TEST-R01.currentCycleKey.year-boundary-dec-jan",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r02-recurrence-reset-lifecycle.test.tsx",
+      "name": "TEST-R02.already-not-done-task-not-rewritten",
+      "fullName": "TEST-R02 useRecurringTaskReset lifecycle TEST-R02.already-not-done-task-not-rewritten",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r02-recurrence-reset-lifecycle.test.tsx",
+      "name": "TEST-R02.fresh-recurring-task-not-rewritten",
+      "fullName": "TEST-R02 useRecurringTaskReset lifecycle TEST-R02.fresh-recurring-task-not-rewritten",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r02-recurrence-reset-lifecycle.test.tsx",
+      "name": "TEST-R02.hq-no-write-control",
+      "fullName": "TEST-R02 useRecurringTaskReset lifecycle TEST-R02.hq-no-write-control",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r02-recurrence-reset-lifecycle.test.tsx",
+      "name": "TEST-R02.mixed-fixture-only-stale-recurring-in-batch",
+      "fullName": "TEST-R02 useRecurringTaskReset lifecycle TEST-R02.mixed-fixture-only-stale-recurring-in-batch",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r02-recurrence-reset-lifecycle.test.tsx",
+      "name": "TEST-R02.one-off-never-resets",
+      "fullName": "TEST-R02 useRecurringTaskReset lifecycle TEST-R02.one-off-never-resets",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r02-recurrence-reset-lifecycle.test.tsx",
+      "name": "TEST-R02.same-cycle-rerender-no-duplicate-write",
+      "fullName": "TEST-R02 useRecurringTaskReset lifecycle TEST-R02.same-cycle-rerender-no-duplicate-write",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r02-recurrence-reset-lifecycle.test.tsx",
+      "name": "TEST-R02.stale-recurring-task-resets",
+      "fullName": "TEST-R02 useRecurringTaskReset lifecycle TEST-R02.stale-recurring-task-resets",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r03-admin-mount-timing.test.tsx",
+      "name": "TEST-R03.second-cycle-resets-after-remount",
+      "fullName": "TEST-R03 admin-mount recurrence with clock advance (G) TEST-R03.second-cycle-resets-after-remount",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r03-admin-mount-timing.test.tsx",
+      "name": "TEST-R03.second-cycle-resets-without-unmount",
+      "fullName": "TEST-R03 admin-mount recurrence with clock advance (G) TEST-R03.second-cycle-resets-without-unmount",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r04-rejected-batch-suppression.test.tsx",
+      "name": "TEST-R04.current-rejected-batch",
+      "fullName": "TEST-R04 rejected batch commit (C/G) TEST-R04.current-rejected-batch",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r04-rejected-batch-suppression.test.tsx",
+      "name": "TEST-R04.recovery-observability (G) — a failed reset must remain actionable: a later render with the same stale snapshot must retry, not be silently suppressed forever",
+      "fullName": "TEST-R04 rejected batch commit (C/G) TEST-R04.recovery-observability (G) — a failed reset must remain actionable: a later render with the same stale snapshot must retry, not be silently suppressed forever",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r05-holiday-display-characterization.test.ts",
+      "name": "TEST-R05.current-holiday-display.identical-across-months-in-same-year",
+      "fullName": "TEST-R05 holiday-anchored current display (C) TEST-R05.current-holiday-display.identical-across-months-in-same-year",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r05-holiday-display-characterization.test.ts",
+      "name": "TEST-R05.current-holiday-display.year-2026",
+      "fullName": "TEST-R05 holiday-anchored current display (C) TEST-R05.current-holiday-display.year-2026",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/r05-holiday-display-characterization.test.ts",
+      "name": "TEST-R05.current-holiday-display.year-2027",
+      "fullName": "TEST-R05 holiday-anchored current display (C) TEST-R05.current-holiday-display.year-2027",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t01-task-create-detail-roundtrip.test.tsx",
+      "name": "TEST-T01.create-then-detail-roundtrip (A) — real /tasks/new form fill saves a payload, and feeding that exact payload back through the same detail view renders without crash",
+      "fullName": "TEST-T01 — task create / detail round-trip / sparse-task list view (V, family=G) TEST-T01.create-then-detail-roundtrip (A) — real /tasks/new form fill saves a payload, and feeding that exact payload back through the same detail view renders without crash",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t01-task-create-detail-roundtrip.test.tsx",
+      "name": "TEST-T01.reject-save-then-retry (A/G) — a rejected setDoc leaves the form values intact; a retry succeeds",
+      "fullName": "TEST-T01 — task create / detail round-trip / sparse-task list view (V, family=G) TEST-T01.reject-save-then-retry (A/G) — a rejected setDoc leaves the form values intact; a retry succeeds",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t01-task-create-detail-roundtrip.test.tsx",
+      "name": "TEST-T01.sparse-task-in-list-view (G) — production sparse task rendered by TasksPage with an active search crashes on category.toLowerCase()",
+      "fullName": "TEST-T01 — task create / detail round-trip / sparse-task list view (V, family=G) TEST-T01.sparse-task-in-list-view (G) — production sparse task rendered by TasksPage with an active search crashes on category.toLowerCase()",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t03-task-relationships-and-delete.test.tsx",
+      "name": "TEST-T03.delete-control-persists (G) — a real delete control on TaskDetailPage removes the task via deleteDoc",
+      "fullName": "TEST-T03 — task relationships & delete/dependency gaps (V, family=A/G) TEST-T03.delete-control-persists (G) — a real delete control on TaskDetailPage removes the task via deleteDoc",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t03-task-relationships-and-delete.test.tsx",
+      "name": "TEST-T03.no-dependency-editor (G) — the edit form exposes no dependency (dependsOn) or contactRefs editor UI",
+      "fullName": "TEST-T03 — task relationships & delete/dependency gaps (V, family=A/G) TEST-T03.no-dependency-editor (G) — the edit form exposes no dependency (dependsOn) or contactRefs editor UI",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t03-task-relationships-and-delete.test.tsx",
+      "name": "TEST-T03.parent-child-navigation (A) — both children of task-fin appear as navigable links in the sub-tasks section",
+      "fullName": "TEST-T03 — task relationships & delete/dependency gaps (V, family=A/G) TEST-T03.parent-child-navigation (A) — both children of task-fin appear as navigable links in the sub-tasks section",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t03-task-relationships-and-delete.test.tsx",
+      "name": "TEST-T03.subtask-creation-persists (A) — the visible \"+ הוסף תת-משימה\" control writes a new task doc with parentTaskId = current",
+      "fullName": "TEST-T03 — task relationships & delete/dependency gaps (V, family=A/G) TEST-T03.subtask-creation-persists (A) — the visible \"+ הוסף תת-משימה\" control writes a new task doc with parentTaskId = current",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t04-dashboard-filter-and-period.test.tsx",
+      "name": "TEST-T04.current-period-conventions (C) — literal DashboardPage bucketing at 2026-09-06: month/quarter/all subsets and `< now` overdue boundary",
+      "fullName": "TEST-T04 — dashboard/tasks filter round-trip + literal current-period conventions (V, family=A/C) TEST-T04.current-period-conventions (C) — literal DashboardPage bucketing at 2026-09-06: month/quarter/all subsets and `< now` overdue boundary",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t04-dashboard-filter-and-period.test.tsx",
+      "name": "TEST-T04.filter-and-back (A) — filters set on TasksPage survive detail navigation and back-link round-trip",
+      "fullName": "TEST-T04 — dashboard/tasks filter round-trip + literal current-period conventions (V, family=A/C) TEST-T04.filter-and-back (A) — filters set on TasksPage survive detail navigation and back-link round-trip",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t05-kanban-keyboard-gap.test.tsx",
+      "name": "TEST-T05.keyboard-equivalent-status-change (A) — Tab reaches the native status control, changing it writes the real status update, and focus is retained",
+      "fullName": "TEST-T05 — Kanban status-change accessibility (V, family=A) TEST-T05.keyboard-equivalent-status-change (A) — Tab reaches the native status control, changing it writes the real status update, and focus is retained",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t06-calendar-view-characterization.test.tsx",
+      "name": "TEST-T06.calendar-view-orphan-component-characterization (C) — mounting CalendarView in isolation renders the expected month header, filter chips, view toggles, and task title",
+      "fullName": "TEST-T06 — orphan CalendarView characterization + reachable calendar requirement (V, family=C/G) TEST-T06.calendar-view-orphan-component-characterization (C) — mounting CalendarView in isolation renders the expected month header, filter chips, view toggles, and task title",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t06-calendar-view-characterization.test.tsx",
+      "name": "TEST-T06.reachable-calendar-month-week-day (G) — a user must be able to reach a month/week/day calendar of tasks through TasksPage",
+      "fullName": "TEST-T06 — orphan CalendarView characterization + reachable calendar requirement (V, family=C/G) TEST-T06.reachable-calendar-month-week-day (G) — a user must be able to reach a month/week/day calendar of tasks through TasksPage",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t07-gantt-expansion-characterization.test.tsx",
+      "name": "TEST-T07.single-month-hand-computed (C) — September 2026 single-month view",
+      "fullName": "TEST-T07 — Gantt expansion/clamping/child omission (V, family=C) TEST-T07.single-month-hand-computed (C) — September 2026 single-month view",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t08-attachment-storage-contract.test.tsx",
+      "name": "TEST-T08.counter-recovery (G) — rejected counter-write must not leave a permanent silent divergence",
+      "fullName": "TEST-T08 — attachment storage contract (V) TEST-T08.counter-recovery (G) — rejected counter-write must not leave a permanent silent divergence",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t08-attachment-storage-contract.test.tsx",
+      "name": "TEST-T08.current-size-boundary (C) — 500 * 1024 byte constant from TaskDetailPage.tsx:181 is the accept/reject edge",
+      "fullName": "TEST-T08 — attachment storage contract (V) TEST-T08.current-size-boundary (C) — 500 * 1024 byte constant from TaskDetailPage.tsx:181 is the accept/reject edge",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t08-attachment-storage-contract.test.tsx",
+      "name": "TEST-T08.storage-roundtrip (G) — uploaded file bytes must be stored in Firebase Storage with metadata",
+      "fullName": "TEST-T08 — attachment storage contract (V) TEST-T08.storage-roundtrip (G) — uploaded file bytes must be stored in Firebase Storage with metadata",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t09-status-change-history.test.tsx",
+      "name": "TEST-T09.dashboard-quick-update-writes-history (G) — DashboardPage inline status change must record a history entry",
+      "fullName": "TEST-T09 — status change history recording (V) TEST-T09.dashboard-quick-update-writes-history (G) — DashboardPage inline status change must record a history entry",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t09-status-change-history.test.tsx",
+      "name": "TEST-T09.detail-status-change-writes-history (G, predicted PASS) — TaskDetailPage inline status control writes both a history subcollection entry AND the task updateDoc",
+      "fullName": "TEST-T09 — status change history recording (V) TEST-T09.detail-status-change-writes-history (G, predicted PASS) — TaskDetailPage inline status control writes both a history subcollection entry AND the task updateDoc",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t09-status-change-history.test.tsx",
+      "name": "TEST-T09.kanban-inline-select-writes-history (G) — changing a task status via the Kanban card select must record a history entry",
+      "fullName": "TEST-T09 — status change history recording (V) TEST-T09.kanban-inline-select-writes-history (G) — changing a task status via the Kanban card select must record a history entry",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t09-status-change-history.test.tsx",
+      "name": "TEST-T09.list-quick-update-writes-history (G) — TasksPage inline status change must record a history entry alongside the task update",
+      "fullName": "TEST-T09 — status change history recording (V) TEST-T09.list-quick-update-writes-history (G) — TasksPage inline status change must record a history entry alongside the task update",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t09-status-change-history.test.tsx",
+      "name": "TEST-T09.rejected-update-no-false-history (G) — when the task-status updateDoc rejects, no separate false-successful history entry is claimed",
+      "fullName": "TEST-T09 — status change history recording (V) TEST-T09.rejected-update-no-false-history (G) — when the task-status updateDoc rejects, no separate false-successful history entry is claimed",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t10-comments-and-listener-errors.test.tsx",
+      "name": "TEST-T10.listener-error (G) — a nested comments listener error must be surfaced, not silently leave an indefinite pending/empty state",
+      "fullName": "TEST-T10 — comments/listener/cleanup (V) TEST-T10.listener-error (G) — a nested comments listener error must be surfaced, not silently leave an indefinite pending/empty state",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t10-comments-and-listener-errors.test.tsx",
+      "name": "TEST-T10.old-task-listener-cleanup-on-id-switch (A) — navigating from task-fin to task-done tears down old nested listeners; a late emission on the old path does not corrupt the new task display",
+      "fullName": "TEST-T10 — comments/listener/cleanup (V) TEST-T10.old-task-listener-cleanup-on-id-switch (A) — navigating from task-fin to task-done tears down old nested listeners; a late emission on the old path does not corrupt the new task display",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t10-comments-and-listener-errors.test.tsx",
+      "name": "TEST-T10.ordered-comments-and-retry (A) — trimmed comment write uses serverTimestamp, pre-existing comments render in delivered order, failed write recoverable",
+      "fullName": "TEST-T10 — comments/listener/cleanup (V) TEST-T10.ordered-comments-and-retry (A) — trimmed comment write uses serverTimestamp, pre-existing comments render in delivered order, failed write recoverable",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t11-private-task-isolation.test.tsx",
+      "name": "TEST-T11.delete-removes-only-own-record (A) — deleteDoc targets the exact row path, other rows untouched",
+      "fullName": "TEST-T11 — private task isolation (V, family=A) TEST-T11.delete-removes-only-own-record (A) — deleteDoc targets the exact row path, other rows untouched",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t11-private-task-isolation.test.tsx",
+      "name": "TEST-T11.legacy-done-flag-displays-correctly (A) — a legacy {done:true} doc with no status field renders as complete (effectiveStatus fallback)",
+      "fullName": "TEST-T11 — private task isolation (V, family=A) TEST-T11.legacy-done-flag-displays-correctly (A) — a legacy {done:true} doc with no status field renders as complete (effectiveStatus fallback)",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t11-private-task-isolation.test.tsx",
+      "name": "TEST-T11.organizational-views-never-subscribe-to-personal-path (A) — TasksPage, KanbanView, GanttView subscribed via real useTasks never register an onSnapshot listener on any personalTasks path",
+      "fullName": "TEST-T11 — private task isolation (V, family=A) TEST-T11.organizational-views-never-subscribe-to-personal-path (A) — TasksPage, KanbanView, GanttView subscribed via real useTasks never register an onSnapshot listener on any personalTasks path",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t11-private-task-isolation.test.tsx",
+      "name": "TEST-T11.private-task-crud-under-own-uid-path (A) — add/edit/delete write ONLY to users/{uid}/personalTasks",
+      "fullName": "TEST-T11 — private task isolation (V, family=A) TEST-T11.private-task-crud-under-own-uid-path (A) — add/edit/delete write ONLY to users/{uid}/personalTasks",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t11-private-task-isolation.test.tsx",
+      "name": "TEST-T11.status-filter-transitions (A) — filter chips narrow the visible list; changing status writes to own personal path",
+      "fullName": "TEST-T11 — private task isolation (V, family=A) TEST-T11.status-filter-transitions (A) — filter chips narrow the visible list; changing status writes to own personal path",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t12-promotion-consistency.test.tsx",
+      "name": "TEST-T12.explicit-promotion (C) — promotion invokes exactly two independent writes and characterizes the fields copied into the new org task",
+      "fullName": "TEST-T12 — explicit promotion & partial retry (V) TEST-T12.explicit-promotion (C) — promotion invokes exactly two independent writes and characterizes the fields copied into the new org task",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/core/t12-promotion-consistency.test.tsx",
+      "name": "TEST-T12.partial-promotion-retry (G) — when the personal-side completion write rejects but org creation succeeded, retrying must NOT create a duplicate org task",
+      "fullName": "TEST-T12 — explicit promotion & partial retry (V) TEST-T12.partial-promotion-retry (G) — when the personal-side completion write rejects but org creation succeeded, retrying must NOT create a duplicate org task",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/knowledge/H01.test.tsx",
+      "name": "TEST-H01.actual-controls-request (A): real scope/domain/report controls drive one token-bearing request, keep the last scope selected, and persist one successful reply",
+      "fullName": "TEST-H01 HQChatPage (component V+F lane) TEST-H01.actual-controls-request (A): real scope/domain/report controls drive one token-bearing request, keep the last scope selected, and persist one successful reply",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/knowledge/H01.test.tsx",
+      "name": "TEST-H01.current-default-scopes (C): the live UI starts with exactly hq+research+global+branch active, not reports",
+      "fullName": "TEST-H01 HQChatPage (component V+F lane) TEST-H01.current-default-scopes (C): the live UI starts with exactly hq+research+global+branch active, not reports",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/knowledge/H01.test.tsx",
+      "name": "TEST-H01.reply-rendering (A): renders the exact returned assistant text verbatim in the transcript",
+      "fullName": "TEST-H01 HQChatPage (component V+F lane) TEST-H01.reply-rendering (A): renders the exact returned assistant text verbatim in the transcript",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-B01.branch-operational-crud [A]",
+      "fullName": "operations requirement tests TEST-B01.branch-operational-crud [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-B04.child-scope-reset [G]",
+      "fullName": "operations requirement tests TEST-B04.child-scope-reset [G]",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-B04.foreign-report-denial [A]",
+      "fullName": "operations requirement tests TEST-B04.foreign-report-denial [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-B04.picker-membership-change [A]",
+      "fullName": "operations requirement tests TEST-B04.picker-membership-change [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-C01.contact-crud-filter-realtime [A]",
+      "fullName": "operations requirement tests TEST-C01.contact-crud-filter-realtime [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-C02.domain-default-and-department-filter [G]",
+      "fullName": "operations requirement tests TEST-C02.domain-default-and-department-filter [G]",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-C03.complete-record-links [A]",
+      "fullName": "operations requirement tests TEST-C03.complete-record-links [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-C03.csv-roundtrip [A]",
+      "fullName": "operations requirement tests TEST-C03.csv-roundtrip [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-C03.production-sparse-task [G]",
+      "fullName": "operations requirement tests TEST-C03.production-sparse-task [G]",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-O01.role-crud-clear-delete [A]",
+      "fullName": "operations requirement tests TEST-O01.role-crud-clear-delete [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-O02.current-delegation-display [C]",
+      "fullName": "operations requirement tests TEST-O02.current-delegation-display [C]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-O03.status-area-dashboard [A]",
+      "fullName": "operations requirement tests TEST-O03.status-area-dashboard [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-O04.dialog-focus [G]",
+      "fullName": "operations requirement tests TEST-O04.dialog-focus [G]",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-O04.keyboard-drilldown [A]",
+      "fullName": "operations requirement tests TEST-O04.keyboard-drilldown [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-O04.volunteer-roundtrip [A]",
+      "fullName": "operations requirement tests TEST-O04.volunteer-roundtrip [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-O05.batch-repeat [A]",
+      "fullName": "operations requirement tests TEST-O05.batch-repeat [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-O05.cycle-visible-or-error [G]",
+      "fullName": "operations requirement tests TEST-O05.cycle-visible-or-error [G]",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-O05.preview-no-write [A]",
+      "fullName": "operations requirement tests TEST-O05.preview-no-write [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-Q01.first-report-loading-race [G]",
+      "fullName": "operations requirement tests TEST-Q01.first-report-loading-race [G]",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-Q01.portal-report-real-reader [A]",
+      "fullName": "operations requirement tests TEST-Q01.portal-report-real-reader [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-Q02.admin-question-editor [A]",
+      "fullName": "operations requirement tests TEST-Q02.admin-question-editor [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-Q03.branch-isolation [G]",
+      "fullName": "operations requirement tests TEST-Q03.branch-isolation [G]",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-Q03.malformed-draft [A]",
+      "fullName": "operations requirement tests TEST-Q03.malformed-draft [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-Q03.restore-own-draft [A]",
+      "fullName": "operations requirement tests TEST-Q03.restore-own-draft [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-Q03.same-branch-other-user-current [C]",
+      "fullName": "operations requirement tests TEST-Q03.same-branch-other-user-current [C]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-Q04.coverage-realtime [A]",
+      "fullName": "operations requirement tests TEST-Q04.coverage-realtime [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-Q05.current-key-label-resolution [C]",
+      "fullName": "operations requirement tests TEST-Q05.current-key-label-resolution [C]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-Q05.filter-render-export [A]",
+      "fullName": "operations requirement tests TEST-Q05.filter-render-export [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-Q06.current-concurrent-submissions [C]",
+      "fullName": "operations requirement tests TEST-Q06.current-concurrent-submissions [C]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-Q06.failed-submit-preserves-input [A]",
+      "fullName": "operations requirement tests TEST-Q06.failed-submit-preserves-input [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-Q07.partial-reorder-recovery [G]",
+      "fullName": "operations requirement tests TEST-Q07.partial-reorder-recovery [G]",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-Q08.current-unversioned-labels [C]",
+      "fullName": "operations requirement tests TEST-Q08.current-unversioned-labels [C]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/components/operations/operations.component.test.tsx",
+      "name": "TEST-Q08.saved-value-survival [A]",
+      "fullName": "operations requirement tests TEST-Q08.saved-value-survival [A]",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F01.test.ts",
+      "name": "TEST-F01.ai-proxy.post-scaffold",
+      "fullName": "TEST-F01 serverless contract — method/media/body (network-free subset) TEST-F01.ai-proxy.post-scaffold",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F01.test.ts",
+      "name": "TEST-F01.ai-proxy.wrong-method",
+      "fullName": "TEST-F01 serverless contract — method/media/body (network-free subset) TEST-F01.ai-proxy.wrong-method",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F01.test.ts",
+      "name": "TEST-F01.portal-login.invalid-shape.array",
+      "fullName": "TEST-F01 serverless contract — method/media/body (network-free subset) TEST-F01.portal-login.invalid-shape.array",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F01.test.ts",
+      "name": "TEST-F01.portal-login.invalid-shape.null",
+      "fullName": "TEST-F01 serverless contract — method/media/body (network-free subset) TEST-F01.portal-login.invalid-shape.null",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F01.test.ts",
+      "name": "TEST-F01.portal-login.invalid-shape.wrong-field-type",
+      "fullName": "TEST-F01 serverless contract — method/media/body (network-free subset) TEST-F01.portal-login.invalid-shape.wrong-field-type",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F01.test.ts",
+      "name": "TEST-F01.portal-login.malformed-json",
+      "fullName": "TEST-F01 serverless contract — method/media/body (network-free subset) TEST-F01.portal-login.malformed-json",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F01.test.ts",
+      "name": "TEST-F01.summarize-article.invalid-shape.array",
+      "fullName": "TEST-F01 serverless contract — method/media/body (network-free subset) TEST-F01.summarize-article.invalid-shape.array",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F01.test.ts",
+      "name": "TEST-F01.summarize-article.invalid-shape.null",
+      "fullName": "TEST-F01 serverless contract — method/media/body (network-free subset) TEST-F01.summarize-article.invalid-shape.null",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F01.test.ts",
+      "name": "TEST-F01.summarize-article.invalid-shape.wrong-field-type",
+      "fullName": "TEST-F01 serverless contract — method/media/body (network-free subset) TEST-F01.summarize-article.invalid-shape.wrong-field-type",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F01.test.ts",
+      "name": "TEST-F01.summarize-article.malformed-json",
+      "fullName": "TEST-F01 serverless contract — method/media/body (network-free subset) TEST-F01.summarize-article.malformed-json",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F01.test.ts",
+      "name": "TEST-F01.summarize-article.valid-json",
+      "fullName": "TEST-F01 serverless contract — method/media/body (network-free subset) TEST-F01.summarize-article.valid-json",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F08.test.ts",
+      "name": "TEST-F08.chat-config-safe",
+      "fullName": "TEST-F08 configuration safety and import-time behavior (network-free subset) TEST-F08.chat-config-safe",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F08.test.ts",
+      "name": "TEST-F08.hq-config-safe",
+      "fullName": "TEST-F08 configuration safety and import-time behavior (network-free subset) TEST-F08.hq-config-safe",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F08.test.ts",
+      "name": "TEST-F08.portal-config-safe",
+      "fullName": "TEST-F08 configuration safety and import-time behavior (network-free subset) TEST-F08.portal-config-safe",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F08.test.ts",
+      "name": "TEST-F08.summarize-import-time-key",
+      "fullName": "TEST-F08 configuration safety and import-time behavior (network-free subset) TEST-F08.summarize-import-time-key",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F08.test.ts",
+      "name": "TEST-F08.summarize-unusable-config",
+      "fullName": "TEST-F08 configuration safety and import-time behavior (network-free subset) TEST-F08.summarize-unusable-config",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/F10.test.ts",
+      "name": "TEST-F10.wrong-method",
+      "fullName": "TEST-F10 ai-proxy disabled write surface (network-free subset) TEST-F10.wrong-method",
+      "result": "passed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "behavior",
+      "file": "tests/requirements/contracts/toolchain/strict.test.ts",
+      "name": "TEST-N01.strict-production-compiler [G] enables the required strict TypeScript configuration",
+      "fullName": "TEST-N01.strict-production-compiler [G] enables the required strict TypeScript configuration",
+      "result": "failed",
+      "evidence": "artifacts/behavior-verified.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/l01-hook-lifecycle-emulator.test.ts",
+      "name": "TEST-L01.emulator.useBranch.array-contains-membership",
+      "fullName": "TEST-L01 (+R) emulator confirmation TEST-L01.emulator.useBranch.array-contains-membership",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/l01-hook-lifecycle-emulator.test.ts",
+      "name": "TEST-L01.emulator.useQuarterlyReports.branch-filter",
+      "fullName": "TEST-L01 (+R) emulator confirmation TEST-L01.emulator.useQuarterlyReports.branch-filter",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/l01-hook-lifecycle-emulator.test.ts",
+      "name": "TEST-L01.emulator.useTasks.orderBy-drops-missing-field",
+      "fullName": "TEST-L01 (+R) emulator confirmation TEST-L01.emulator.useTasks.orderBy-drops-missing-field",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/l03-identity-scope-transitions-emulator.test.ts",
+      "name": "TEST-L03.emulator.personalTasks.old-scope-not-visible-after-identity-switch",
+      "fullName": "TEST-L03 (+R) emulator confirmation TEST-L03.emulator.personalTasks.old-scope-not-visible-after-identity-switch",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/l04-server-timestamps.test.ts",
+      "name": "TEST-L04.emulator.hq-knowledge-mirror.requires-server-timestamp",
+      "fullName": "TEST-L04 (+R) emulator confirmation TEST-L04.emulator.hq-knowledge-mirror.requires-server-timestamp",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/l04-server-timestamps.test.ts",
+      "name": "TEST-L04.emulator.role-writer.requires-server-timestamp (G)",
+      "fullName": "TEST-L04 (+R) emulator confirmation TEST-L04.emulator.role-writer.requires-server-timestamp (G)",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/l04-server-timestamps.test.ts",
+      "name": "TEST-L04.emulator.task-writer.server-timestamp-becomes-Timestamp",
+      "fullName": "TEST-L04 (+R) emulator confirmation TEST-L04.emulator.task-writer.server-timestamp-becomes-Timestamp",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/l05-two-client-convergence.test.ts",
+      "name": "TEST-L05.detail-live (G) — an open task detail view must reflect another client's update without a manual refresh",
+      "fullName": "TEST-L05 two-client convergence TEST-L05.detail-live (G) — an open task detail view must reflect another client's update without a manual refresh",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/l05-two-client-convergence.test.ts",
+      "name": "TEST-L05.realtime.contacts",
+      "fullName": "TEST-L05 two-client convergence TEST-L05.realtime.contacts",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/l05-two-client-convergence.test.ts",
+      "name": "TEST-L05.realtime.hq-knowledge",
+      "fullName": "TEST-L05 two-client convergence TEST-L05.realtime.hq-knowledge",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/l05-two-client-convergence.test.ts",
+      "name": "TEST-L05.realtime.reports",
+      "fullName": "TEST-L05 two-client convergence TEST-L05.realtime.reports",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/l05-two-client-convergence.test.ts",
+      "name": "TEST-L05.realtime.tasks",
+      "fullName": "TEST-L05 two-client convergence TEST-L05.realtime.tasks",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/l05-two-client-convergence.test.ts",
+      "name": "TEST-L05.research-live (G) — maintained research content must reach an already-open knowledge library without a refresh",
+      "fullName": "TEST-L05 two-client convergence TEST-L05.research-live (G) — maintained research content must reach an already-open knowledge library without a refresh",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/r02-recurrence-reset-emulator.test.ts",
+      "name": "TEST-R02.emulator.same-cycle-rerender-no-duplicate-write",
+      "fullName": "TEST-R02 (+R) emulator confirmation TEST-R02.emulator.same-cycle-rerender-no-duplicate-write",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/r02-recurrence-reset-emulator.test.ts",
+      "name": "TEST-R02.emulator.stale-recurring-task-persists-reset",
+      "fullName": "TEST-R02 (+R) emulator confirmation TEST-R02.emulator.stale-recurring-task-persists-reset",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/t08-attachment-storage-emulator.test.ts",
+      "name": "TEST-T08.emulator.counter-recovery (G) — a failed counter write must not leave a permanent silent divergence",
+      "fullName": "TEST-T08 (+R) emulator confirmation TEST-T08.emulator.counter-recovery (G) — a failed counter write must not leave a permanent silent divergence",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/t08-attachment-storage-emulator.test.ts",
+      "name": "TEST-T08.emulator.storage-roundtrip (G) — the real Storage Emulator must receive the uploaded file bytes",
+      "fullName": "TEST-T08 (+R) emulator confirmation TEST-T08.emulator.storage-roundtrip (G) — the real Storage Emulator must receive the uploaded file bytes",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/t09-status-history-emulator.test.ts",
+      "name": "TEST-T09.emulator.dashboard-quick-update-history-gap (G)",
+      "fullName": "TEST-T09 (+R) emulator confirmation TEST-T09.emulator.dashboard-quick-update-history-gap (G)",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/t09-status-history-emulator.test.ts",
+      "name": "TEST-T09.emulator.detail-status-change-persists-history (compliant)",
+      "fullName": "TEST-T09 (+R) emulator confirmation TEST-T09.emulator.detail-status-change-persists-history (compliant)",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/t09-status-history-emulator.test.ts",
+      "name": "TEST-T09.emulator.kanban-inline-select-history-gap (G)",
+      "fullName": "TEST-T09 (+R) emulator confirmation TEST-T09.emulator.kanban-inline-select-history-gap (G)",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/core/t09-status-history-emulator.test.ts",
+      "name": "TEST-T09.emulator.list-quick-update-history-gap (G)",
+      "fullName": "TEST-T09 (+R) emulator confirmation TEST-T09.emulator.list-quick-update-history-gap (G)",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F01.test.ts",
+      "name": "TEST-F01.chat.invalid-shape.array",
+      "fullName": "TEST-F01 serverless contract — method/media/body (real-emulator subset) TEST-F01.chat.invalid-shape.array",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F01.test.ts",
+      "name": "TEST-F01.chat.invalid-shape.null",
+      "fullName": "TEST-F01 serverless contract — method/media/body (real-emulator subset) TEST-F01.chat.invalid-shape.null",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F01.test.ts",
+      "name": "TEST-F01.chat.invalid-shape.wrong-field-type",
+      "fullName": "TEST-F01 serverless contract — method/media/body (real-emulator subset) TEST-F01.chat.invalid-shape.wrong-field-type",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F01.test.ts",
+      "name": "TEST-F01.chat.malformed-json",
+      "fullName": "TEST-F01 serverless contract — method/media/body (real-emulator subset) TEST-F01.chat.malformed-json",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F01.test.ts",
+      "name": "TEST-F01.chat.media.missing",
+      "fullName": "TEST-F01 serverless contract — method/media/body (real-emulator subset) TEST-F01.chat.media.missing",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F01.test.ts",
+      "name": "TEST-F01.chat.media.wrong",
+      "fullName": "TEST-F01 serverless contract — method/media/body (real-emulator subset) TEST-F01.chat.media.wrong",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F01.test.ts",
+      "name": "TEST-F01.hq-chat.invalid-shape.array",
+      "fullName": "TEST-F01 serverless contract — method/media/body (real-emulator subset) TEST-F01.hq-chat.invalid-shape.array",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F01.test.ts",
+      "name": "TEST-F01.hq-chat.invalid-shape.null",
+      "fullName": "TEST-F01 serverless contract — method/media/body (real-emulator subset) TEST-F01.hq-chat.invalid-shape.null",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F01.test.ts",
+      "name": "TEST-F01.hq-chat.invalid-shape.wrong-field-type",
+      "fullName": "TEST-F01 serverless contract — method/media/body (real-emulator subset) TEST-F01.hq-chat.invalid-shape.wrong-field-type",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F01.test.ts",
+      "name": "TEST-F01.hq-chat.malformed-json",
+      "fullName": "TEST-F01 serverless contract — method/media/body (real-emulator subset) TEST-F01.hq-chat.malformed-json",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F01.test.ts",
+      "name": "TEST-F01.hq-chat.media.missing",
+      "fullName": "TEST-F01 serverless contract — method/media/body (real-emulator subset) TEST-F01.hq-chat.media.missing",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F01.test.ts",
+      "name": "TEST-F01.hq-chat.media.wrong",
+      "fullName": "TEST-F01 serverless contract — method/media/body (real-emulator subset) TEST-F01.hq-chat.media.wrong",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F01.test.ts",
+      "name": "TEST-F01.portal-login.valid-json",
+      "fullName": "TEST-F01 serverless contract — method/media/body (real-emulator subset) TEST-F01.portal-login.valid-json",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F02.test.ts",
+      "name": "TEST-F02.current-name-query-limit",
+      "fullName": "TEST-F02 portal-login lookup and failure surface TEST-F02.current-name-query-limit",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F02.test.ts",
+      "name": "TEST-F02.empty-digits-denial",
+      "fullName": "TEST-F02 portal-login lookup and failure surface TEST-F02.empty-digits-denial",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F02.test.ts",
+      "name": "TEST-F02.non-enumerating-failure",
+      "fullName": "TEST-F02 portal-login lookup and failure surface TEST-F02.non-enumerating-failure",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F02.test.ts",
+      "name": "TEST-F02.normalized-uid-success",
+      "fullName": "TEST-F02 portal-login lookup and failure surface TEST-F02.normalized-uid-success",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F03.test.ts",
+      "name": "TEST-F03.foreign-membership",
+      "fullName": "TEST-F03 chat authentication and branch authority TEST-F03.foreign-membership",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F03.test.ts",
+      "name": "TEST-F03.invalid-token",
+      "fullName": "TEST-F03 chat authentication and branch authority TEST-F03.invalid-token",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F03.test.ts",
+      "name": "TEST-F03.missing-token",
+      "fullName": "TEST-F03 chat authentication and branch authority TEST-F03.missing-token",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F03.test.ts",
+      "name": "TEST-F03.role-required",
+      "fullName": "TEST-F03 chat authentication and branch authority TEST-F03.role-required",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F04.test.ts",
+      "name": "TEST-F04.coordinator-denial",
+      "fullName": "TEST-F04 hq-chat authorization contracts TEST-F04.coordinator-denial",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F04.test.ts",
+      "name": "TEST-F04.domain-access-current",
+      "fullName": "TEST-F04 hq-chat authorization contracts TEST-F04.domain-access-current",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F04.test.ts",
+      "name": "TEST-F04.missing-profile-denial",
+      "fullName": "TEST-F04 hq-chat authorization contracts TEST-F04.missing-profile-denial",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F04.test.ts",
+      "name": "TEST-F04.missing-role-denial",
+      "fullName": "TEST-F04 hq-chat authorization contracts TEST-F04.missing-role-denial",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F04.test.ts",
+      "name": "TEST-F04.unknown-role-denial",
+      "fullName": "TEST-F04 hq-chat authorization contracts TEST-F04.unknown-role-denial",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F04.test.ts",
+      "name": "TEST-F04.valid-hq-success",
+      "fullName": "TEST-F04 hq-chat authorization contracts TEST-F04.valid-hq-success",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+      "name": "TEST-F05.chat.blank-content",
+      "fullName": "TEST-F05 protected body validation TEST-F05.chat.blank-content",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+      "name": "TEST-F05.chat.branchId-absent",
+      "fullName": "TEST-F05 protected body validation TEST-F05.chat.branchId-absent",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+      "name": "TEST-F05.chat.branchId-wrong-type",
+      "fullName": "TEST-F05 protected body validation TEST-F05.chat.branchId-wrong-type",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+      "name": "TEST-F05.chat.extra-field-no-authority-expansion",
+      "fullName": "TEST-F05 protected body validation TEST-F05.chat.extra-field-no-authority-expansion",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+      "name": "TEST-F05.chat.invalid-role",
+      "fullName": "TEST-F05 protected body validation TEST-F05.chat.invalid-role",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+      "name": "TEST-F05.chat.messages-null",
+      "fullName": "TEST-F05 protected body validation TEST-F05.chat.messages-null",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+      "name": "TEST-F05.chat.messages-object",
+      "fullName": "TEST-F05 protected body validation TEST-F05.chat.messages-object",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+      "name": "TEST-F05.chat.nonstring-content",
+      "fullName": "TEST-F05 protected body validation TEST-F05.chat.nonstring-content",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+      "name": "TEST-F05.hq-chat.blank-content",
+      "fullName": "TEST-F05 protected body validation TEST-F05.hq-chat.blank-content",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+      "name": "TEST-F05.hq-chat.invalid-role",
+      "fullName": "TEST-F05 protected body validation TEST-F05.hq-chat.invalid-role",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+      "name": "TEST-F05.hq-chat.messages-null",
+      "fullName": "TEST-F05 protected body validation TEST-F05.hq-chat.messages-null",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+      "name": "TEST-F05.hq-chat.messages-object",
+      "fullName": "TEST-F05 protected body validation TEST-F05.hq-chat.messages-object",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+      "name": "TEST-F05.hq-chat.nonstring-content",
+      "fullName": "TEST-F05 protected body validation TEST-F05.hq-chat.nonstring-content",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+      "name": "TEST-F05.hq-chat.scopes-empty-array (C)",
+      "fullName": "TEST-F05 protected body validation TEST-F05.hq-chat.scopes-empty-array (C)",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+      "name": "TEST-F05.hq-chat.scopes-invalid-type (C)",
+      "fullName": "TEST-F05 protected body validation TEST-F05.hq-chat.scopes-invalid-type (C)",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F06.test.ts",
+      "name": "TEST-F06.current-nonsettling-provider",
+      "fullName": "TEST-F06 current control baselines TEST-F06.current-nonsettling-provider",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F06.test.ts",
+      "name": "TEST-F06.current-unbounded-request",
+      "fullName": "TEST-F06 current control baselines TEST-F06.current-unbounded-request",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F07.test.ts",
+      "name": "TEST-F07.chat.provider-error-redaction",
+      "fullName": "TEST-F07 failure details must not leak secrets or internals TEST-F07.chat.provider-error-redaction",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F07.test.ts",
+      "name": "TEST-F07.hq-chat.partial-source-error-redaction",
+      "fullName": "TEST-F07 failure details must not leak secrets or internals TEST-F07.hq-chat.partial-source-error-redaction",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F07.test.ts",
+      "name": "TEST-F07.hq-chat.provider-error-redaction",
+      "fullName": "TEST-F07 failure details must not leak secrets or internals TEST-F07.hq-chat.provider-error-redaction",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F07.test.ts",
+      "name": "TEST-F07.portal-login.config-error-safe",
+      "fullName": "TEST-F07 failure details must not leak secrets or internals TEST-F07.portal-login.config-error-safe",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F08.test.ts",
+      "name": "TEST-F08.configured-firestore-failure-redaction",
+      "fullName": "TEST-F08 health diagnostic (real-emulator subset) TEST-F08.configured-firestore-failure-redaction",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F08.test.ts",
+      "name": "TEST-F08.configured-provider-failure-redaction",
+      "fullName": "TEST-F08 health diagnostic (real-emulator subset) TEST-F08.configured-provider-failure-redaction",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F08.test.ts",
+      "name": "TEST-F08.health-valid-get",
+      "fullName": "TEST-F08 health diagnostic (real-emulator subset) TEST-F08.health-valid-get",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/contracts/F10.test.ts",
+      "name": "TEST-F10.post-disabled",
+      "fullName": "TEST-F10 ai-proxy disabled write surface (real-emulator subset) TEST-F10.post-disabled",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/H03.test.tsx",
+      "name": "TEST-H03.current-branch-filter (C)",
+      "fullName": "TEST-H03 hq-chat source fidelity TEST-H03.current-branch-filter (C)",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/H03.test.tsx",
+      "name": "TEST-H03.partial-source-success (A)",
+      "fullName": "TEST-H03 hq-chat source fidelity TEST-H03.partial-source-success (A)",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/H03.test.tsx",
+      "name": "TEST-H03.source.branch (A)",
+      "fullName": "TEST-H03 hq-chat source fidelity TEST-H03.source.branch (A)",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/H03.test.tsx",
+      "name": "TEST-H03.source.global (A)",
+      "fullName": "TEST-H03 hq-chat source fidelity TEST-H03.source.global (A)",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/H03.test.tsx",
+      "name": "TEST-H03.source.hq (A)",
+      "fullName": "TEST-H03 hq-chat source fidelity TEST-H03.source.hq (A)",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/H03.test.tsx",
+      "name": "TEST-H03.source.reports (A)",
+      "fullName": "TEST-H03 hq-chat source fidelity TEST-H03.source.reports (A)",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/H03.test.tsx",
+      "name": "TEST-H03.source.research (A)",
+      "fullName": "TEST-H03 hq-chat source fidelity TEST-H03.source.research (A)",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/H04.test.tsx",
+      "name": "TEST-H04.all-mode-context (A)",
+      "fullName": "TEST-H04 chat branch scoping TEST-H04.all-mode-context (A)",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/H04.test.tsx",
+      "name": "TEST-H04.foreign-branch-denial (A)",
+      "fullName": "TEST-H04 chat branch scoping TEST-H04.foreign-branch-denial (A)",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/H04.test.tsx",
+      "name": "TEST-H04.own-branch-context (A)",
+      "fullName": "TEST-H04 chat branch scoping TEST-H04.own-branch-context (A)",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/H05.test.tsx",
+      "name": "TEST-H05.task-evidence-reaches-context (G)",
+      "fullName": "TEST-H05 hq-chat task context coverage TEST-H05.task-evidence-reaches-context (G)",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/H07.test.tsx",
+      "name": "TEST-H07.current-limit-before-filter (C)",
+      "fullName": "TEST-H07 useChatHistory boundaries and characterization TEST-H07.current-limit-before-filter (C)",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/knowledge/H07.test.tsx",
+      "name": "TEST-H07.scope-session-isolation (G)",
+      "fullName": "TEST-H07 useChatHistory boundaries and characterization TEST-H07.scope-session-isolation (G)",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/operations/operations.emulator.test.tsx",
+      "name": "TEST-B03.atomic-coordinator-links [G] uses two real BranchesPage writers and preserves all committed links",
+      "fullName": "TEST-operations emulator-backed production flows TEST-B03.atomic-coordinator-links [G] uses two real BranchesPage writers and preserves all committed links",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/operations/operations.emulator.test.tsx",
+      "name": "TEST-Q06.current-concurrent-submissions-ui [C] uses two real PortalReport forms and characterizes duplicate creates",
+      "fullName": "TEST-operations emulator-backed production flows TEST-Q06.current-concurrent-submissions-ui [C] uses two real PortalReport forms and characterizes duplicate creates",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/operations/operations.emulator.test.tsx",
+      "name": "TEST-Q07.atomic-question-reorder [G] uses real ReportQuestionsAdminPage reorder and leaves no duplicate order after writer failure",
+      "fullName": "TEST-operations emulator-backed production flows TEST-Q07.atomic-question-reorder [G] uses real ReportQuestionsAdminPage reorder and leaves no duplicate order after writer failure",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.branches.crud denies anonymous with positive controls",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.branches.crud denies anonymous with positive controls",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.branches.list denies anonymous list with positive control",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.branches.list denies anonymous list with positive control",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.chatSessions.crud denies anonymous with positive controls",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.chatSessions.crud denies anonymous with positive controls",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.chatSessions.list denies anonymous list with positive control",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.chatSessions.list denies anonymous list with positive control",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.contacts.crud denies anonymous with positive controls",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.contacts.crud denies anonymous with positive controls",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.contacts.list denies anonymous list with positive control",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.contacts.list denies anonymous list with positive control",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.hq_knowledge.crud denies anonymous with positive controls",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.hq_knowledge.crud denies anonymous with positive controls",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.hq_knowledge.list denies anonymous list with positive control",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.hq_knowledge.list denies anonymous list with positive control",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.knowledge_articles.crud denies anonymous with positive controls",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.knowledge_articles.crud denies anonymous with positive controls",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.knowledge_articles.list denies anonymous list with positive control",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.knowledge_articles.list denies anonymous list with positive control",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.knowledgeItems.crud denies anonymous with positive controls",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.knowledgeItems.crud denies anonymous with positive controls",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.knowledgeItems.list denies anonymous list with positive control",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.knowledgeItems.list denies anonymous list with positive control",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.personalTasks.crud denies anonymous with positive controls",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.personalTasks.crud denies anonymous with positive controls",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.personalTasks.list denies anonymous list with positive control",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.personalTasks.list denies anonymous list with positive control",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.quarterlyReports.crud denies anonymous with positive controls",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.quarterlyReports.crud denies anonymous with positive controls",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.quarterlyReports.list denies anonymous list with positive control",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.quarterlyReports.list denies anonymous list with positive control",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.reportQuestions.crud denies anonymous with positive controls",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.reportQuestions.crud denies anonymous with positive controls",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.reportQuestions.list denies anonymous list with positive control",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.reportQuestions.list denies anonymous list with positive control",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.roles.crud denies anonymous with positive controls",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.roles.crud denies anonymous with positive controls",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.roles.list denies anonymous list with positive control",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.roles.list denies anonymous list with positive control",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.task-attachments.crud denies anonymous with positive controls",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.task-attachments.crud denies anonymous with positive controls",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.task-comments.crud denies anonymous with positive controls",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.task-comments.crud denies anonymous with positive controls",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.task-history.crud denies anonymous with positive controls",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.task-history.crud denies anonymous with positive controls",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.tasks.crud denies anonymous with positive controls",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.tasks.crud denies anonymous with positive controls",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.anonymous.tasks.list denies anonymous list with positive control",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.anonymous.tasks.list denies anonymous list with positive control",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.missing-role-read.branches denies app-data reads to profile with no role",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.missing-role-read.branches denies app-data reads to profile with no role",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.missing-role-read.knowledge_articles denies app-data reads to profile with no role",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.missing-role-read.knowledge_articles denies app-data reads to profile with no role",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.missing-role-read.knowledgeItems denies app-data reads to profile with no role",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.missing-role-read.knowledgeItems denies app-data reads to profile with no role",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.missing-role-read.reportQuestions denies app-data reads to profile with no role",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.missing-role-read.reportQuestions denies app-data reads to profile with no role",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.no-profile-read.branches denies app-data reads to authenticated identity without users profile",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.no-profile-read.branches denies app-data reads to authenticated identity without users profile",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.no-profile-read.knowledge_articles denies app-data reads to authenticated identity without users profile",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.no-profile-read.knowledge_articles denies app-data reads to authenticated identity without users profile",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.no-profile-read.knowledgeItems denies app-data reads to authenticated identity without users profile",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.no-profile-read.knowledgeItems denies app-data reads to authenticated identity without users profile",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S01.no-profile-read.reportQuestions denies app-data reads to authenticated identity without users profile",
+      "fullName": "TEST-S01 anonymous and invalid-profile Security Rules TEST-S01.no-profile-read.reportQuestions denies app-data reads to authenticated identity without users profile",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.cross-domain-current.CEO characterizes current cross-domain task read",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.cross-domain-current.CEO characterizes current cross-domain task read",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.cross-domain-current.DES characterizes current cross-domain task read",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.cross-domain-current.DES characterizes current cross-domain task read",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.cross-domain-current.DON characterizes current cross-domain task read",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.cross-domain-current.DON characterizes current cross-domain task read",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.cross-domain-current.FIN characterizes current cross-domain task read",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.cross-domain-current.FIN characterizes current cross-domain task read",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.cross-domain-current.JLM characterizes current cross-domain task read",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.cross-domain-current.JLM characterizes current cross-domain task read",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.cross-domain-current.PUB characterizes current cross-domain task read",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.cross-domain-current.PUB characterizes current cross-domain task read",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.cross-domain-current.SUP characterizes current cross-domain task read",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.cross-domain-current.SUP characterizes current cross-domain task read",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.cross-domain-current.VOL characterizes current cross-domain task read",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.cross-domain-current.VOL characterizes current cross-domain task read",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.valid-hq.admin permits base CRM reads and writes",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.valid-hq.admin permits base CRM reads and writes",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.valid-hq.CEO permits base CRM reads and writes",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.valid-hq.CEO permits base CRM reads and writes",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.valid-hq.DES permits base CRM reads and writes",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.valid-hq.DES permits base CRM reads and writes",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.valid-hq.DON permits base CRM reads and writes",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.valid-hq.DON permits base CRM reads and writes",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.valid-hq.FIN permits base CRM reads and writes",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.valid-hq.FIN permits base CRM reads and writes",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.valid-hq.JLM permits base CRM reads and writes",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.valid-hq.JLM permits base CRM reads and writes",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.valid-hq.PUB permits base CRM reads and writes",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.valid-hq.PUB permits base CRM reads and writes",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.valid-hq.SUP permits base CRM reads and writes",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.valid-hq.SUP permits base CRM reads and writes",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S02.valid-hq.VOL permits base CRM reads and writes",
+      "fullName": "TEST-S02 HQ role matrices TEST-S02.valid-hq.VOL permits base CRM reads and writes",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S03.foreign-branch-read denies coordinator reading foreign branch document",
+      "fullName": "TEST-S03 coordinator branch and knowledge boundaries TEST-S03.foreign-branch-read denies coordinator reading foreign branch document",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S03.foreign-knowledge-mutation denies changing own item into another branch",
+      "fullName": "TEST-S03 coordinator branch and knowledge boundaries TEST-S03.foreign-knowledge-mutation denies changing own item into another branch",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S03.foreign-knowledge-read denies coordinator reading another branch knowledge item",
+      "fullName": "TEST-S03 coordinator branch and knowledge boundaries TEST-S03.foreign-knowledge-read denies coordinator reading another branch knowledge item",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S03.own-branch-query positive control permits own branch query",
+      "fullName": "TEST-S03 coordinator branch and knowledge boundaries TEST-S03.own-branch-query positive control permits own branch query",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S04.admin-update-delete permits admin update/delete control",
+      "fullName": "TEST-S04 quarterly report boundaries TEST-S04.admin-update-delete permits admin update/delete control",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S04.coordinator-update-delete denies coordinator update/delete",
+      "fullName": "TEST-S04 quarterly report boundaries TEST-S04.coordinator-update-delete denies coordinator update/delete",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S04.foreign-branch denies coordinator creating or reading foreign report",
+      "fullName": "TEST-S04 quarterly report boundaries TEST-S04.foreign-branch denies coordinator creating or reading foreign report",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S04.forged-submitter denies coordinator report with mismatched submittedBy",
+      "fullName": "TEST-S04 quarterly report boundaries TEST-S04.forged-submitter denies coordinator report with mismatched submittedBy",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S04.own-create-and-read allows coordinator own report create/read with authorized query control",
+      "fullName": "TEST-S04 quarterly report boundaries TEST-S04.own-create-and-read allows coordinator own report create/read with authorized query control",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S05.admin-only-write.branches permits admin and denies non-admin HQ",
+      "fullName": "TEST-S05 admin-only Firestore writes TEST-S05.admin-only-write.branches permits admin and denies non-admin HQ",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S05.admin-only-write.hq_knowledge permits admin and denies non-admin HQ",
+      "fullName": "TEST-S05 admin-only Firestore writes TEST-S05.admin-only-write.hq_knowledge permits admin and denies non-admin HQ",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S05.admin-only-write.knowledge_articles permits admin and denies non-admin HQ",
+      "fullName": "TEST-S05 admin-only Firestore writes TEST-S05.admin-only-write.knowledge_articles permits admin and denies non-admin HQ",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S05.admin-only-write.reportQuestions permits admin and denies non-admin HQ",
+      "fullName": "TEST-S05 admin-only Firestore writes TEST-S05.admin-only-write.reportQuestions permits admin and denies non-admin HQ",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S05.admin-only-write.users permits admin and denies non-admin HQ",
+      "fullName": "TEST-S05 admin-only Firestore writes TEST-S05.admin-only-write.users permits admin and denies non-admin HQ",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S06.anonymous.hq_knowledge/item-a/proof.txt denies anonymous access after positive control",
+      "fullName": "TEST-S06 Storage exact prefix boundaries TEST-S06.anonymous.hq_knowledge/item-a/proof.txt denies anonymous access after positive control",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S06.anonymous.knowledge_articles/article-a/proof.txt denies anonymous access after positive control",
+      "fullName": "TEST-S06 Storage exact prefix boundaries TEST-S06.anonymous.knowledge_articles/article-a/proof.txt denies anonymous access after positive control",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S06.foreign-delete.hq_knowledge/item-a/proof.txt denies unrelated coordinator delete",
+      "fullName": "TEST-S06 Storage exact prefix boundaries TEST-S06.foreign-delete.hq_knowledge/item-a/proof.txt denies unrelated coordinator delete",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S06.foreign-delete.knowledge_articles/article-a/proof.txt denies unrelated coordinator delete",
+      "fullName": "TEST-S06 Storage exact prefix boundaries TEST-S06.foreign-delete.knowledge_articles/article-a/proof.txt denies unrelated coordinator delete",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S06.foreign-overwrite.hq_knowledge/item-a/proof.txt denies unrelated coordinator overwrite",
+      "fullName": "TEST-S06 Storage exact prefix boundaries TEST-S06.foreign-overwrite.hq_knowledge/item-a/proof.txt denies unrelated coordinator overwrite",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S06.foreign-overwrite.knowledge_articles/article-a/proof.txt denies unrelated coordinator overwrite",
+      "fullName": "TEST-S06 Storage exact prefix boundaries TEST-S06.foreign-overwrite.knowledge_articles/article-a/proof.txt denies unrelated coordinator overwrite",
+      "result": "failed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S06.positive.hq_knowledge/item-a/proof.txt permits authenticated exact-prefix upload/read",
+      "fullName": "TEST-S06 Storage exact prefix boundaries TEST-S06.positive.hq_knowledge/item-a/proof.txt permits authenticated exact-prefix upload/read",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S06.positive.knowledge_articles/article-a/proof.txt permits authenticated exact-prefix upload/read",
+      "fullName": "TEST-S06 Storage exact prefix boundaries TEST-S06.positive.knowledge_articles/article-a/proof.txt permits authenticated exact-prefix upload/read",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-delete.admin.chatSessions denies foreign authenticated delete",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-delete.admin.chatSessions denies foreign authenticated delete",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-delete.admin.personalTasks denies foreign authenticated delete",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-delete.admin.personalTasks denies foreign authenticated delete",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-delete.coordinator.chatSessions denies foreign authenticated delete",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-delete.coordinator.chatSessions denies foreign authenticated delete",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-delete.coordinator.personalTasks denies foreign authenticated delete",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-delete.coordinator.personalTasks denies foreign authenticated delete",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-delete.other-hq.chatSessions denies foreign authenticated delete",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-delete.other-hq.chatSessions denies foreign authenticated delete",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-delete.other-hq.personalTasks denies foreign authenticated delete",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-delete.other-hq.personalTasks denies foreign authenticated delete",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-list.admin.chatSessions denies foreign authenticated list",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-list.admin.chatSessions denies foreign authenticated list",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-list.admin.personalTasks denies foreign authenticated list",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-list.admin.personalTasks denies foreign authenticated list",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-list.coordinator.chatSessions denies foreign authenticated list",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-list.coordinator.chatSessions denies foreign authenticated list",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-list.coordinator.personalTasks denies foreign authenticated list",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-list.coordinator.personalTasks denies foreign authenticated list",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-list.other-hq.chatSessions denies foreign authenticated list",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-list.other-hq.chatSessions denies foreign authenticated list",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-list.other-hq.personalTasks denies foreign authenticated list",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-list.other-hq.personalTasks denies foreign authenticated list",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-update.admin.chatSessions denies foreign authenticated update",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-update.admin.chatSessions denies foreign authenticated update",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-update.admin.personalTasks denies foreign authenticated update",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-update.admin.personalTasks denies foreign authenticated update",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-update.coordinator.chatSessions denies foreign authenticated update",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-update.coordinator.chatSessions denies foreign authenticated update",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-update.coordinator.personalTasks denies foreign authenticated update",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-update.coordinator.personalTasks denies foreign authenticated update",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-update.other-hq.chatSessions denies foreign authenticated update",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-update.other-hq.chatSessions denies foreign authenticated update",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.foreign-update.other-hq.personalTasks denies foreign authenticated update",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.foreign-update.other-hq.personalTasks denies foreign authenticated update",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.owner-only.chatSessions allows owner and denies other users including admin",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.owner-only.chatSessions allows owner and denies other users including admin",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S07.owner-only.personalTasks allows owner and denies other users including admin",
+      "fullName": "TEST-S07 private user subcollection boundaries TEST-S07.owner-only.personalTasks allows owner and denies other users including admin",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S08.current-authorized-body-validation characterizes current authorized malformed task body",
+      "fullName": "TEST-S08 direct-body authority boundaries TEST-S08.current-authorized-body-validation characterizes current authorized malformed task body",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S08.forged-report-owner denies mismatched submittedBy body",
+      "fullName": "TEST-S08 direct-body authority boundaries TEST-S08.forged-report-owner denies mismatched submittedBy body",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    },
+    {
+      "lane": "emulator",
+      "file": "tests/requirements/emulator/rules/security-boundaries.test.ts",
+      "name": "TEST-S08.self-role-escalation denies own users document self-promotion",
+      "fullName": "TEST-S08 direct-body authority boundaries TEST-S08.self-role-escalation denies own users document self-promotion",
+      "result": "passed",
+      "evidence": "artifacts/emulator-closure.json"
+    }
+  ],
+  "files": [
+    ".gitignore",
+    "docs/requirements/executive-summary.he.md",
+    "docs/requirements/technical-specification.he.md",
+    "package-lock.json",
+    "package.json",
+    "tests/requirements/.gitignore",
+    "tests/requirements/API-RESULTS.md",
+    "tests/requirements/AUTOMATION.md",
+    "tests/requirements/CORE-INDIVIDUAL-REVIEW.md",
+    "tests/requirements/CORE-RESULTS.md",
+    "tests/requirements/FAILURES.md",
+    "tests/requirements/KNOWLEDGE-FEATURE-RESULTS.md",
+    "tests/requirements/OPERATIONS-RESULTS.md",
+    "tests/requirements/README.md",
+    "tests/requirements/RESULTS.md",
+    "tests/requirements/RULES-BROWSER-RESULTS.md",
+    "tests/requirements/RULES-INDIVIDUAL-REVIEW.md",
+    "tests/requirements/TEST-PLAN.md",
+    "tests/requirements/TOOLCHAIN-RESULTS.md",
+    "tests/requirements/browser-vite.config.ts",
+    "tests/requirements/browser/e01-e04-n05.spec.ts",
+    "tests/requirements/browser/error-paths.spec.ts",
+    "tests/requirements/browser/knowledge/H02-H06-H07.spec.ts",
+    "tests/requirements/browser/knowledge/K01-K07.spec.ts",
+    "tests/requirements/browser/knowledge/K08.spec.ts",
+    "tests/requirements/components/core/__harness-smoke.test.tsx",
+    "tests/requirements/components/core/a01-session-route-authority.test.tsx",
+    "tests/requirements/components/core/a02-role-portal-crm-boundaries.test.tsx",
+    "tests/requirements/components/core/a03-domain-default-filters.test.tsx",
+    "tests/requirements/components/core/a04-authcontext-profile-race.test.tsx",
+    "tests/requirements/components/core/a05-identity-state-matrix.test.tsx",
+    "tests/requirements/components/core/a06-admin-route-denial.test.tsx",
+    "tests/requirements/components/core/a07-branch-membership-transitions.test.tsx",
+    "tests/requirements/components/core/a08-coordinator-login-form.test.tsx",
+    "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
+    "tests/requirements/components/core/l02-hook-error-handling.test.tsx",
+    "tests/requirements/components/core/l03-identity-scope-transitions.test.tsx",
+    "tests/requirements/components/core/l04-writer-timestamps.test.tsx",
+    "tests/requirements/components/core/r01-cycle-key-literals.test.ts",
+    "tests/requirements/components/core/r02-recurrence-reset-lifecycle.test.tsx",
+    "tests/requirements/components/core/r03-admin-mount-timing.test.tsx",
+    "tests/requirements/components/core/r04-rejected-batch-suppression.test.tsx",
+    "tests/requirements/components/core/r05-holiday-display-characterization.test.ts",
+    "tests/requirements/components/core/t01-task-create-detail-roundtrip.test.tsx",
+    "tests/requirements/components/core/t03-task-relationships-and-delete.test.tsx",
+    "tests/requirements/components/core/t04-dashboard-filter-and-period.test.tsx",
+    "tests/requirements/components/core/t05-kanban-keyboard-gap.test.tsx",
+    "tests/requirements/components/core/t06-calendar-view-characterization.test.tsx",
+    "tests/requirements/components/core/t07-gantt-expansion-characterization.test.tsx",
+    "tests/requirements/components/core/t08-attachment-storage-contract.test.tsx",
+    "tests/requirements/components/core/t09-status-change-history.test.tsx",
+    "tests/requirements/components/core/t10-comments-and-listener-errors.test.tsx",
+    "tests/requirements/components/core/t11-private-task-isolation.test.tsx",
+    "tests/requirements/components/core/t12-promotion-consistency.test.tsx",
+    "tests/requirements/components/knowledge/H01.test.tsx",
+    "tests/requirements/components/operations/operations.component.test.tsx",
+    "tests/requirements/contracts/F01.test.ts",
+    "tests/requirements/contracts/F08.test.ts",
+    "tests/requirements/contracts/F10.test.ts",
+    "tests/requirements/contracts/toolchain/strict.test.ts",
+    "tests/requirements/emulator/core/l01-hook-lifecycle-emulator.test.ts",
+    "tests/requirements/emulator/core/l03-identity-scope-transitions-emulator.test.ts",
+    "tests/requirements/emulator/core/l04-server-timestamps.test.ts",
+    "tests/requirements/emulator/core/l05-two-client-convergence.test.ts",
+    "tests/requirements/emulator/core/r02-recurrence-reset-emulator.test.ts",
+    "tests/requirements/emulator/core/t08-attachment-storage-emulator.test.ts",
+    "tests/requirements/emulator/core/t09-status-history-emulator.test.ts",
+    "tests/requirements/emulator/knowledge/H03.test.tsx",
+    "tests/requirements/emulator/knowledge/H04.test.tsx",
+    "tests/requirements/emulator/knowledge/H05.test.tsx",
+    "tests/requirements/emulator/knowledge/H07.test.tsx",
+    "tests/requirements/emulator/knowledge/contracts/F01.test.ts",
+    "tests/requirements/emulator/knowledge/contracts/F02.test.ts",
+    "tests/requirements/emulator/knowledge/contracts/F03.test.ts",
+    "tests/requirements/emulator/knowledge/contracts/F04.test.ts",
+    "tests/requirements/emulator/knowledge/contracts/F05.test.ts",
+    "tests/requirements/emulator/knowledge/contracts/F06.test.ts",
+    "tests/requirements/emulator/knowledge/contracts/F07.test.ts",
+    "tests/requirements/emulator/knowledge/contracts/F08.test.ts",
+    "tests/requirements/emulator/knowledge/contracts/F10.test.ts",
+    "tests/requirements/emulator/operations/operations.emulator.test.tsx",
+    "tests/requirements/emulator/rules/security-boundaries.test.ts",
+    "tests/requirements/firebase.json",
+    "tests/requirements/playwright.config.ts",
+    "tests/requirements/run-emulators.mjs",
+    "tests/requirements/support/browser-firebase.ts",
+    "tests/requirements/support/browser-seed.ts",
+    "tests/requirements/support/core-auth-mock.ts",
+    "tests/requirements/support/core-firestore-mock.ts",
+    "tests/requirements/support/core-fixtures.ts",
+    "tests/requirements/support/core-storage-mock.ts",
+    "tests/requirements/support/emulator-admin.ts",
+    "tests/requirements/support/emulator-env.ts",
+    "tests/requirements/support/emulator-firebase-alias.ts",
+    "tests/requirements/support/emulator-setup.ts",
+    "tests/requirements/support/knowledge-admin.ts",
+    "tests/requirements/support/knowledge-browser-driver.html",
+    "tests/requirements/support/knowledge-browser-driver.tsx",
+    "tests/requirements/support/knowledge-browser.ts",
+    "tests/requirements/support/knowledge-chat-context.ts",
+    "tests/requirements/support/knowledge-client-emulator.ts",
+    "tests/requirements/support/knowledge-fake-service-account.ts",
+    "tests/requirements/support/knowledge-fixtures.ts",
+    "tests/requirements/support/knowledge-grpc-fault.ts",
+    "tests/requirements/support/knowledge-netlify-handler.ts",
+    "tests/requirements/support/knowledge-playwright.config.ts",
+    "tests/requirements/support/knowledge-provider-stub.ts",
+    "tests/requirements/support/knowledge-results.mjs",
+    "tests/requirements/support/knowledge-run.mjs",
+    "tests/requirements/support/knowledge-vite-env.ts",
+    "tests/requirements/support/network.ts",
+    "tests/requirements/support/setup.ts",
+    "tests/requirements/support/unit-env.ts",
+    "tests/requirements/test-manifest.json",
+    "tests/requirements/tsconfig.json",
+    "tests/requirements/vitest.config.ts",
+    "tests/requirements/vitest.rules.config.ts"
+  ]
+}
