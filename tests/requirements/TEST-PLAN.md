@@ -581,3 +581,33 @@ The parent runs design review **before implementation**. This author launches no
 - Both Hebrew requirements have exact-line clause mappings, all technical sections and executive features have explicit planned disposition, and every function/hook/module has a production entrypoint.
 - Baseline predictions are traceable, not asserted as executed findings. No numerical targets or contradictory policies are invented.
 - Implementation waits for the parent's design review/approval, with genuine emulators and per-test independent outcome verification explicitly required.
+
+## 10. Post-implementation consolidation addendum
+
+A follow-up infra/consolidation review (Firebase+Netlify tooling audit, מטה/רכזים
+role-vector independence audit, and duplicate/benign-test consolidation) identified
+four component-lane leaf tests in the operations area whose evidence is fully
+subsumed by a stronger sibling test elsewhere in the suite. These four were removed
+from `operations.component.test.tsx`, each replaced with a comment citing the
+superseding test, with **zero requirement-gap evidence lost** (verified against
+`FAILURES.md` before removal):
+
+| Removed leaf test (§6.1 row) | Superseding test | Layer | Requirement gap preserved |
+|---|---|---|---|
+| `B04.picker-membership-change` (line 458) | `TEST-A07.ui.branch-membership-transitions` | component (core lane) | n/a — passing characterization, concept retained |
+| `Q06.current-concurrent-submissions` (line 461) | `TEST-Q06.current-concurrent-submissions-ui` | emulator | n/a — passing characterization, concept retained |
+| `C02.domain-default-and-department-filter` (line 296) | `TEST-A03.contacts.own-domain-default` | component (core lane) | R03 |
+| `Q07.partial-reorder-recovery` (line 318) | `TEST-Q07.atomic-question-reorder` | emulator | R21 |
+
+Role-vector independence (מטה/HQ vs. רכזים/coordinator) was confirmed genuine and
+was **not** consolidated — the two vectors use disjoint fixtures, security-rule
+matrices, and E2E flows by design (see `RULES-INDIVIDUAL-REVIEW.md` and
+`RULES-BROWSER-RESULTS.md`), so no scenario in §6 above was merged across role
+vectors. Firebase-emulator and Netlify-runtime tooling recommendations from the
+same review are documented as findings only (not implemented in this pass,
+since they touch application/config code, not tests) — see `RESULTS.md` and
+`README.md` for the current infra posture.
+
+Post-consolidation authoritative counts: **435** total cases (was 439), **280**
+passed (was 282), **155** failed (was 157). See `RESULTS.md` for the full
+lane breakdown and `FAILURES.md`/`test-manifest.json` for the reconciled indexes.

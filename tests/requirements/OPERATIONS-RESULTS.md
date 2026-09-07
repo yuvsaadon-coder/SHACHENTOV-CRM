@@ -14,19 +14,22 @@ No production, package, or shared configuration files were edited.
 
 - Command: `node node_modules/vitest/vitest.mjs run --config tests/requirements/vitest.config.ts tests/requirements/components/operations --reporter=default --reporter=json --outputFile=tests/requirements/artifacts/operations.json`
 - Post-C01-browser-migration result: 33 tests discovered, 25 passed, 8 failed.
+  **Post-consolidation** (removed `TEST-C02.domain-default-and-department-filter`,
+  `TEST-B04.picker-membership-change`, `TEST-Q06.current-concurrent-submissions`,
+  `TEST-Q07.partial-reorder-recovery` — each superseded by a stronger sibling
+  test elsewhere in the suite; see `RESULTS.md` and `FAILURES.md`): 29 tests
+  discovered, 23 passed, 6 failed.
 - Log: `tests\requirements\artifacts\operations-components-after-c01-migration.log`
 - Unhandled rejection count in this run: 0.
 
-Failed component tests:
+Failed component tests (post-consolidation):
 
-1. `TEST-C02.domain-default-and-department-filter [G]`
-2. `TEST-C03.production-sparse-task [G]`
-3. `TEST-O04.dialog-focus [G]`
-4. `TEST-O05.cycle-visible-or-error [G]`
-5. `TEST-B04.child-scope-reset [G]`
-6. `TEST-Q01.first-report-loading-race [G]`
-7. `TEST-Q03.branch-isolation [G]`
-8. `TEST-Q07.partial-reorder-recovery [G]`
+1. `TEST-C03.production-sparse-task [G]`
+2. `TEST-O04.dialog-focus [G]`
+3. `TEST-O05.cycle-visible-or-error [G]`
+4. `TEST-B04.child-scope-reset [G]`
+5. `TEST-Q01.first-report-loading-race [G]`
+6. `TEST-Q03.branch-isolation [G]`
 
 ### Browser lane
 
@@ -88,43 +91,47 @@ Lease status: released to parent. No emulator processes intentionally left runni
 | Q07 | Component partial-reorder red test; emulator production-flow red test. |
 | Q08 | Component saved-value survival and current unversioned-label characterization green tests. |
 
-## Component reviewer map — 33 leaf tests
+## Component reviewer map — 29 leaf tests (post-consolidation)
+
+`TEST-C02.domain-default-and-department-filter`, `TEST-B04.picker-membership-change`,
+`TEST-Q06.current-concurrent-submissions`, and `TEST-Q07.partial-reorder-recovery`
+were removed from this lane as consolidation duplicates (see `RESULTS.md`); their
+gap/pass evidence is preserved by `TEST-A03.contacts.own-domain-default`,
+`TEST-A07.ui.branch-membership-transitions`, `TEST-Q06.current-concurrent-submissions-ui`
+(emulator lane, row below), and `TEST-Q07.atomic-question-reorder` (emulator lane,
+row below) respectively.
 
 | # | Test | Result | Reviewer | Verdict |
 |---:|---|---|---|---|
 | 1 | `TEST-C01.contact-crud-filter-realtime [A]` | PASS | `latest-review-C01` | success path retained; failure path migrated to browser. |
-| 2 | `TEST-C02.domain-default-and-department-filter [G]` | FAIL | `latest-review-C02` | confirmed-production-defect. |
-| 3 | `TEST-C03.complete-record-links [A]` | PASS | `latest-review-C03-links` | pass. |
-| 4 | `TEST-C03.csv-roundtrip [A]` | PASS | `latest-review-C03-csv` | pass. |
-| 5 | `TEST-C03.production-sparse-task [G]` | FAIL | `latest-review-C03-sparse` | confirmed-production-defect. |
-| 6 | `TEST-O01.role-crud-clear-delete [A]` | PASS | `latest-review-O01` | pass. |
-| 7 | `TEST-O02.current-delegation-display [C]` | PASS | `latest-review-O02` | pass/current-characterization; adjacent edit-persistence risk noted only. |
-| 8 | `TEST-O03.status-area-dashboard [A]` | PASS | `required-review-O03-corrected` | pass. |
-| 9 | `TEST-O04.keyboard-drilldown [A]` | PASS | `final-review-O04-keyboard` | pass. |
-| 10 | `TEST-O04.volunteer-roundtrip [A]` | PASS | `final-review-O04-volunteer` | pass. |
-| 11 | `TEST-O04.dialog-focus [G]` | FAIL | `latest-review-O04-focus` | confirmed-production-defect. |
-| 12 | `TEST-O05.cycle-visible-or-error [G]` | FAIL | `latest-review-O05-cycle` | confirmed-production-defect. |
-| 13 | `TEST-O05.preview-no-write [A]` | PASS | `latest-review-O05-preview` | pass. |
-| 14 | `TEST-O05.batch-repeat [A]` | PASS | `latest-review-O05-repeat` | pass. |
-| 15 | `TEST-B01.branch-operational-crud [A]` | PASS | `review-B01-final-corrected` | pass; missing-type-filter claim retracted. |
-| 16 | `TEST-B04.picker-membership-change [A]` | PASS | `final2-review-B04-picker` | pass. |
-| 17 | `TEST-B04.child-scope-reset [G]` | FAIL | `final2-review-B04-scope` | confirmed-production-defect. |
-| 18 | `TEST-B04.foreign-report-denial [A]` | PASS | `final2-review-B04-denial` | pass. |
-| 19 | `TEST-Q01.portal-report-real-reader [A]` | PASS | `final2-review-Q01` | pass for writer/reader; separate race covered in test 20. |
-| 20 | `TEST-Q01.first-report-loading-race [G]` | FAIL | `final-review-Q01-race` | confirmed-production-defect. |
-| 21 | `TEST-Q02.admin-question-editor [A]` | PASS | `final2-review-Q02` | pass. |
-| 22 | `TEST-Q03.restore-own-draft [A]` | PASS | `final2-review-Q03-restore` | pass. |
-| 23 | `TEST-Q03.malformed-draft [A]` | PASS | `final-review-Q03-malformed` | pass. |
-| 24 | `TEST-Q03.branch-isolation [G]` | FAIL | `final-review-Q03-branch` | confirmed-production-defect. |
-| 25 | `TEST-Q03.same-branch-other-user-current [C]` | PASS | `final-review-Q03-samebranch` | pass/current-characterization. |
-| 26 | `TEST-Q04.coverage-realtime [A]` | PASS | `final-review-Q04` | pass. |
-| 27 | `TEST-Q05.filter-render-export [A]` | PASS | `final4-review-Q05-filter` | pass. |
-| 28 | `TEST-Q05.current-key-label-resolution [C]` | PASS | `final-review-Q05-labels` | pass/current-characterization. |
-| 29 | `TEST-Q06.current-concurrent-submissions [C]` | PASS | `final-review-Q06-concurrent` | pass/current-characterization. |
-| 30 | `TEST-Q06.failed-submit-preserves-input [A]` | PASS | `final-review-Q06-failure` | pass. |
-| 31 | `TEST-Q07.partial-reorder-recovery [G]` | FAIL | `final-review-Q07` | confirmed-production-defect. |
-| 32 | `TEST-Q08.saved-value-survival [A]` | PASS | `final-review-Q08-survival` | pass. |
-| 33 | `TEST-Q08.current-unversioned-labels [C]` | PASS | `final-review-Q08-labels` | pass/current-characterization. |
+| 2 | `TEST-C03.complete-record-links [A]` | PASS | `latest-review-C03-links` | pass. |
+| 3 | `TEST-C03.csv-roundtrip [A]` | PASS | `latest-review-C03-csv` | pass. |
+| 4 | `TEST-C03.production-sparse-task [G]` | FAIL | `latest-review-C03-sparse` | confirmed-production-defect. |
+| 5 | `TEST-O01.role-crud-clear-delete [A]` | PASS | `latest-review-O01` | pass. |
+| 6 | `TEST-O02.current-delegation-display [C]` | PASS | `latest-review-O02` | pass/current-characterization; adjacent edit-persistence risk noted only. |
+| 7 | `TEST-O03.status-area-dashboard [A]` | PASS | `required-review-O03-corrected` | pass. |
+| 8 | `TEST-O04.keyboard-drilldown [A]` | PASS | `final-review-O04-keyboard` | pass. |
+| 9 | `TEST-O04.volunteer-roundtrip [A]` | PASS | `final-review-O04-volunteer` | pass. |
+| 10 | `TEST-O04.dialog-focus [G]` | FAIL | `latest-review-O04-focus` | confirmed-production-defect. |
+| 11 | `TEST-O05.cycle-visible-or-error [G]` | FAIL | `latest-review-O05-cycle` | confirmed-production-defect. |
+| 12 | `TEST-O05.preview-no-write [A]` | PASS | `latest-review-O05-preview` | pass. |
+| 13 | `TEST-O05.batch-repeat [A]` | PASS | `latest-review-O05-repeat` | pass. |
+| 14 | `TEST-B01.branch-operational-crud [A]` | PASS | `review-B01-final-corrected` | pass; missing-type-filter claim retracted. |
+| 15 | `TEST-B04.child-scope-reset [G]` | FAIL | `final2-review-B04-scope` | confirmed-production-defect. |
+| 16 | `TEST-B04.foreign-report-denial [A]` | PASS | `final2-review-B04-denial` | pass. |
+| 17 | `TEST-Q01.portal-report-real-reader [A]` | PASS | `final2-review-Q01` | pass for writer/reader; separate race covered in test 18. |
+| 18 | `TEST-Q01.first-report-loading-race [G]` | FAIL | `final-review-Q01-race` | confirmed-production-defect. |
+| 19 | `TEST-Q02.admin-question-editor [A]` | PASS | `final2-review-Q02` | pass. |
+| 20 | `TEST-Q03.restore-own-draft [A]` | PASS | `final2-review-Q03-restore` | pass. |
+| 21 | `TEST-Q03.malformed-draft [A]` | PASS | `final-review-Q03-malformed` | pass. |
+| 22 | `TEST-Q03.branch-isolation [G]` | FAIL | `final-review-Q03-branch` | confirmed-production-defect. |
+| 23 | `TEST-Q03.same-branch-other-user-current [C]` | PASS | `final-review-Q03-samebranch` | pass/current-characterization. |
+| 24 | `TEST-Q04.coverage-realtime [A]` | PASS | `final-review-Q04` | pass. |
+| 25 | `TEST-Q05.filter-render-export [A]` | PASS | `final4-review-Q05-filter` | pass. |
+| 26 | `TEST-Q05.current-key-label-resolution [C]` | PASS | `final-review-Q05-labels` | pass/current-characterization. |
+| 27 | `TEST-Q06.failed-submit-preserves-input [A]` | PASS | `final-review-Q06-failure` | pass. |
+| 28 | `TEST-Q08.saved-value-survival [A]` | PASS | `final-review-Q08-survival` | pass. |
+| 29 | `TEST-Q08.current-unversioned-labels [C]` | PASS | `final-review-Q08-labels` | pass/current-characterization. |
 
 ## Browser reviewer map — 2 migrated C01 leaf tests
 
@@ -141,16 +148,19 @@ Lease status: released to parent. No emulator processes intentionally left runni
 | 2 | `TEST-Q06.current-concurrent-submissions-ui [C]` | PASS | `emu-review-Q06-final` | pass/current-characterization. |
 | 3 | `TEST-Q07.atomic-question-reorder [G]` | FAIL | `emu-review-Q07-final` | confirmed-production-defect. |
 
-## The 8 current failing component tests
+## The 6 current failing component tests (post-consolidation)
 
-1. `TEST-C02.domain-default-and-department-filter [G]` — contacts page filters section/type/search only; no own-domain default or department/domain filter.
-2. `TEST-C03.production-sparse-task [G]` — contact panel calls `t.contactRefs.includes(...)` and crashes when a persisted task omits `contactRefs`.
-3. `TEST-O04.dialog-focus [G]` — custom role modal closes without restoring focus to the orgchart opener.
-4. `TEST-O05.cycle-visible-or-error [G]` — cyclic roles are all marked as children and silently disappear from orgchart roots.
-5. `TEST-B04.child-scope-reset [G]` — `PortalReport` keeps A form values when the outlet branch changes to C.
-6. `TEST-Q01.first-report-loading-race [G]` — `PortalReport` ignores report-history loading and can render/submit first-only later-report fields.
-7. `TEST-Q03.branch-isolation [G]` — one `restoredRef` and persistent `values` state let an A draft be saved under branch C.
-8. `TEST-Q07.partial-reorder-recovery [G]` — independent reorder writes can leave duplicate order values and no explicit recovery.
+1. `TEST-C03.production-sparse-task [G]` — contact panel calls `t.contactRefs.includes(...)` and crashes when a persisted task omits `contactRefs`.
+2. `TEST-O04.dialog-focus [G]` — custom role modal closes without restoring focus to the orgchart opener.
+3. `TEST-O05.cycle-visible-or-error [G]` — cyclic roles are all marked as children and silently disappear from orgchart roots.
+4. `TEST-B04.child-scope-reset [G]` — `PortalReport` keeps A form values when the outlet branch changes to C.
+5. `TEST-Q01.first-report-loading-race [G]` — `PortalReport` ignores report-history loading and can render/submit first-only later-report fields.
+6. `TEST-Q03.branch-isolation [G]` — one `restoredRef` and persistent `values` state let an A draft be saved under branch C.
+
+Removed from this lane (consolidation, not new evidence): `TEST-C02.domain-default-and-department-filter`
+(gap R03 preserved by `TEST-A03.contacts.own-domain-default`) and
+`TEST-Q07.partial-reorder-recovery` (gap R21 preserved by `TEST-Q07.atomic-question-reorder`,
+emulator lane).
 
 ## Emulator failure causes
 

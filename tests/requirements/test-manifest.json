@@ -2,9 +2,9 @@
   "applicationBaseline": "60548f8",
   "kind": "observed-runtime-results",
   "summary": {
-    "total": 439,
-    "passed": 282,
-    "failed": 157
+    "total": 435,
+    "passed": 280,
+    "failed": 155
   },
   "cases": [
     {
@@ -1666,25 +1666,9 @@
     {
       "lane": "behavior",
       "file": "tests/requirements/components/operations/operations.component.test.tsx",
-      "name": "TEST-B04.picker-membership-change [A]",
-      "fullName": "operations requirement tests TEST-B04.picker-membership-change [A]",
-      "result": "passed",
-      "evidence": "artifacts/behavior-verified.json"
-    },
-    {
-      "lane": "behavior",
-      "file": "tests/requirements/components/operations/operations.component.test.tsx",
       "name": "TEST-C01.contact-crud-filter-realtime [A]",
       "fullName": "operations requirement tests TEST-C01.contact-crud-filter-realtime [A]",
       "result": "passed",
-      "evidence": "artifacts/behavior-verified.json"
-    },
-    {
-      "lane": "behavior",
-      "file": "tests/requirements/components/operations/operations.component.test.tsx",
-      "name": "TEST-C02.domain-default-and-department-filter [G]",
-      "fullName": "operations requirement tests TEST-C02.domain-default-and-department-filter [G]",
-      "result": "failed",
       "evidence": "artifacts/behavior-verified.json"
     },
     {
@@ -1866,25 +1850,9 @@
     {
       "lane": "behavior",
       "file": "tests/requirements/components/operations/operations.component.test.tsx",
-      "name": "TEST-Q06.current-concurrent-submissions [C]",
-      "fullName": "operations requirement tests TEST-Q06.current-concurrent-submissions [C]",
-      "result": "passed",
-      "evidence": "artifacts/behavior-verified.json"
-    },
-    {
-      "lane": "behavior",
-      "file": "tests/requirements/components/operations/operations.component.test.tsx",
       "name": "TEST-Q06.failed-submit-preserves-input [A]",
       "fullName": "operations requirement tests TEST-Q06.failed-submit-preserves-input [A]",
       "result": "passed",
-      "evidence": "artifacts/behavior-verified.json"
-    },
-    {
-      "lane": "behavior",
-      "file": "tests/requirements/components/operations/operations.component.test.tsx",
-      "name": "TEST-Q07.partial-reorder-recovery [G]",
-      "fullName": "operations requirement tests TEST-Q07.partial-reorder-recovery [G]",
-      "result": "failed",
       "evidence": "artifacts/behavior-verified.json"
     },
     {

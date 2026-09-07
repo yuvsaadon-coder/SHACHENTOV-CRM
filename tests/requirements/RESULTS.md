@@ -2,7 +2,7 @@
 
 ## Outcome
 
-**439 concrete cases: 282 passed, 157 failed, 0 skipped, 0 expected failures.**
+**435 concrete cases: 280 passed, 155 failed, 0 skipped, 0 expected failures.**
 The suite is deliverable for check-in as an intentionally red acceptance suite,
 not evidence that all requirements are implemented or that release gates pass.
 Every failed case is indexed once in [FAILURES.md](FAILURES.md#failure-index).
@@ -12,14 +12,28 @@ the parent verified matching hashes for the immutable Hebrew requirement
 captures. Dependency, script, runner and fixture changes are test-only.
 This delivery-writing pass changes only `RESULTS.md` and `FAILURES.md`.
 
+A follow-up consolidation pass removed 4 benign/duplicate cases from
+`components/operations/operations.component.test.tsx` whose oracle is fully
+preserved by a stronger sibling test (see `TEST-PLAN.md` §Consolidation):
+`TEST-C02.domain-default-and-department-filter` (superseded by
+`TEST-A03.contacts.own-domain-default`), `TEST-B04.picker-membership-change`
+(superseded by `TEST-A07.ui.branch-membership-transitions`),
+`TEST-Q06.current-concurrent-submissions` (superseded by
+`TEST-Q06.current-concurrent-submissions-ui`), and
+`TEST-Q07.partial-reorder-recovery` (superseded by
+`TEST-Q07.atomic-question-reorder`). No requirement-gap evidence was lost: the
+two failing cases removed (C02, Q07.partial-reorder-recovery) each document
+the same gap (R03, R21) as their surviving stronger sibling.
+
 ### Authoritative runtime inputs
 
 | Lane | Concrete cases | Passed | Failed | Final observed evidence |
 |---|---:|---:|---:|---|
-| Behavior: components/hooks, network-free contracts, compiler configuration | 197 | 127 | 70 | [behavior-verified.json](artifacts/behavior-verified.json) |
+| Behavior: components/hooks, network-free contracts, compiler configuration | 193 | 125 | 68 | [behavior-verified.json](artifacts/behavior-verified.json) |
 | Real Auth/Firestore/Storage emulators and handler integration | 184 | 126 | 58 | [emulator-closure.json](artifacts/emulator-closure.json) |
 | Real Chromium journeys with emulators/local handler adapter | 58 | 29 | 29 | [browser-closure.json](artifacts/browser-closure.json) |
-| **Total** | **439** | **282** | **157** | [Observed test manifest](test-manifest.json) |
+| **Total** | **435** | **280** | **155** | [Observed test manifest](test-manifest.json) |
+
 
 `behavior-verified.json` supersedes the earlier behavior closure: the latest
 L02 healthy-state oracle accepts nullish absence instead of requiring an
@@ -35,13 +49,13 @@ diagnostic evidence; this is not a claim that application logs contain no errors
 | Area | Composition | Cases | Passed | Failed | Analysis/review record |
 |---|---|---:|---:|---:|---|
 | Core A/L/T/R | 143 component + 21 emulator + 1 migrated T05 browser | 165 | 101 | 64 | [Core results](CORE-RESULTS.md), [individual review](CORE-INDIVIDUAL-REVIEW.md) |
-| Operations C/O/B/Q | 33 component + 3 emulator + 2 migrated C01 browser | 38 | 26 | 12 | [Operations results](OPERATIONS-RESULTS.md) |
+| Operations C/O/B/Q | 31 component + 3 emulator + 2 migrated C01 browser | 34 | 24 | 10 | [Operations results](OPERATIONS-RESULTS.md) |
 | Knowledge/chat K/H | 3 component + 13 emulator + 30 browser | 46 | 24 | 22 | [Knowledge results and verifier map](KNOWLEDGE-FEATURE-RESULTS.md) |
 | API F | 17 network-free + 52 emulator | 69 | 33 | 36 | [API results and verifier map](API-RESULTS.md) |
 | Security Rules S | 95 emulator | 95 | 80 | 15 | [Rules individual review](RULES-INDIVIDUAL-REVIEW.md) |
 | Base E/N05/T05 browser journeys | 25 browser | 25 | 18 | 7 | [Browser results and verifier map](RULES-BROWSER-RESULTS.md) |
 | Compiler N01 | 1 configuration case | 1 | 0 | 1 | [Compiler result](TOOLCHAIN-RESULTS.md) |
-| **Total** | Disjoint ownership, not overlapping requirement families | **439** | **282** | **157** | |
+| **Total** | Disjoint ownership, not overlapping requirement families | **435** | **280** | **155** | |
 
 Browser **58 = 25 base + 30 K/H + 3 migrated error paths**. The browser K/H
 cases are already included in K/H46, not another 30 cases. Retired component C01
@@ -59,11 +73,11 @@ way that suppresses later lanes after the first red result.
 
 | Command from repository root | Final result / interpretation |
 |---|---|
-| `npm run test:requirements` | 197 cases, 70 normal failures; nonzero exit is required |
+| `npm run test:requirements` | 193 cases, 68 normal failures; nonzero exit is required |
 | `npm run test:requirements:rules` | 184 cases, 58 normal failures; nonzero exit is required |
 | `npm run test:requirements:browser` | 58 cases, 29 normal failures; nonzero exit is required |
 | `npm run test:requirements:typecheck` | Pass |
-| `npm test` | **22 existing tests pass separately; not part of 439** |
+| `npm test` | **22 existing tests pass separately; not part of 435** |
 | `npm run build` | Standard production typecheck/build passes |
 | `npm run lint` | Three pre-existing warnings; no new warnings |
 
@@ -101,7 +115,9 @@ operations and N01 retain their own per-test maps.
 the multi-persona source review and strict re-reviews converged, and two delivery
 review rounds reconciled the final evidence. No final-current case-audit gap remains
 reported by the refreshed owners. The failure
-index was mechanically reconciled to all **157 unique failed file/ID pairs**,
+index was mechanically reconciled to all **155 unique failed file/ID pairs**
+(after the operations-lane consolidation described above removed 2 failed
+cases whose gap evidence is preserved by a surviving sibling test),
 with zero missing/extra rows and valid local Markdown links.
 
 ## Limits and unimplemented evidence

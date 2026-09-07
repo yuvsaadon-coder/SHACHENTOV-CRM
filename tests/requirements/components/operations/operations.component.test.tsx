@@ -122,10 +122,9 @@ describe('operations requirement tests', () => {
     await u.click(screen.getAllByTitle('עריכה')[0]); await u.click(screen.getByRole('button', { name: 'מחק' })); await u.click(screen.getByRole('button', { name: 'אשר מחיקה' })); await waitFor(() => expect(s.contacts.some((x) => x.name === 'ספק בדיקה')).toBe(false))
   })
 
-  it('TEST-C02.domain-default-and-department-filter [G]', () => {
-    s.auth.appUser = { uid: 'fin', name: 'FIN', role: 'FIN', active: true }; s.contacts = [c('fin', { name: 'איש כספים', domainTags: ['FIN'] }), c('vol', { name: 'איש מתנדבים', domainTags: ['VOL'] })]
-    rr(<ContactsPage />); expect(screen.getByText('איש כספים')).toBeInTheDocument(); expect(screen.queryByText('איש מתנדבים')).not.toBeInTheDocument(); expect(screen.getByRole('combobox', { name: /מחלקה|תחום/ })).toBeInTheDocument()
-  })
+  // TEST-C02.domain-default-and-department-filter removed: consolidated into the
+  // stronger real-app requirement coverage at
+  // components/core/a03-domain-default-filters.test.tsx (TEST-A03.contacts.own-domain-default).
 
   it('TEST-C03.complete-record-links [A]', async () => {
     s.contacts = [c('cx', { name: 'איש קישור' })]; s.tasks = [t('a', { title: 'לפי מזהה', contactRefs: ['cx'] }), t('b', { title: 'לפי מפעיל', activator: 'איש קישור' }), t('z', { title: 'זר', contactRefs: ['z'] })]
@@ -227,21 +226,9 @@ describe('operations requirement tests', () => {
     expect(screen.getByText(/חיפה בדיקה/)).toBeInTheDocument()
     expect(screen.queryByText(/תל אביב בדיקה/)).not.toBeInTheDocument()
   })
-  it('TEST-B04.picker-membership-change [A]', async () => {
-    s.auth.appUser = { uid: 'coord-a', name: 'רכז', role: 'coordinator', active: true }; s.branches = [b('A', { name: 'א', coordinatorUids: ['coord-a'] }), b('C', { name: 'ג', coordinatorUids: ['coord-a'] })]
-    rr(<Routes><Route path="/portal" element={<CoordinatorPortal />}><Route path="home" element={<PortalHome />} /></Route></Routes>, '/portal/home')
-    expect(screen.getByText('בחר סניף')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: /א/ }))
-    expect(await screen.findByText('ברוכים הבאים')).toBeInTheDocument()
-    expect(screen.getAllByText('א').length).toBeGreaterThan(0)
-    act(() => { s.branches = [b('C', { name: 'ג', coordinatorUids: ['coord-a'] })]; s.notify() })
-    await waitFor(() => expect(screen.getAllByText('ג').length).toBeGreaterThan(0))
-    expect(screen.queryByText('א')).not.toBeInTheDocument()
-    act(() => { s.branches = []; s.notify() })
-    expect(await screen.findByText('אין סניפים מוגדרים למשתמש זה.')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'יציאה' }))
-    await waitFor(() => expect(s.auth.logOut).toHaveBeenCalled())
-  })
+  // TEST-B04.picker-membership-change removed: consolidated into the stronger
+  // real-portal/useBranch coverage at
+  // components/core/a07-branch-membership-transitions.test.tsx (TEST-A07.ui.branch-membership-transitions).
   it('TEST-B04.child-scope-reset [G]', async () => {
     s.auth.appUser = { uid: 'coord-a', name: 'רכז', role: 'coordinator', active: true }; s.branches = [b('A', { name: 'א', coordinatorUids: ['coord-a'] }), b('C', { name: 'ג', coordinatorUids: ['coord-a'] })]; s.questions = [q('x', { key: 'challenge', label: 'אתגר' })]
     rr(<Routes><Route path="/portal" element={<CoordinatorPortal />}><Route path="report" element={<PortalReport />} /></Route></Routes>, '/portal/report'); fireEvent.click(screen.getByRole('button', { name: /א/ })); await screen.findByText('דיווח רבעוני'); fireEvent.change(ctl('אתגר'), { target: { value: 'ערך של סניף א' } }); act(() => { s.branches = [b('C', { name: 'ג', coordinatorUids: ['coord-a'] })]; s.notify() }); fireEvent.click(screen.getByRole('button', { name: 'שלח דיווח' })); await waitFor(() => expect(s.reports.at(-1)?.branchId).toBe('C')); expect(s.reports.at(-1)?.data.challenge).not.toBe('ערך של סניף א')
@@ -313,9 +300,14 @@ describe('operations requirement tests', () => {
     expect(csv).not.toContain('קפה ב')
   })
   it('TEST-Q05.current-key-label-resolution [C]', () => { s.branches = [b('A')]; s.questions = [q('a', { key: 'shared', label: 'תווית מזון' }), q('b', { key: 'shared', label: 'תווית קפה', branchType: 'cafe_youth' })]; s.reports = [rep('r', { data: { shared: 'ערך', old: 'ישן' } })]; rr(<ReportsPage />); fireEvent.click(screen.getByRole('button', { name: /רבעון/ })); expect(screen.getByText('תווית קפה:')).toBeInTheDocument(); expect(screen.getByText('old:')).toBeInTheDocument() })
-  it('TEST-Q06.current-concurrent-submissions [C]', async () => { await Promise.all([add('quarterlyReports', { branchId: 'A', branchType: 'food', quarter: 'Q3', year: 2026, data: { x: 1 } }), add('quarterlyReports', { branchId: 'A', branchType: 'food', quarter: 'Q3', year: 2026, data: { x: 2 } })]); expect(s.reports.filter((x) => x.branchId === 'A')).toHaveLength(2) })
+  // TEST-Q06.current-concurrent-submissions removed: benign in-memory-only
+  // characterization, consolidated into the stronger real duplicate-create
+  // behavior at emulator/operations/operations.emulator.test.tsx
+  // (TEST-Q06.current-concurrent-submissions-ui).
   it('TEST-Q06.failed-submit-preserves-input [A]', async () => { s.auth.appUser = { uid: 'coord-a', name: 'רכז א', role: 'coordinator', active: true }; s.questions = [q('x', { key: 'challenge', label: 'אתגר' })]; s.addDoc.mockRejectedValueOnce(new Error('fail')); portal(<PortalReport />); fireEvent.change(ctl('אתגר'), { target: { value: 'נשאר' } }); fireEvent.click(screen.getByRole('button', { name: 'שלח דיווח' })); await waitFor(() => expect(s.toast).toHaveBeenCalledWith('שגיאה בשליחת הדיווח. נסה שוב.', 'error')); expect(screen.getByDisplayValue('נשאר')).toBeInTheDocument() })
-  it('TEST-Q07.partial-reorder-recovery [G]', async () => { s.questions = [q('q1', { key: 'a', label: 'א', order: 1 }), q('q2', { key: 'b', label: 'ב', order: 2 })]; s.updateDoc.mockImplementationOnce((ref: any, data: any) => upd(ref.collection, ref.id, data)).mockRejectedValueOnce(new Error('reject')); rr(<ReportQuestionsAdminPage />); fireEvent.click(screen.getAllByRole('button', { name: 'הזז למטה' })[0]); await waitFor(() => expect(s.questions.map((x) => x.order).sort()).toEqual([1, 2])); expect(s.toast).toHaveBeenCalledWith(expect.stringMatching(/שגיאה|נכשל/), 'error') })
+  // TEST-Q07.partial-reorder-recovery removed: weaker mock duplicate of the
+  // stronger persisted-ordering coverage at
+  // emulator/operations/operations.emulator.test.tsx (TEST-Q07.atomic-question-reorder).
   it('TEST-Q08.saved-value-survival [A]', () => { s.branches = [b('A')]; s.questions = [q('new', { key: 'challenge', label: 'תווית חדשה', type: 'radio' })]; s.reports = [rep('old', { quarter: 'Q2', data: { challenge: 'טקסט ישן', retired: 'שרד' } })]; rr(<ReportsPage />); fireEvent.click(screen.getByRole('button', { name: /רבעון 2/ })); expect(screen.getByText('טקסט ישן')).toBeInTheDocument(); expect(screen.getByText('retired:')).toBeInTheDocument() })
   it('TEST-Q08.current-unversioned-labels [C]', () => { s.branches = [b('A')]; s.questions = [q('new', { key: 'challenge', label: 'תווית רבעון 3' })]; s.reports = [rep('old', { quarter: 'Q2', data: { challenge: 'ערך' } })]; rr(<ReportsPage />); fireEvent.click(screen.getByRole('button', { name: /רבעון 2/ })); expect(screen.getByText('תווית רבעון 3:')).toBeInTheDocument() })
 })
