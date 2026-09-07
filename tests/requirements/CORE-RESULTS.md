@@ -23,7 +23,7 @@ Command: `node node_modules/vitest/vitest.mjs run --config tests/requirements/vi
 
 ```
 Test Files  16 failed | 13 passed (29)
-     Tests  54 failed | 89 passed (143)
+     Tests  54 failed | 87 passed (141)
 ```
 
 Artifact: `tests/requirements/artifacts/core-components-closure.json` (also
@@ -117,7 +117,7 @@ executed and confirmed this pass, none touched again since):**
 | `TEST-L02.usePersonalTasks.error-then-remount-recovers` | `usePersonalTasks` | Pass — genuinely green: real `error` state, surfaces + remount recovers |
 | `TEST-L02.useChatHistory.error-then-remount-recovers` | `useChatHistory` | Pass — genuinely red: `useChatHistory` has no `error` state |
 
-Of the 143: **134 concrete `TEST-<ID>` cases (54 red, 80 green)**, 7 unnamed
+Of the 141: **132 concrete `TEST-<ID>` cases (54 red, 78 green)**, 7 unnamed
 positive-control harness sanity checks, 2 infrastructure smoke tests. Every
 red test asserts the firm requirement directly and fails because production
 violates it — no `test.fails`/`.skip`/inverted/conditional assertions.
@@ -265,7 +265,7 @@ for that one-agent-per-concrete-test audit.
 ## 5. Next steps for this workstream
 
 Both lanes are current, executed, and validated with zero unhandled
-errors: 143 component tests, 21 emulator tests (7 files — T05's emulator
+errors: 141 component tests, 21 emulator tests (7 files — T05's emulator
 case removed, now covered by the browser workstream's real-browser test).
 The emulator lease has been released. Remaining work is reactive: fix any
 test defect a per-test leaf audit identifies (the L02 manifest above is
@@ -408,3 +408,21 @@ re-verification is needed, and keep `components/core` frozen otherwise.
     `onSnapshot` error callback registered at all
     (`src/hooks/useContacts.ts`), so this case was and remains correctly
     red regardless of the fixture's message/code.
+11. **Cross-workstream consolidation review (this pass, no lease held)**: a
+    follow-up test-consolidation review (parent-requested, spanning
+    operations/core/emulator scope) identified
+    `TEST-L01.useContacts.strictmode-lifecycle` and
+    `TEST-L01.usePersonalTasks.strictmode-lifecycle` as benign duplicates of
+    `TEST-L01.useTasks.strictmode-lifecycle`: `useContacts`, `usePersonalTasks`,
+    and `useTasks` all subscribe via the identical
+    `useEffect(() => { ...onSnapshot(...); return unsub }, [deps])` shape, so
+    React StrictMode's double-invoke-effects behavior is a property of that
+    shared pattern, not per-hook business logic — proving it once is
+    sufficient. Both removed cases were passing (green, not a positive
+    control/harness-smoke test); removed with an explanatory comment citing
+    the surviving `useTasks` case. Non-StrictMode `.lifecycle` cases for
+    `useContacts` and `usePersonalTasks` are unaffected and still exercise
+    each hook's own production entrypoint individually. Net **−2 tests**
+    (143→141, 89→87 pass, 54 red unchanged — see §1 for the current
+    authoritative breakdown). Re-ran the file (`l01-hook-lifecycle.test.tsx`,
+    12/12 pass) confirming zero regressions.

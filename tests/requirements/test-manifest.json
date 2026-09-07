@@ -2,8 +2,8 @@
   "applicationBaseline": "60548f8",
   "kind": "observed-runtime-results",
   "summary": {
-    "total": 435,
-    "passed": 280,
+    "total": 433,
+    "passed": 278,
     "failed": 155
   },
   "cases": [
@@ -962,14 +962,6 @@
     {
       "lane": "behavior",
       "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
-      "name": "TEST-L01.useContacts.strictmode-lifecycle",
-      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.useContacts.strictmode-lifecycle",
-      "result": "passed",
-      "evidence": "artifacts/behavior-verified.json"
-    },
-    {
-      "lane": "behavior",
-      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
       "name": "TEST-L01.useHQKnowledge.lifecycle",
       "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.useHQKnowledge.lifecycle",
       "result": "passed",
@@ -988,14 +980,6 @@
       "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
       "name": "TEST-L01.usePersonalTasks.lifecycle",
       "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.usePersonalTasks.lifecycle",
-      "result": "passed",
-      "evidence": "artifacts/behavior-verified.json"
-    },
-    {
-      "lane": "behavior",
-      "file": "tests/requirements/components/core/l01-hook-lifecycle.test.tsx",
-      "name": "TEST-L01.usePersonalTasks.strictmode-lifecycle",
-      "fullName": "TEST-L01 hook subscription lifecycle TEST-L01.usePersonalTasks.strictmode-lifecycle",
       "result": "passed",
       "evidence": "artifacts/behavior-verified.json"
     },

@@ -608,6 +608,32 @@ same review are documented as findings only (not implemented in this pass,
 since they touch application/config code, not tests) — see `RESULTS.md` and
 `README.md` for the current infra posture.
 
-Post-consolidation authoritative counts: **435** total cases (was 439), **280**
-passed (was 282), **155** failed (was 157). See `RESULTS.md` for the full
-lane breakdown and `FAILURES.md`/`test-manifest.json` for the reconciled indexes.
+Post-consolidation authoritative counts (first pass): **435** total cases
+(was 439), **280** passed (was 282), **155** failed (was 157).
+
+A second consolidation pass reviewed every other file previously flagged as a
+"looks-repetitive" candidate (`l02-hook-error-handling.test.tsx`,
+`r02-recurrence-reset-lifecycle.test.tsx`, `H01.test.tsx`, `H03.test.tsx`,
+`t08-attachment-storage-contract.test.tsx`, `t09-status-change-history.test.tsx`,
+`l04-writer-timestamps.test.tsx`). Cross-referencing each against the actual
+hook/component source confirmed almost all of that apparent repetition is
+genuine, non-redundant coverage — each test proves the same requirement is
+violated independently at a distinct production call site (e.g. `useBranch`
+vs. `useContacts` each missing their own `error` state; `RoleEditModal`'s
+`addDoc` vs. `updateDoc` call sites are separate gaps) — so none of those
+were removed. The one genuine additional find: `l01-hook-lifecycle.test.tsx`
+had 3 "StrictMode" tests (`useTasks`, `useContacts`, `usePersonalTasks`), all
+exercising React 19's double-invoke-effects behavior. Source inspection
+confirmed all three hooks share the byte-identical
+`useEffect(() => { ...onSnapshot(...); return unsub }, [deps])` shape —
+StrictMode compliance is a property of that shared pattern, not per-hook
+business logic. Removed 2 of the 3 (`useContacts`, `usePersonalTasks`
+StrictMode cases; both were passing, no evidence lost), keeping `useTasks`'s
+as the representative case. Non-StrictMode `.lifecycle` cases for all three
+hooks are untouched and still exercise each hook's own entrypoint separately.
+
+Post-consolidation authoritative counts (final): **433** total cases (was
+435), **278** passed (was 280), **155** failed (unchanged — both removed
+tests were passing). See `RESULTS.md` for the full lane breakdown,
+`CORE-RESULTS.md` §1/erratum-11 for the core-lane-specific accounting, and
+`FAILURES.md`/`test-manifest.json` for the reconciled indexes.

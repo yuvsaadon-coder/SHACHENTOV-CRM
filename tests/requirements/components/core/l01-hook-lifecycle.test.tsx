@@ -379,28 +379,15 @@ describe('TEST-L01 hook subscription lifecycle', () => {
     expect(firestoreMock.liveCount('tasks')).toBe(0)
   })
 
-  it('TEST-L01.useContacts.strictmode-lifecycle', async () => {
-    const { result, unmount } = renderHook(() => useContacts(), {
-      wrapper: ({ children }) => React.createElement(React.StrictMode, null, children),
-    })
-    act(() =>
-      firestoreMock.emitQuery('contacts', [{ id: 'c-1', data: { name: 'א' } }])
-    )
-    await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(result.current.contacts.map((c) => c.id)).toEqual(['c-1'])
-    unmount()
-    expect(firestoreMock.liveCount('contacts')).toBe(0)
-  })
-
-  it('TEST-L01.usePersonalTasks.strictmode-lifecycle', async () => {
-    const path = `users/${COORD_UID}/personalTasks`
-    const { result, unmount } = renderHook(() => usePersonalTasks(COORD_UID), {
-      wrapper: ({ children }) => React.createElement(React.StrictMode, null, children),
-    })
-    act(() => firestoreMock.emitQuery(path, [{ id: 'pt-1', data: { title: 'א' } }]))
-    await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(result.current.personalTasks.map((p) => p.id)).toEqual(['pt-1'])
-    unmount()
-    expect(firestoreMock.liveCount(path)).toBe(0)
-  })
+  // TEST-L01.useContacts.strictmode-lifecycle and
+  // TEST-L01.usePersonalTasks.strictmode-lifecycle were consolidated here
+  // (removed as benign duplicates, not requirement gaps). useContacts and
+  // usePersonalTasks subscribe via the exact same
+  // `useEffect(() => { ...onSnapshot(...); return unsub }, [deps])` shape as
+  // useTasks (see src/hooks/useContacts.ts, src/hooks/usePersonalTasks.ts,
+  // src/hooks/useTasks.ts) — StrictMode's double-invoke-effects behavior is
+  // a property of that shared React/Firestore pattern, not per-hook business
+  // logic, so TEST-L01.useTasks.strictmode-lifecycle above already proves
+  // the pattern once for all hooks using it. Both removed tests passed
+  // (see RESULTS.md); no requirement-gap evidence is lost.
 })

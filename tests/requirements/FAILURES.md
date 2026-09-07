@@ -2,7 +2,7 @@
 
 ## Accounting and interpretation
 
-**155 actual failed cases out of 435: behavior 68, emulator 58, browser 29.**
+**155 actual failed cases out of 433: behavior 68, emulator 58, browser 29.**
 The [failure index](#failure-index) contains each failed `(file, test ID)` from
 [test-manifest.json](test-manifest.json) exactly once. IDs are the stable portion
 of the actual expanded runtime names; the manifest retains their full wording.

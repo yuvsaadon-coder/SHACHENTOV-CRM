@@ -48,21 +48,22 @@ diagnostic evidence; this is not a claim that application logs contain no errors
 
 | Area | Composition | Cases | Passed | Failed | Analysis/review record |
 |---|---|---:|---:|---:|---|
-| Core A/L/T/R | 143 component + 21 emulator + 1 migrated T05 browser | 165 | 101 | 64 | [Core results](CORE-RESULTS.md), [individual review](CORE-INDIVIDUAL-REVIEW.md) |
+| Core A/L/T/R | 141 component + 21 emulator + 1 migrated T05 browser | 163 | 99 | 64 | [Core results](CORE-RESULTS.md), [individual review](CORE-INDIVIDUAL-REVIEW.md) |
 | Operations C/O/B/Q | 31 component + 3 emulator + 2 migrated C01 browser | 34 | 24 | 10 | [Operations results](OPERATIONS-RESULTS.md) |
 | Knowledge/chat K/H | 3 component + 13 emulator + 30 browser | 46 | 24 | 22 | [Knowledge results and verifier map](KNOWLEDGE-FEATURE-RESULTS.md) |
 | API F | 17 network-free + 52 emulator | 69 | 33 | 36 | [API results and verifier map](API-RESULTS.md) |
 | Security Rules S | 95 emulator | 95 | 80 | 15 | [Rules individual review](RULES-INDIVIDUAL-REVIEW.md) |
 | Base E/N05/T05 browser journeys | 25 browser | 25 | 18 | 7 | [Browser results and verifier map](RULES-BROWSER-RESULTS.md) |
 | Compiler N01 | 1 configuration case | 1 | 0 | 1 | [Compiler result](TOOLCHAIN-RESULTS.md) |
-| **Total** | Disjoint ownership, not overlapping requirement families | **435** | **280** | **155** | |
+| **Total** | Disjoint ownership, not overlapping requirement families | **433** | **278** | **155** | |
 
 Browser **58 = 25 base + 30 K/H + 3 migrated error paths**. The browser K/H
 cases are already included in K/H46, not another 30 cases. Retired component C01
-and emulator T05 versions are not counted. Nine core passing checks are seven
-positive controls and two harness-smoke checks; they are included in concrete
-runtime totals but **are not claimed as requirement coverage**. Nor does a
-passing C characterization approve its observed policy.
+and emulator T05 versions are not counted. Seven core passing checks are five
+positive controls and two harness-smoke checks (down from nine/seven after
+consolidating 2 redundant StrictMode duplicates below); they are included in
+concrete runtime totals but **are not claimed as requirement coverage**. Nor
+does a passing C characterization approve its observed policy.
 
 ## Reproduction and baseline checks
 
@@ -73,11 +74,11 @@ way that suppresses later lanes after the first red result.
 
 | Command from repository root | Final result / interpretation |
 |---|---|
-| `npm run test:requirements` | 193 cases, 68 normal failures; nonzero exit is required |
+| `npm run test:requirements` | 191 cases, 68 normal failures; nonzero exit is required |
 | `npm run test:requirements:rules` | 184 cases, 58 normal failures; nonzero exit is required |
 | `npm run test:requirements:browser` | 58 cases, 29 normal failures; nonzero exit is required |
 | `npm run test:requirements:typecheck` | Pass |
-| `npm test` | **22 existing tests pass separately; not part of 435** |
+| `npm test` | **22 existing tests pass separately; not part of 433** |
 | `npm run build` | Standard production typecheck/build passes |
 | `npm run lint` | Three pre-existing warnings; no new warnings |
 
