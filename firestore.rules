@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthed() {
+      return request.auth != null;
+    }
+
+    // A signed-in user with no /users doc (or no role field) gets '' rather than
+    // an evaluation error, so a half-provisioned account is denied instead of
+    // failing the whole request with "Missing or insufficient permissions".
+    function role() {
+      return isAuthed()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '')
+        : '';
+    }
+
+    function isAdmin()       { return role() == 'admin'; }
+    function isCoordinator() { return role() == 'coordinator'; }
+
+    // The app routes on "coordinator or not": App.tsx sends coordinators to the
+    // portal and every other signed-in user to the CRM. Staff roles are stored
+    // as domain codes (JLM, SUP, DON, FIN, PUB, DES, VOL), so an allow-list of
+    // ['admin','hq'] would lock out most of the HQ team. Match the app instead.
+    function isHQ() {
+      return isAuthed() && role() != '' && role() != 'coordinator';
+    }
+
+    // True when the signed-in user is listed as a coordinator of that branch.
+    function coordinatesBranch(branchId) {
+      return isAuthed()
+        && exists(/databases/$(database)/documents/branches/$(branchId))
+        && request.auth.uid in get(/databases/$(database)/documents/branches/$(branchId)).data.get('coordinatorUids', []);
+    }
+
+    // ── CRM (HQ staff & admins) ──────────────────────────────────────────────
+    match /tasks/{taskId} {
+      allow read, write: if isHQ();
+      match /{sub}/{subId} {
+        allow read, write: if isHQ();
+      }
+    }
+
+    match /contacts/{id} { allow read, write: if isHQ(); }
+    match /roles/{id}    { allow read, write: if isHQ(); }
+
+    // Coordinators need to read their own branch document to enter the portal.
+    match /branches/{id} {
+      allow read:  if isAuthed();
+      allow write: if isAdmin();
+    }
+
+    // ── Knowledge ────────────────────────────────────────────────────────────
+    match /hq_knowledge/{id}       { allow read: if isHQ();    allow write: if isAdmin(); }
+    match /knowledge_articles/{id} { allow read: if isAuthed(); allow write: if isAdmin(); }
+    match /knowledgeItems/{id} {
+      allow read:  if isAuthed();
+      allow write: if isCoordinator() || isHQ();
+    }
+
+    // ── Quarterly reports ────────────────────────────────────────────────────
+    // HQ sees everything (the /reports page). A coordinator reads the reports of
+    // branches they are attached to — without this, "הדיווחים שלי" in the portal
+    // is denied.
+    match /quarterlyReports/{id} {
+      allow read: if isHQ() || coordinatesBranch(resource.data.branchId);
+      allow create: if isCoordinator()
+                    && request.resource.data.submittedBy == request.auth.uid
+                    && coordinatesBranch(request.resource.data.branchId);
+      allow update, delete: if isAdmin();
+    }
+
+    // Coordinators read this to render the report form; only admins edit it.
+    match /reportQuestions/{id} {
+      allow read:  if isAuthed();
+      allow write: if isAdmin();
+    }
+
+    // ── Users ────────────────────────────────────────────────────────────────
+    match /users/{uid} {
+      allow read:  if isAuthed() && (request.auth.uid == uid || isHQ());
+      allow write: if isAdmin();
+
+      // Chat history is private to its owner.
+      match /chatSessions/{sessionId} {
+        allow read, write: if isAuthed() && request.auth.uid == uid;
+      }
+
+      // Personal to-dos — private to their owner, not part of the org tasks.
+      match /personalTasks/{taskId} {
+        allow read, write: if isAuthed() && request.auth.uid == uid;
+      }
+    }
+  }
+}
