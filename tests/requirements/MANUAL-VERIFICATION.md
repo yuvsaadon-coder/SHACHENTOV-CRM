@@ -45,17 +45,19 @@ row already has the maximum test coverage possible without prejudging the decisi
 | D5 | HQ domain visibility scope | The explicit required domain **default** only; current broader access is recorded separately, not endorsed. |
 | D6 | Final coordinator authentication method | Current name/phone/custom-token flow, its malformed-input handling, and public-endpoint abuse-control posture. |
 | D7 | What information is allowed to reach the AI provider | Only synthetic data is used; exactly which synthetic sources leave the handler is recorded — no assumed customer-data allowlist. |
-| D8 | All numeric/lifecycle policies (SLA, load, rate, retry, timeout, token/context budgets, retention, coverage/mutation thresholds, file allowlists, inactive-user lifecycle, duplicate-report amendment, hierarchy-repair, offline-conflict policy) | Existing numeric constants are characterized as current behavior inputs, never asserted as acceptance thresholds. **No numeric target may be invented by any future contributor, human or agent, without an explicit owner decision recorded here first.** |
+| D8 | All numeric/lifecycle policies (SLA, load, rate, retry, timeout, token/context budgets, retention, coverage/mutation thresholds, file allowlists, inactive-user lifecycle, duplicate-report amendment, hierarchy-repair, offline-conflict policy, period-versioned report-question schema, Hebrew-holiday anchor/offset and timezone policy, branch operational-field authority) | Existing numeric constants are characterized as current behavior inputs, never asserted as acceptance thresholds. This list is **non-exhaustive**: any other unstated numeric or lifecycle policy falls under D8 as well. **No numeric target may be invented by any future contributor, human or agent, without an explicit owner decision recorded here first.** |
 
 ## Future features with no entrypoint yet (`F`)
 
 | # | Feature | Current disposition |
 |---|---|---|
 | 1 | J01/J03 — notifications and durable-offline support | No runtime assertion exists because there is no production entrypoint to call yet. Coverage gap is explicit and tracked, not silently dropped. |
+| 2 | R06 — automatic recurrence reset by a scheduled server-side job | Executive [L48](../../docs/requirements/executive-summary.he.md) requires recurring tasks to reset `ללא התערבות ידנית`, and technical §12 names the production target as an idempotent scheduled server job with locking/transaction, audit trail and retry. No such job entrypoint exists in the baseline functions; the only reset path (`useRecurringTaskReset`) is client-side and admin-page-triggered, which is characterized separately as `C` (R01–R04). The acceptance gap is tracked here and is **not** closed by those characterization tests. |
+| 3 | J02 — AI tool-calling writes gated on human approval | Technical §8 requires future AI write operations to need human approval and be off by default. Only the disabled `ai-proxy` scaffold exists (returns 501), whose current behavior is covered by F10. Approval identity, replay semantics and tool schema must be defined by the owner, not invented by tests. |
 
 ## Process for closing an item on this list
 
 1. Get the specific owner decision or deployed-environment access needed (see table above).
 2. Update `TEST-PLAN.md`'s classification for that row from `M`/`U`/`F` to `A`, `G`, or `C` and write the concrete test.
-3. Add the new test's ID to `test-manifest.json`, its outcome to the relevant `*-RESULTS.md`, and if it fails, to `FAILURES.md`.
+3. Add the new test's ID to `test-manifest.json`, its outcome to the relevant per-area `*-RESULTS.md`, **and to the headline count and lane/area tables in `RESULTS.md`** (which is the overall authority and is *not* matched by the `*-RESULTS.md` pattern), and if it fails, to `FAILURES.md`.
 4. Never mark an item here "done" by weakening or faking evidence — closing the gap means writing a real test against real access/decision, not adjusting the checklist.

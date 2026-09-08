@@ -8,8 +8,12 @@ cross-checked against the raw Hebrew source (`docs/requirements/technical-specif
 they could be read as conflicting.
 
 > **✅ CURRENT AUTHORITATIVE STATUS**
-> - **Component suite (`components/core`): 143 total, 89 passed, 54 failed** — verified directly from
->   `tests/requirements/artifacts/core-component-closure-reviewed.json`.
+> - **Component suite (`components/core`): 141 total, 87 passed, 54 failed** — verified directly from
+>   `tests/requirements/artifacts/core-component-closure-reviewed.json`, less the two redundant
+>   StrictMode duplicates (`L01.useContacts.strictmode-lifecycle`,
+>   `L01.usePersonalTasks.strictmode-lifecycle`) removed by the Pass 2 consolidation recorded in
+>   `CORE-RESULTS.md` erratum #11. Both were passing, so no review verdict below changed; the
+>   pre-consolidation figures were 143 total / 89 passed.
 > - **Emulator suite (`emulator/core`, real Auth+Firestore+Storage backend): 21 total, 12 passed, 9
 >   failed** — verified directly from `tests/requirements/artifacts/core-emulator-verified.json` (a
 >   frozen `emulator/core`-only subset of the parent's full 184-test closure run,
@@ -17,11 +21,11 @@ they could be read as conflicting.
 >   `T05.emulator.failed-write-observable` was removed from this suite and migrated to, and already
 >   independently reviewed by, the browser-suite owner as `TEST-T05.failed-write-observable.browser` —
 >   not re-counted here to avoid double-counting (see Erratum M).
-> - **All 143 + 21 = 164 tests currently on record are individually reviewed, 0 pending, 0 outstanding
+> - **All 141 + 21 = 162 tests currently on record are individually reviewed, 0 pending, 0 outstanding
 >   NOT CONFIRMED or INCONCLUSIVE.** (The one emulator test previously recorded INCONCLUSIVE,
 >   `T09.list-quick-update-history-gap`, was re-verified against the current clean closure run and is now
 >   CONFIRMED FAIL — clean; see Erratum I.)
-> - Of the 143 component tests: **54 CONFIRMED FAIL (genuine production defects)**, **89 CONFIRMED PASS**
+> - Of the 141 component tests: **54 CONFIRMED FAIL (genuine production defects)**, **87 CONFIRMED PASS**
 >   (of which 9 are positive-control/harness-infrastructure, proving fixture transport only).
 > - Of the 21 emulator tests: **9 CONFIRMED FAIL (all clean, genuine, real-backend-confirmed defects)**,
 >   **12 CONFIRMED PASS**. 0 INCONCLUSIVE remaining.
@@ -242,89 +246,91 @@ cause. The observed failure and verdict are unchanged.
 | 65 | L01.usePersonalTasks.lifecycle | passed | CONFIRMED PASS |
 | 66 | L01.useChatHistory.lifecycle | passed | CONFIRMED PASS |
 | 67 | L01.useTasks.strictmode-lifecycle | passed | CONFIRMED PASS |
-| 68 | L01.useContacts.strictmode-lifecycle | passed | CONFIRMED PASS |
-| 69 | L01.usePersonalTasks.strictmode-lifecycle | passed | CONFIRMED PASS |
-| 70 | L02.useTasks.error-then-remount-recovers | passed | CONFIRMED PASS |
-| 71 | L02.useContacts.error-surfaces | **failed** | **CONFIRMED FAIL** (root cause 6) |
-| 72 | L02.useContacts.stale-success-not-fresh-after-error (fixture now permanent permission-denied) | **failed** | **CONFIRMED FAIL** (root cause 6; see Erratum J) |
-| 73 | L02.useRoles.error-then-remount-recovers | passed | CONFIRMED PASS (see Erratum F) |
-| 74 | L02.useBranch.error-then-remount-recovers (new) | **failed** | **CONFIRMED FAIL** (root cause 18 — no error state exposed at all) |
-| 75 | L02.useQuarterlyReports.error-then-remount-recovers (new) | **failed** | **CONFIRMED FAIL** (root cause 18 — no error state exposed at all) |
-| 76 | L02.useAllQuarterlyReports.error-then-remount-recovers (new) | passed | CONFIRMED PASS — real error callback + state (see root cause 18 contrast) |
-| 77 | L02.useReportQuestions.error-then-remount-recovers (new) | passed | CONFIRMED PASS — real error callback + state |
-| 78 | L02.useKnowledge.error-then-remount-recovers (new) | **failed** | **CONFIRMED FAIL** (root cause 18 — callback exists, no error field exposed) |
-| 79 | L02.useHQKnowledge.error-then-remount-recovers (new) | **failed** | **CONFIRMED FAIL** (root cause 18 — callback clears loading but exposes no error state) |
-| 80 | L02.usePersonalTasks.error-then-remount-recovers (new) | passed | CONFIRMED PASS — real error callback + state |
-| 81 | L02.useChatHistory.error-then-remount-recovers (new) | **failed** | **CONFIRMED FAIL** (root cause 18 — callback exists, no error field exposed) |
-| 82 | L03.usePersonalTasks.uid-change-no-stale-A-data | **failed** | **CONFIRMED FAIL** (root cause 8) |
-| 83 | L03.usePersonalTasks.uid-to-undefined-clears-immediately | passed | CONFIRMED PASS |
-| 84 | L03.useKnowledge.branch-change-no-stale-A-data | **failed** | **CONFIRMED FAIL** (root cause 8) |
-| 85 | L03.useChatHistory.scope-change-clears-session-id | **failed** | **CONFIRMED FAIL** (root cause 8) |
-| 86 | L03.useChatHistory.startNewSession-clears-id | passed | CONFIRMED PASS |
-| 87 | L04.contact-writer.server-timestamp | passed | CONFIRMED PASS |
-| 88 | L04.report-question-writer.timestamp-gap | **failed** | **CONFIRMED FAIL** (root cause 9) |
-| 89 | L04.role-writer.timestamp-gap | **failed** | **CONFIRMED FAIL** (root cause 9) |
-| 90 | L04.role-writer.update-timestamp-gap | **failed** | **CONFIRMED FAIL** (root cause 9) |
-| 91 | L04.hq-knowledge-writer.mirror-requires-server-timestamp | **failed** | **CONFIRMED FAIL** (root cause 9; see Erratum C) |
-| 92 | R01.currentCycleKey.literal-values-september-2026 | passed | CONFIRMED PASS |
-| 93 | R01.currentCycleKey.month-boundary-sep-oct | passed | CONFIRMED PASS |
-| 94 | R01.currentCycleKey.half-year-boundary-jun-jul | passed | CONFIRMED PASS |
-| 95 | R01.currentCycleKey.year-boundary-dec-jan | passed | CONFIRMED PASS |
-| 96 | R01.currentCycleKey.leap-february-boundary | passed | CONFIRMED PASS |
-| 97 | R02.stale-recurring-task-resets | passed | CONFIRMED PASS |
-| 98 | R02.fresh-recurring-task-not-rewritten | passed | CONFIRMED PASS |
-| 99 | R02.already-not-done-task-not-rewritten | passed | CONFIRMED PASS |
-| 100 | R02.one-off-never-resets | passed | CONFIRMED PASS |
-| 101 | R02.hq-no-write-control | passed | CONFIRMED PASS (negative control, not distinct requirement) |
-| 102 | R02.same-cycle-rerender-no-duplicate-write | passed | CONFIRMED PASS |
-| 103 | R02.mixed-fixture-only-stale-recurring-in-batch | passed | CONFIRMED PASS |
-| 104 | R03.second-cycle-resets-without-unmount | **failed** | **CONFIRMED FAIL** (root cause 10) |
-| 105 | R03.second-cycle-resets-after-remount | passed | CONFIRMED PASS |
-| 106 | R04.current-rejected-batch | passed | CONFIRMED PASS (characterization) |
-| 107 | R04.recovery-observability | **failed** | **CONFIRMED FAIL** (root cause 10) |
-| 108 | R05.current-holiday-display.year-2026 | passed | CONFIRMED PASS (characterization) |
-| 109 | R05.current-holiday-display.year-2027 | passed | CONFIRMED PASS (characterization) |
-| 110 | R05.current-holiday-display.identical-across-months | passed | CONFIRMED PASS (characterization) |
-| 111 | T01.create-then-detail-roundtrip | passed | CONFIRMED PASS |
-| 112 | T01.sparse-task-in-list-view | **failed** | **CONFIRMED FAIL** (root cause 11) |
-| 113 | T01.reject-save-then-retry | passed | CONFIRMED PASS |
-| 114 | T03.parent-child-navigation | passed | CONFIRMED PASS |
-| 115 | T03.subtask-creation-persists | passed | CONFIRMED PASS |
-| 116 | T03.delete-control-persists | **failed** | **CONFIRMED FAIL** (root cause 12) |
-| 117 | T03.no-dependency-editor | **failed** | **CONFIRMED FAIL** (root cause 12) |
-| 118 | T04.filter-and-back | passed | CONFIRMED PASS |
-| 119 | T04.current-period-conventions | passed | CONFIRMED PASS (characterization) |
-| 120 | T05.keyboard-equivalent-status-change | passed | CONFIRMED PASS |
-| 121 | T06.calendar-view-orphan-component-characterization | passed | CONFIRMED PASS (characterization) |
-| 122 | T06.reachable-calendar-month-week-day | **failed** | **CONFIRMED FAIL** (root cause 17) |
-| 123 | T07.single-month-hand-computed | passed | CONFIRMED PASS (characterization) |
-| 124 | T08.storage-roundtrip | **failed** | **CONFIRMED FAIL** (root cause 13) |
-| 125 | T08.counter-recovery | **failed** | **CONFIRMED FAIL** (root cause 13) |
-| 126 | T08.current-size-boundary | passed | CONFIRMED PASS (characterization; see Erratum D) |
-| 127 | T09.detail-status-change-writes-history | passed | CONFIRMED PASS |
-| 128 | T09.list-quick-update-writes-history | **failed** | **CONFIRMED FAIL** (root cause 14) |
-| 129 | T09.dashboard-quick-update-writes-history | **failed** | **CONFIRMED FAIL** (root cause 14) |
-| 130 | T09.kanban-inline-select-writes-history | **failed** | **CONFIRMED FAIL** (root cause 14) |
-| 131 | T09.rejected-update-no-false-history | **failed** | **CONFIRMED FAIL** (root cause 14) |
-| 132 | T10.ordered-comments-and-retry | passed | CONFIRMED PASS |
-| 133 | T10.listener-error | **failed** | **CONFIRMED FAIL** (root cause 6) |
-| 134 | T10.old-task-listener-cleanup-on-id-switch | passed | CONFIRMED PASS |
-| 135 | T11.private-task-crud-under-own-uid-path | passed | CONFIRMED PASS |
-| 136 | T11.legacy-done-flag-displays-correctly | passed | CONFIRMED PASS |
-| 137 | T11.status-filter-transitions | passed | CONFIRMED PASS |
-| 138 | T11.delete-removes-only-own-record | passed | CONFIRMED PASS |
-| 139 | T11.organizational-views-never-subscribe-to-personal-path | passed | CONFIRMED PASS |
-| 140 | T12.explicit-promotion | passed | CONFIRMED PASS (characterization) |
-| 141 | T12.partial-promotion-retry | **failed** | **CONFIRMED FAIL** (root cause 15) |
-| 142 | harness-smoke: pushed snapshot to real hook | passed | CONFIRMED PASS (infrastructure, not requirement coverage) |
-| 143 | harness-smoke: listener error delivery | passed | CONFIRMED PASS (infrastructure, not requirement coverage) |
+| 68 | L02.useTasks.error-then-remount-recovers | passed | CONFIRMED PASS |
+| 69 | L02.useContacts.error-surfaces | **failed** | **CONFIRMED FAIL** (root cause 6) |
+| 70 | L02.useContacts.stale-success-not-fresh-after-error (fixture now permanent permission-denied) | **failed** | **CONFIRMED FAIL** (root cause 6; see Erratum J) |
+| 71 | L02.useRoles.error-then-remount-recovers | passed | CONFIRMED PASS (see Erratum F) |
+| 72 | L02.useBranch.error-then-remount-recovers (new) | **failed** | **CONFIRMED FAIL** (root cause 18 — no error state exposed at all) |
+| 73 | L02.useQuarterlyReports.error-then-remount-recovers (new) | **failed** | **CONFIRMED FAIL** (root cause 18 — no error state exposed at all) |
+| 74 | L02.useAllQuarterlyReports.error-then-remount-recovers (new) | passed | CONFIRMED PASS — real error callback + state (see root cause 18 contrast) |
+| 75 | L02.useReportQuestions.error-then-remount-recovers (new) | passed | CONFIRMED PASS — real error callback + state |
+| 76 | L02.useKnowledge.error-then-remount-recovers (new) | **failed** | **CONFIRMED FAIL** (root cause 18 — callback exists, no error field exposed) |
+| 77 | L02.useHQKnowledge.error-then-remount-recovers (new) | **failed** | **CONFIRMED FAIL** (root cause 18 — callback clears loading but exposes no error state) |
+| 78 | L02.usePersonalTasks.error-then-remount-recovers (new) | passed | CONFIRMED PASS — real error callback + state |
+| 79 | L02.useChatHistory.error-then-remount-recovers (new) | **failed** | **CONFIRMED FAIL** (root cause 18 — callback exists, no error field exposed) |
+| 80 | L03.usePersonalTasks.uid-change-no-stale-A-data | **failed** | **CONFIRMED FAIL** (root cause 8) |
+| 81 | L03.usePersonalTasks.uid-to-undefined-clears-immediately | passed | CONFIRMED PASS |
+| 82 | L03.useKnowledge.branch-change-no-stale-A-data | **failed** | **CONFIRMED FAIL** (root cause 8) |
+| 83 | L03.useChatHistory.scope-change-clears-session-id | **failed** | **CONFIRMED FAIL** (root cause 8) |
+| 84 | L03.useChatHistory.startNewSession-clears-id | passed | CONFIRMED PASS |
+| 85 | L04.contact-writer.server-timestamp | passed | CONFIRMED PASS |
+| 86 | L04.report-question-writer.timestamp-gap | **failed** | **CONFIRMED FAIL** (root cause 9) |
+| 87 | L04.role-writer.timestamp-gap | **failed** | **CONFIRMED FAIL** (root cause 9) |
+| 88 | L04.role-writer.update-timestamp-gap | **failed** | **CONFIRMED FAIL** (root cause 9) |
+| 89 | L04.hq-knowledge-writer.mirror-requires-server-timestamp | **failed** | **CONFIRMED FAIL** (root cause 9; see Erratum C) |
+| 90 | R01.currentCycleKey.literal-values-september-2026 | passed | CONFIRMED PASS |
+| 91 | R01.currentCycleKey.month-boundary-sep-oct | passed | CONFIRMED PASS |
+| 92 | R01.currentCycleKey.half-year-boundary-jun-jul | passed | CONFIRMED PASS |
+| 93 | R01.currentCycleKey.year-boundary-dec-jan | passed | CONFIRMED PASS |
+| 94 | R01.currentCycleKey.leap-february-boundary | passed | CONFIRMED PASS |
+| 95 | R02.stale-recurring-task-resets | passed | CONFIRMED PASS |
+| 96 | R02.fresh-recurring-task-not-rewritten | passed | CONFIRMED PASS |
+| 97 | R02.already-not-done-task-not-rewritten | passed | CONFIRMED PASS |
+| 98 | R02.one-off-never-resets | passed | CONFIRMED PASS |
+| 99 | R02.hq-no-write-control | passed | CONFIRMED PASS (negative control, not distinct requirement) |
+| 100 | R02.same-cycle-rerender-no-duplicate-write | passed | CONFIRMED PASS |
+| 101 | R02.mixed-fixture-only-stale-recurring-in-batch | passed | CONFIRMED PASS |
+| 102 | R03.second-cycle-resets-without-unmount | **failed** | **CONFIRMED FAIL** (root cause 10) |
+| 103 | R03.second-cycle-resets-after-remount | passed | CONFIRMED PASS |
+| 104 | R04.current-rejected-batch | passed | CONFIRMED PASS (characterization) |
+| 105 | R04.recovery-observability | **failed** | **CONFIRMED FAIL** (root cause 10) |
+| 106 | R05.current-holiday-display.year-2026 | passed | CONFIRMED PASS (characterization) |
+| 107 | R05.current-holiday-display.year-2027 | passed | CONFIRMED PASS (characterization) |
+| 108 | R05.current-holiday-display.identical-across-months | passed | CONFIRMED PASS (characterization) |
+| 109 | T01.create-then-detail-roundtrip | passed | CONFIRMED PASS |
+| 110 | T01.sparse-task-in-list-view | **failed** | **CONFIRMED FAIL** (root cause 11) |
+| 111 | T01.reject-save-then-retry | passed | CONFIRMED PASS |
+| 112 | T03.parent-child-navigation | passed | CONFIRMED PASS |
+| 113 | T03.subtask-creation-persists | passed | CONFIRMED PASS |
+| 114 | T03.delete-control-persists | **failed** | **CONFIRMED FAIL** (root cause 12) |
+| 115 | T03.no-dependency-editor | **failed** | **CONFIRMED FAIL** (root cause 12) |
+| 116 | T04.filter-and-back | passed | CONFIRMED PASS |
+| 117 | T04.current-period-conventions | passed | CONFIRMED PASS (characterization) |
+| 118 | T05.keyboard-equivalent-status-change | passed | CONFIRMED PASS |
+| 119 | T06.calendar-view-orphan-component-characterization | passed | CONFIRMED PASS (characterization) |
+| 120 | T06.reachable-calendar-month-week-day | **failed** | **CONFIRMED FAIL** (root cause 17) |
+| 121 | T07.single-month-hand-computed | passed | CONFIRMED PASS (characterization) |
+| 122 | T08.storage-roundtrip | **failed** | **CONFIRMED FAIL** (root cause 13) |
+| 123 | T08.counter-recovery | **failed** | **CONFIRMED FAIL** (root cause 13) |
+| 124 | T08.current-size-boundary | passed | CONFIRMED PASS (characterization; see Erratum D) |
+| 125 | T09.detail-status-change-writes-history | passed | CONFIRMED PASS |
+| 126 | T09.list-quick-update-writes-history | **failed** | **CONFIRMED FAIL** (root cause 14) |
+| 127 | T09.dashboard-quick-update-writes-history | **failed** | **CONFIRMED FAIL** (root cause 14) |
+| 128 | T09.kanban-inline-select-writes-history | **failed** | **CONFIRMED FAIL** (root cause 14) |
+| 129 | T09.rejected-update-no-false-history | **failed** | **CONFIRMED FAIL** (root cause 14) |
+| 130 | T10.ordered-comments-and-retry | passed | CONFIRMED PASS |
+| 131 | T10.listener-error | **failed** | **CONFIRMED FAIL** (root cause 6) |
+| 132 | T10.old-task-listener-cleanup-on-id-switch | passed | CONFIRMED PASS |
+| 133 | T11.private-task-crud-under-own-uid-path | passed | CONFIRMED PASS |
+| 134 | T11.legacy-done-flag-displays-correctly | passed | CONFIRMED PASS |
+| 135 | T11.status-filter-transitions | passed | CONFIRMED PASS |
+| 136 | T11.delete-removes-only-own-record | passed | CONFIRMED PASS |
+| 137 | T11.organizational-views-never-subscribe-to-personal-path | passed | CONFIRMED PASS |
+| 138 | T12.explicit-promotion | passed | CONFIRMED PASS (characterization) |
+| 139 | T12.partial-promotion-retry | **failed** | **CONFIRMED FAIL** (root cause 15) |
+| 140 | harness-smoke: pushed snapshot to real hook | passed | CONFIRMED PASS (infrastructure, not requirement coverage) |
+| 141 | harness-smoke: listener error delivery | passed | CONFIRMED PASS (infrastructure, not requirement coverage) |
 
-**Component counts reconciliation:** 143 total = 89 passed + 54 failed, verified directly against
-`core-component-closure-reviewed.json`. 9 of the 89 passes are positive-control/harness infrastructure
-(#21,22,23,46,48,50,52,142,143). 0 NOT CONFIRMED, 0 pending. Diffed programmatically against the
+**Component counts reconciliation:** 141 total = 87 passed + 54 failed. 9 of the 87 passes are
+positive-control/harness infrastructure (#21,22,23,46,48,50,52,140,141). 0 NOT CONFIRMED, 0 pending.
+The underlying `core-component-closure-reviewed.json` artifact records the pre-consolidation
+143 = 89 + 54; the Pass 2 StrictMode consolidation (`CORE-RESULTS.md` erratum #11) then removed the
+two redundant passing duplicates `L01.useContacts.strictmode-lifecycle` and
+`L01.usePersonalTasks.strictmode-lifecycle`, giving 141 = 87 + 54 and shifting every row after #67
+down by two. No verdict changed. Diffed programmatically against the
 previously-reviewed 135-test state: 0 removed, 8 added (all freshly reviewed, Erratum K), 0 status
 mismatches among the 135 carried-forward tests (renumbered #1-73 unchanged, #74-135 shifted to #82-143
-unchanged in verdict).
+unchanged in verdict, and now #80-141 after the Pass 2 removal).
 
 ## Emulator suite — result summary, all 21 current tests (real Auth+Firestore+Storage backend)
 

@@ -29,9 +29,11 @@ Test Files  16 failed | 13 passed (29)
 Artifact: `tests/requirements/artifacts/core-components-closure.json` (also
 mirrored at `core.json`). `tsc -p tests\requirements\tsconfig.json --noEmit` — clean.
 
-This total (143, up from 135) reflects four rounds of parent-authorized
+This total (141) reflects four rounds of parent-authorized
 freeze exceptions, all fixing genuine test defects/gaps (not production
-code):
+code), which raised the count from 135 to 143, less the 2 redundant
+StrictMode duplicates later removed by the consolidation recorded in
+erratum #11:
 
 - **Coordinator `1161408d`** fixed two already-passing `(C)` cases in
   `a05-identity-state-matrix.test.tsx`: `TEST-A05.inactive.ui.admin` now uses
@@ -426,3 +428,20 @@ re-verification is needed, and keep `components/core` frozen otherwise.
     (143→141, 89→87 pass, 54 red unchanged — see §1 for the current
     authoritative breakdown). Re-ran the file (`l01-hook-lifecycle.test.tsx`,
     12/12 pass) confirming zero regressions.
+12. **Documentation-consistency correction pass (no test or production change).**
+    A five-reviewer audit of the requirements documentation found stale
+    post-consolidation numbers that had been left presented as current. Fixed:
+    §1 above said the component total was `143, up from 135` while the run block
+    eight lines earlier correctly showed `141`; `CORE-INDIVIDUAL-REVIEW.md`
+    still self-labelled `143 total, 89 passed` / `143 + 21 = 164` as "CURRENT
+    AUTHORITATIVE" and still listed the two removed StrictMode duplicates as
+    live passing rows #68/#69; `KNOWLEDGE-FEATURE-RESULTS.md` cited the behavior
+    lane as `197 = 127/70` instead of `191 = 123/68`; `RESULTS.md` described the
+    non-requirement passing checks as "seven ... five positive controls" when the
+    manifest has **seven** positive controls plus **two** harness-smoke checks (nine),
+    and wrongly attributed that figure to the Pass 2 consolidation, which removed
+    `TEST-` cases rather than controls; and `FAILURES.md` carried one broken
+    anchor (`#the-8-current-failing-component-tests`, actual heading says 6).
+    All counts were re-derived from `test-manifest.json`: total 433 = 278/155,
+    components/core 141 = 87/54, emulator/core 21 = 12/9, emulator/rules 95 = 80/15.
+    No test verdict, classification, or observed result changed.

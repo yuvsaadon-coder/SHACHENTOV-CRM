@@ -123,8 +123,8 @@ existing-hook defect, distinct from the non-runnable future server scheduler.
 
 [T194–204][t-task-contact] requires usable task CRUD/contact linkage.
 [TaskDetailPage defaults](../../src/pages/TaskDetailPage.tsx#L58-L79) can omit
-consumer fields. [TasksPage](../../src/pages/TasksPage.tsx#L100-L110) unconditionally
-calls `category.toLowerCase()` and [ContactsPage](../../src/pages/ContactsPage.tsx#L280-L291)
+consumer fields. [TasksPage](../../src/pages/TasksPage.tsx#L100-L110) calls
+`category.toLowerCase()` whenever a search filter is active, and [ContactsPage](../../src/pages/ContactsPage.tsx#L280-L291)
 calls `contactRefs.includes()`. Example: create a minimal task using production,
 then open the list or linked-contact panel: the respective missing field crashes
 the reader. This is production writer/reader incompatibility, not a hand-made
@@ -230,7 +230,7 @@ focus assertions distinguish this from functional CRUD checks.
 members of A→B→A as children, leaving no root to render either. Example: two
 existing roles vanish without an error. The test accepts visibility or explicit
 error; it does not dictate an unresolved cycle-repair algorithm.
-[Operations](OPERATIONS-RESULTS.md#the-8-current-failing-component-tests).
+[Operations](OPERATIONS-RESULTS.md#the-6-current-failing-component-tests-post-consolidation).
 
 ### R19 — report state/draft crosses a branch change
 

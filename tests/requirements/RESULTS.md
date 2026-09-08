@@ -2,7 +2,7 @@
 
 ## Outcome
 
-**435 concrete cases: 280 passed, 155 failed, 0 skipped, 0 expected failures.**
+**433 concrete cases: 278 passed, 155 failed, 0 skipped, 0 expected failures.**
 The suite is deliverable for check-in as an intentionally red acceptance suite,
 not evidence that all requirements are implemented or that release gates pass.
 Every failed case is indexed once in [FAILURES.md](FAILURES.md#failure-index).
@@ -10,11 +10,11 @@ Every failed case is indexed once in [FAILURES.md](FAILURES.md#failure-index).
 Application baseline: **`60548f8`**. Production application/rules remain unchanged;
 the parent verified matching hashes for the immutable Hebrew requirement
 captures. Dependency, script, runner and fixture changes are test-only.
-This delivery-writing pass changes only `RESULTS.md` and `FAILURES.md`.
 
-A follow-up consolidation pass removed 4 benign/duplicate cases from
+Two consolidation passes reduced the original 439 concrete cases to the 433
+reported above. **Pass 1 (439 → 435)** removed 4 benign/duplicate cases from
 `components/operations/operations.component.test.tsx` whose oracle is fully
-preserved by a stronger sibling test (see `TEST-PLAN.md` §Consolidation):
+preserved by a stronger sibling test (see `TEST-PLAN.md` §10):
 `TEST-C02.domain-default-and-department-filter` (superseded by
 `TEST-A03.contacts.own-domain-default`), `TEST-B04.picker-membership-change`
 (superseded by `TEST-A07.ui.branch-membership-transitions`),
@@ -25,21 +25,38 @@ preserved by a stronger sibling test (see `TEST-PLAN.md` §Consolidation):
 two failing cases removed (C02, Q07.partial-reorder-recovery) each document
 the same gap (R03, R21) as their surviving stronger sibling.
 
+**Pass 2 (435 → 433)** removed 2 passing StrictMode duplicates from
+`components/core/l01-hook-lifecycle.test.tsx`
+(`TEST-L01.useContacts.strictmode-lifecycle`,
+`TEST-L01.usePersonalTasks.strictmode-lifecycle`). `useTasks`, `useContacts`
+and `usePersonalTasks` share an identical
+`useEffect(() => { ...onSnapshot(...); return unsub }, [deps])` shape, so
+React StrictMode double-invoke behavior is a property of that shared pattern
+rather than per-hook logic; `TEST-L01.useTasks.strictmode-lifecycle` is
+retained as the representative case. Both removed cases were passing, so the
+failed total is unchanged at 155. Each hook still has its own non-StrictMode
+`.lifecycle` case.
+
 ### Authoritative runtime inputs
 
 | Lane | Concrete cases | Passed | Failed | Final observed evidence |
 |---|---:|---:|---:|---|
-| Behavior: components/hooks, network-free contracts, compiler configuration | 193 | 125 | 68 | [behavior-verified.json](artifacts/behavior-verified.json) |
-| Real Auth/Firestore/Storage emulators and handler integration | 184 | 126 | 58 | [emulator-closure.json](artifacts/emulator-closure.json) |
-| Real Chromium journeys with emulators/local handler adapter | 58 | 29 | 29 | [browser-closure.json](artifacts/browser-closure.json) |
-| **Total** | **435** | **280** | **155** | [Observed test manifest](test-manifest.json) |
+| Behavior: components/hooks, network-free contracts, compiler configuration | 191 | 123 | 68 | `artifacts/behavior-verified.json` (local only) |
+| Real Auth/Firestore/Storage emulators and handler integration | 184 | 126 | 58 | `artifacts/emulator-closure.json` (local only) |
+| Real Chromium journeys with emulators/local handler adapter | 58 | 29 | 29 | `artifacts/browser-closure.json` (local only) |
+| **Total** | **433** | **278** | **155** | [Observed test manifest](test-manifest.json) — **tracked** |
 
 
 `behavior-verified.json` supersedes the earlier behavior closure: the latest
 L02 healthy-state oracle accepts nullish absence instead of requiring an
 invented missing-error representation. The manifest records the actual expanded
 test names, files, lanes, outcomes and input artifact for every case.
-Artifacts are ignored local evidence, not promised contents of a clean checkout.
+The three per-lane `artifacts/*.json` files are **local run output and are
+git-ignored** (`tests/requirements/.gitignore`), so they do not exist in a
+fresh clone — they are named above for reproducibility, not linked. The
+tracked [`test-manifest.json`](test-manifest.json) is the durable, checked-in
+record of every case and is what a clean checkout should be verified against;
+re-running a lane regenerates its artifact locally.
 No test/fixture/infrastructure error is identified in the latest closure
 adjudication. Application-level rejected operations in failing flows remain
 diagnostic evidence; this is not a claim that application logs contain no errors.
@@ -59,10 +76,12 @@ diagnostic evidence; this is not a claim that application logs contain no errors
 
 Browser **58 = 25 base + 30 K/H + 3 migrated error paths**. The browser K/H
 cases are already included in K/H46, not another 30 cases. Retired component C01
-and emulator T05 versions are not counted. Seven core passing checks are five
-positive controls and two harness-smoke checks (down from nine/seven after
-consolidating 2 redundant StrictMode duplicates below); they are included in
-concrete runtime totals but **are not claimed as requirement coverage**. Nor
+and emulator T05 versions are not counted. Nine core passing checks are seven
+positive controls and two harness-smoke checks; they are included in
+concrete runtime totals but **are not claimed as requirement coverage**. The
+Pass 2 StrictMode consolidation did not change this figure — it removed two
+`TEST-L01.*.strictmode-lifecycle` concrete requirement cases, not controls or
+smoke checks. Nor
 does a passing C characterization approve its observed policy.
 
 ## Reproduction and baseline checks
@@ -100,7 +119,10 @@ test/code evidence, raw source lines and a bounded causal explanation.
 Distinct per-test verifier records are preserved in the linked owner reports;
 reviewer identities are not invented. The final global source and delivery
 reviews have completed. During delivery preparation the core review was
-refreshed to **143 component + 21 emulator cases, none pending/inconclusive**.
+refreshed to **143 component + 21 emulator cases, none pending/inconclusive**
+(the component figure was subsequently reduced to **141** by the StrictMode
+consolidation described above; that consolidation removed two passing
+duplicates and changed no review verdict).
 Its errata K–N now record all eight expanded L02 hook reviews, direct verification
 of the five nullish post-remount changes, the corrected L03 settled-identity
 control, current clean T09 history failures and removal of the migrated emulator

@@ -14,10 +14,10 @@ All 46 have a distinct mapped verifier: six fresh result reviews and 40 source/s
 |---|---:|---:|---:|---|
 | [browser-closure.json](artifacts/browser-closure.json) | 30 | 11 | 19 | Native knowledge subset of final 58-case browser closure |
 | [emulator-closure.json](artifacts/emulator-closure.json) | 13 | 10 | 3 | H03/H04/H05/H07 subset of final 184-case emulator closure |
-| [behavior-verified.json](artifacts/behavior-verified.json) | 3 | 3 | 0 | H01 subset of final 197-case behavior verification |
+| [behavior-verified.json](artifacts/behavior-verified.json) | 3 | 3 | 0 | H01 subset of final 191-case behavior verification |
 | **Total** | **46** | **24** | **22** | Complete current K/H inventory |
 
-The full closure inputs are **browser 58 = 29 passed / 29 failed**, **emulator 184 = 126 passed / 58 failed**, and **behavior 197 = 127 passed / 70 failed**. Browser native 30 = 11/19; other 28 = 18/10. Failures outside K/H are preserved in those inputs, not hidden by filtering or claimed as reviewed here.
+The full closure inputs are **browser 58 = 29 passed / 29 failed**, **emulator 184 = 126 passed / 58 failed**, and **behavior 191 = 123 passed / 68 failed**. Browser native 30 = 11/19; other 28 = 18/10. Failures outside K/H are preserved in those inputs, not hidden by filtering or claimed as reviewed here.
 
 For final closure, **every source fingerprint recorded by the 46-case manifest still matches current disk bytes**, and all 46 closure identities/statuses/classifications/lanes match. No new K/H source or verdict change was needed. The earlier six-fresh/40-carried construction and its historical source-comparison limits remain recorded in the manifest; this closure check adds a direct byte-fingerprint gate against that completed map.
 
