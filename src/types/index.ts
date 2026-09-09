@@ -303,6 +303,7 @@ export interface KnowledgeItem {
   url?: string
   fileUrl?: string
   fileName?: string
+  storagePath?: string
   fileSize?: number
   checklistItems?: string[]
   tags: string[]
@@ -329,6 +330,7 @@ export interface HQKnowledgeItem {
   content: string
   fileUrl?: string
   fileName?: string
+  storagePath?: string
   tags: string[]
   visibleToCoordinators?: boolean
   createdBy: string
