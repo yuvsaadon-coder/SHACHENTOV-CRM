@@ -1,7 +1,17 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useOutletContext, Link } from 'react-router-dom'
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
+import {
+  deleteReportDraft,
+  firestoreQuarterlyReportStore,
+  loadReportDraft,
+  ReportAlreadySubmittedError,
+  reportDraftKey,
+  saveReportDraft,
+  submitQuarterlyReport,
+  type ReportData,
+  type ReportFieldValue,
+} from '../../lib/quarterlyReports'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useQuarterlyReports } from '../../hooks/useQuarterlyReports'
@@ -65,7 +75,7 @@ function Section({ title }: { title: string }) {
   )
 }
 
-type FieldValue = string | SupplierRating
+type FieldValue = ReportFieldValue
 
 function QuestionField({
   question, value, onChange,
@@ -161,14 +171,17 @@ export function PortalReport() {
   const { reports } = useQuarterlyReports(branch.id)
   const { questions, loading: questionsLoading } = useReportQuestions(branch.type)
 
-  const DRAFT_KEY = `report_draft_${branch.id}`
-
   const [quarter, setQuarter] = useState<QuarterLabel>(currentQuarter())
   const [year, setYear] = useState(new Date().getFullYear())
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [values, setValues] = useState<Record<string, FieldValue>>({})
-  const restoredRef = useRef(false)
+  const period = useMemo(() => ({ branchId: branch.id, quarter, year }), [branch.id, quarter, year])
+  const periodKey = reportDraftKey(period)
+  const [formState, setFormState] = useState<{ periodKey: string; values: ReportData }>({
+    periodKey: '',
+    values: {},
+  })
+  const values = formState.periodKey === periodKey ? formState.values : {}
 
   const existingReport = useMemo(
     () => reports.find((r) => r.quarter === quarter && r.year === year),
@@ -178,41 +191,44 @@ export function PortalReport() {
 
   // Initialize any question not yet in state (covers newly-added questions too).
   useEffect(() => {
-    setValues((prev) => {
-      const next = { ...prev }
+    setFormState((prev) => {
+      if (prev.periodKey !== periodKey) return prev
+      const next = { ...prev.values }
       let changed = false
       for (const q of questions) {
         if (!(q.key in next)) { next[q.key] = defaultFor(q.type); changed = true }
       }
-      return changed ? next : prev
+      return changed ? { ...prev, values: next } : prev
     })
-  }, [questions])
+  }, [periodKey, questions])
 
-  // Restore draft from localStorage once questions are known.
+  // Each period owns independent form state and storage.
   useEffect(() => {
-    if (restoredRef.current || questionsLoading) return
-    restoredRef.current = true
-    const raw = localStorage.getItem(DRAFT_KEY)
-    if (!raw) return
-    try {
-      const d = JSON.parse(raw) as { quarter?: QuarterLabel; year?: number; values?: Record<string, FieldValue> }
-      if (d.quarter) setQuarter(d.quarter)
-      if (d.year) setYear(d.year)
-      if (d.values) setValues((prev) => ({ ...prev, ...d.values }))
+    if (questionsLoading) return
+    const defaults: ReportData = {}
+    for (const q of questions) defaults[q.key] = defaultFor(q.type)
+    const draft = loadReportDraft(localStorage, period)
+    setFormState({ periodKey, values: { ...defaults, ...draft?.values } })
+    if (draft) {
       toast('טיוטה שמורה שוחזרה', 'info')
-    } catch { /* ignore malformed draft */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [questionsLoading])
+    }
+  }, [periodKey, questionsLoading])
 
   // Autosave to localStorage with 500ms debounce.
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = null
+    if (formState.periodKey !== periodKey) return
     saveTimer.current = setTimeout(() => {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ quarter, year, values }))
+      saveReportDraft(localStorage, period, formState.values)
+      saveTimer.current = null
     }, 500)
-    return () => { if (saveTimer.current) clearTimeout(saveTimer.current) }
-  }, [values, quarter, year, DRAFT_KEY])
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+      saveTimer.current = null
+    }
+  }, [formState, period, periodKey])
 
   const hasContent = Object.values(values).some(hasContentValue)
   useEffect(() => {
@@ -224,31 +240,42 @@ export function PortalReport() {
     return () => window.removeEventListener('beforeunload', handler)
   }, [hasContent])
 
-  const setField = (key: string, v: FieldValue) => setValues((prev) => ({ ...prev, [key]: v }))
+  const setField = (key: string, v: FieldValue) => {
+    setFormState((prev) => prev.periodKey === periodKey
+      ? { ...prev, values: { ...prev.values, [key]: v } }
+      : prev)
+  }
 
   const handleSubmit = async () => {
     if (!appUser) return
     setSubmitting(true)
     try {
       const visible = questions.filter((q) => isFirstReport || !q.firstReportOnly)
-      const data: Record<string, FieldValue> = {}
+      const data: ReportData = {}
       for (const q of visible) data[q.key] = values[q.key] ?? defaultFor(q.type)
 
-      await addDoc(collection(db, 'quarterlyReports'), {
+      await submitQuarterlyReport(firestoreQuarterlyReportStore(db), {
         branchId: branch.id,
         branchType: branch.type,
         quarter,
         year,
-        submittedAt: serverTimestamp(),
         submittedBy: appUser.uid,
         isFirstReport,
         data,
       })
-      localStorage.removeItem(DRAFT_KEY)
+      deleteReportDraft(localStorage, period, () => {
+        if (saveTimer.current) clearTimeout(saveTimer.current)
+        saveTimer.current = null
+      })
       setSubmitted(true)
       toast('הדיווח נשלח בהצלחה!', 'success')
-    } catch {
-      toast('שגיאה בשליחת הדיווח. נסה שוב.', 'error')
+    } catch (error) {
+      toast(
+        error instanceof ReportAlreadySubmittedError
+          ? 'כבר הוגש דיווח לתקופה זו.'
+          : 'שגיאה בשליחת הדיווח. נסה שוב.',
+        'error',
+      )
     } finally {
       setSubmitting(false)
     }
