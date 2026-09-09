@@ -149,6 +149,7 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
   const [keepExistingFile, setKeepExistingFile] = useState(true)
   const [visibleToCoordinators, setVisibleToCoordinators] = useState(initialItem?.visibleToCoordinators ?? false)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   const addTag = () => {
     const t = tag.trim()
@@ -163,15 +164,18 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
       return
     }
     setSaving(true)
+    setSaveError('')
     try {
       const existingFileUrl = isEdit && keepExistingFile && !file ? initialItem?.fileUrl : undefined
       const existingFileName = isEdit && keepExistingFile && !file ? initialItem?.fileName : undefined
+      const existingStoragePath = isEdit && keepExistingFile && !file ? initialItem?.storagePath : undefined
       const payload = {
         domain, category,
         title: title.trim(), content: content.trim(), tags,
         file: file ?? undefined,
         fileUrl: existingFileUrl,
         fileName: existingFileName,
+        storagePath: existingStoragePath,
         visibleToCoordinators,
       }
       if (isEdit) {
@@ -180,6 +184,8 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
         await addItem(payload)
       }
       onClose()
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'שמירת הפריט נכשלה.')
     } finally {
       setSaving(false)
     }
@@ -345,6 +351,9 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
         </div>
 
         <div className="sticky bottom-0 bg-white px-4 py-3 border-t border-gray-100 flex gap-3">
+          {saveError && (
+            <p role="alert" className="text-xs text-red-600 self-center max-w-52">{saveError}</p>
+          )}
           <button
             onClick={() => void handleSave()}
             disabled={saving || !title.trim()}
@@ -372,10 +381,19 @@ export function HQKnowledgePage() {
   const [coordFilter, setCoordFilter] = useState<'all' | 'shared' | 'hq_only'>('all')
   const [showAdd, setShowAdd] = useState(false)
   const [editingItem, setEditingItem] = useState<HQKnowledgeItem | null>(null)
+  const [deleteError, setDeleteError] = useState('')
 
   const { items, loading } = useHQKnowledge(domainFilter)
   const { deleteItem } = useDeleteHQKnowledge()
   const isAdmin = appUser?.role === 'admin'
+  const handleDelete = async (id: string) => {
+    setDeleteError('')
+    try {
+      await deleteItem(id)
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'מחיקת הפריט נכשלה.')
+    }
+  }
 
   const filtered = useMemo(() => {
     return items.filter((item) => {
@@ -405,6 +423,11 @@ export function HQKnowledgePage() {
 
   return (
     <div className="space-y-5" dir="rtl">
+      {deleteError && (
+        <div role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          {deleteError}
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -518,7 +541,7 @@ export function HQKnowledgePage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {group.items.map((item) => (
-                  <HQItemCard key={item.id} item={item} isAdmin={isAdmin} onDelete={deleteItem} onEdit={setEditingItem} />
+                  <HQItemCard key={item.id} item={item} isAdmin={isAdmin} onDelete={(id) => void handleDelete(id)} onEdit={setEditingItem} />
                 ))}
               </div>
             </section>

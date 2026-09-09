@@ -3,6 +3,7 @@ import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'f
 import { db } from '../lib/firebase'
 import type { KnowledgeItem, KnowledgeItemType } from '../types'
 import { useAuth } from '../context/AuthContext'
+import { normalizeKnowledgeDocument } from '../lib/hqKnowledgeSchema'
 
 export function useKnowledge(branchId: string | null) {
   const [items, setItems] = useState<KnowledgeItem[]>([])
@@ -18,7 +19,11 @@ export function useKnowledge(branchId: string | null) {
       q,
       (snap) => {
         const sorted = snap.docs
-          .map((d) => ({ id: d.id, ...d.data() } as KnowledgeItem))
+          .map((d) => {
+            const data = d.data()
+            const normalized = data.sourceHQId ? normalizeKnowledgeDocument(data) : data
+            return { ...normalized, id: d.id } as KnowledgeItem
+          })
           .sort((a, b) => {
             const ta = a.createdAt?.toMillis?.() ?? 0
             const tb = b.createdAt?.toMillis?.() ?? 0
