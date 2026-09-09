@@ -6,6 +6,7 @@ import type { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions'
 import { cert, initializeApp, getApps } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getFirestore } from 'firebase-admin/firestore'
+import { serializeQuarterlyReport } from './hq-chat-reports'
 
 function initFirebase() {
   if (getApps().length > 0) return
@@ -185,16 +186,7 @@ async function chat(event: HandlerEvent): Promise<HandlerResponse> {
     if (branchFilter) q = q.where('branchId', '==', branchFilter)
     const snap = await q.limit(40).get()
     if (snap.empty) return null
-    const lines = snap.docs.map((d) => {
-      const data = d.data() as {
-        branchId?: string; quarter?: string
-        answers?: Record<string, string>; submittedAt?: string
-      }
-      const answersText = Object.entries(data.answers ?? {})
-        .map(([k, v]) => `${k}: ${String(v).slice(0, 200)}`)
-        .join(' | ')
-      return `— [${data.branchId ?? '?'}] ${data.quarter ?? ''}: ${answersText}`
-    })
+    const lines = snap.docs.map((d) => serializeQuarterlyReport(d.data()))
     return `דיווחי רכזים:\n${lines.join('\n')}`
   }))
 
