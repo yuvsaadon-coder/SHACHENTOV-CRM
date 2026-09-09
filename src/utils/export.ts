@@ -1,15 +1,23 @@
 import type { Task, OrgRole, Contact } from '../types'
 import { DOMAIN_LABELS } from '../types'
 
-function toCSV(rows: string[][]): string {
+const FORMULA_PREFIX = /^[=+\-@\t\r]/
+
+function escapeCSVCell(value: unknown): string {
+  const cell = String(value ?? '')
+  const safeCell = FORMULA_PREFIX.test(cell) ? `'${cell}` : cell
+  return `"${safeCell.replace(/"/g, '""')}"`
+}
+
+export function toCSV(rows: ReadonlyArray<ReadonlyArray<unknown>>): string {
   return rows
-    .map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+    .map(row => row.map(escapeCSVCell).join(','))
     .join('\n')
 }
 
-function download(filename: string, content: string) {
+export function downloadCSV(filename: string, rows: ReadonlyArray<ReadonlyArray<unknown>>) {
   const BOM = '﻿'
-  const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob([BOM + toCSV(rows)], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -35,7 +43,7 @@ export function exportTasks(tasks: Task[]) {
     t.notes ?? '',
   ])
   const today = new Date().toISOString().slice(0, 10)
-  download(`tasks_${today}.csv`, toCSV([header, ...rows]))
+  downloadCSV(`tasks_${today}.csv`, [header, ...rows])
 }
 
 export function exportRoles(roles: OrgRole[]) {
@@ -53,7 +61,7 @@ export function exportRoles(roles: OrgRole[]) {
     r.notes,
   ])
   const today = new Date().toISOString().slice(0, 10)
-  download(`roles_${today}.csv`, toCSV([header, ...rows]))
+  downloadCSV(`roles_${today}.csv`, [header, ...rows])
 }
 
 export function exportContacts(contacts: Contact[]) {
@@ -67,5 +75,5 @@ export function exportContacts(contacts: Contact[]) {
     c.notes,
   ])
   const today = new Date().toISOString().slice(0, 10)
-  download(`contacts_${today}.csv`, toCSV([header, ...rows]))
+  downloadCSV(`contacts_${today}.csv`, [header, ...rows])
 }
