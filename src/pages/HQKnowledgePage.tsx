@@ -140,7 +140,9 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
   const isEdit = !!initialItem
 
   const [domain, setDomain] = useState<Domain | 'all'>(initialItem?.domain ?? 'all')
-  const [category, setCategory] = useState<HQKnowledgeCategory>(initialItem?.category ?? 'instructions')
+  const [category, setCategory] = useState<string>(initialItem?.category ?? 'instructions')
+  const [customCatInput, setCustomCatInput] = useState('')
+  const [showCustomCat, setShowCustomCat] = useState(false)
   const [title, setTitle] = useState(initialItem?.title ?? '')
   const [content, setContent] = useState(initialItem?.content ?? '')
   const [tag, setTag] = useState('')
@@ -167,7 +169,7 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
       const existingFileUrl = isEdit && keepExistingFile && !file ? initialItem?.fileUrl : undefined
       const existingFileName = isEdit && keepExistingFile && !file ? initialItem?.fileName : undefined
       const payload = {
-        domain, category,
+        domain, category: category as HQKnowledgeCategory,
         title: title.trim(), content: content.trim(), tags,
         file: file ?? undefined,
         fileUrl: existingFileUrl,
@@ -236,15 +238,56 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
               {HQ_KNOWLEDGE_CATEGORIES.map((c) => (
                 <button
                   key={c.id}
-                  onClick={() => setCategory(c.id)}
+                  onClick={() => { setCategory(c.id); setShowCustomCat(false) }}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors text-right"
-                  style={category === c.id ? { backgroundColor: '#141348', color: 'white', borderColor: '#141348' } : { borderColor: '#E5E7EB', color: '#374151' }}
+                  style={category === c.id && !showCustomCat ? { backgroundColor: '#141348', color: 'white', borderColor: '#141348' } : { borderColor: '#E5E7EB', color: '#374151' }}
                 >
                   <span>{c.icon}</span>
                   <span className="text-xs">{c.label}</span>
                 </button>
               ))}
+              <button
+                onClick={() => { setShowCustomCat(true); setCustomCatInput('') }}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors text-right"
+                style={showCustomCat ? { backgroundColor: '#189A9F', color: 'white', borderColor: '#189A9F' } : { borderColor: '#E5E7EB', color: '#374151', borderStyle: 'dashed' }}
+              >
+                <span>➕</span>
+                <span className="text-xs">קטגוריה חדשה</span>
+              </button>
             </div>
+            {showCustomCat && (
+              <div className="flex gap-2 mt-2">
+                <input
+                  autoFocus
+                  value={customCatInput}
+                  onChange={(e) => setCustomCatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && customCatInput.trim()) {
+                      e.preventDefault()
+                      setCategory(customCatInput.trim())
+                      setShowCustomCat(false)
+                    }
+                  }}
+                  className="flex-1 border border-[#189A9F] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+                  placeholder="שם הקטגוריה..."
+                />
+                <button
+                  onClick={() => { if (customCatInput.trim()) { setCategory(customCatInput.trim()); setShowCustomCat(false) } }}
+                  disabled={!customCatInput.trim()}
+                  className="px-3 py-1.5 text-sm rounded-lg text-white disabled:opacity-40"
+                  style={{ backgroundColor: '#189A9F' }}
+                >
+                  אשר
+                </button>
+              </div>
+            )}
+            {!HQ_KNOWLEDGE_CATEGORIES.some(c => c.id === category) && !showCustomCat && (
+              <div className="mt-2 flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm" style={{ borderColor: '#189A9F', color: '#189A9F', backgroundColor: '#E6F4F4' }}>
+                <span>📋</span>
+                <span className="text-xs font-medium">{category}</span>
+                <button onClick={() => setShowCustomCat(true)} className="mr-auto text-xs underline">ערוך</button>
+              </div>
+            )}
           </div>
 
           {/* Title */}
@@ -367,7 +410,7 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
 export function HQKnowledgePage() {
   const { appUser } = useAuth()
   const [domainFilter, setDomainFilter] = useState<Domain | 'all'>('all')
-  const [catFilter, setCatFilter] = useState<HQKnowledgeCategory | ''>('')
+  const [catFilter, setCatFilter] = useState<string>('')
   const [search, setSearch] = useState('')
   const [coordFilter, setCoordFilter] = useState<'all' | 'shared' | 'hq_only'>('all')
   const [showAdd, setShowAdd] = useState(false)
@@ -391,16 +434,30 @@ export function HQKnowledgePage() {
     })
   }, [items, catFilter, coordFilter, search])
 
+  // Custom category ids found in loaded items
+  const customCategoryIds = useMemo(() => {
+    const presetIds = new Set(HQ_KNOWLEDGE_CATEGORIES.map(c => c.id))
+    const custom = new Set<string>()
+    items.forEach(item => { if (!presetIds.has(item.category)) custom.add(item.category) })
+    return Array.from(custom).sort()
+  }, [items])
+
   // Group filtered by category for display
   const grouped = useMemo(() => {
-    const map = new Map<HQKnowledgeCategory, HQKnowledgeItem[]>()
+    const map = new Map<string, HQKnowledgeItem[]>()
     HQ_KNOWLEDGE_CATEGORIES.forEach((c) => map.set(c.id, []))
     filtered.forEach((item) => {
-      map.get(item.category)?.push(item)
+      if (!map.has(item.category)) map.set(item.category, [])
+      map.get(item.category)!.push(item)
     })
-    return HQ_KNOWLEDGE_CATEGORIES
-      .map((c) => ({ ...c, items: map.get(c.id) ?? [] }))
+    const preset = HQ_KNOWLEDGE_CATEGORIES
+      .map((c) => ({ id: c.id, icon: c.icon, label: c.label, items: map.get(c.id) ?? [] }))
       .filter((g) => g.items.length > 0)
+    const custom = Array.from(map.entries())
+      .filter(([id]) => !HQ_KNOWLEDGE_CATEGORIES.some(c => c.id === id))
+      .map(([id, items]) => ({ id, icon: '📋', label: id, items }))
+      .filter(g => g.items.length > 0)
+    return [...preset, ...custom]
   }, [filtered])
 
   return (
@@ -467,6 +524,17 @@ export function HQKnowledgePage() {
           >
             <span>{c.icon}</span>
             <span>{c.label}</span>
+          </button>
+        ))}
+        {customCategoryIds.map((id) => (
+          <button
+            key={id}
+            onClick={() => setCatFilter(catFilter === id ? '' : id)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border transition-colors"
+            style={catFilter === id ? { backgroundColor: '#141348', color: 'white', borderColor: '#141348' } : { borderColor: '#E5E7EB', color: '#374151' }}
+          >
+            <span>📋</span>
+            <span>{id}</span>
           </button>
         ))}
       </div>
