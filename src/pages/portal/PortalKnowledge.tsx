@@ -59,7 +59,7 @@ function ItemCard({ item }: { item: KnowledgeItem }) {
               </div>
             )}
             <div className="flex flex-wrap gap-1 mt-1">
-              {item.tags.map((t) => (
+              {(item.tags ?? []).map((t) => (
                 <span key={t} className="px-1.5 py-0.5 text-xs rounded"
                   style={{ backgroundColor: '#E6F4F4', color: '#189A9F' }}>{t}</span>
               ))}

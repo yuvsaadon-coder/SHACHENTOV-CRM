@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { DOMAIN_LABELS, DOMAINS, type Domain } from '../../types'
 
-interface NavItem { to: string; label: string; icon: string; adminOnly: boolean }
+interface NavItem { to: string; label: string; icon: string; adminOnly: boolean; hqOnly?: boolean }
 interface NavGroup { title: string; items: NavItem[] }
 
 const navGroups: NavGroup[] = [
@@ -34,6 +34,13 @@ const navGroups: NavGroup[] = [
       { to: '/knowledge', label: 'ספריית ידע', icon: '📚', adminOnly: false },
       { to: '/hq-chat', label: "צ'אטבוט מטה", icon: '🤖', adminOnly: false },
       { to: '/admin/knowledge', label: 'ניהול ספרייה', icon: '📖', adminOnly: true },
+    ],
+  },
+  {
+    title: 'מערכת',
+    items: [
+      { to: '/admin/users', label: 'ניהול משתמשים', icon: '👤', adminOnly: false, hqOnly: true },
+      { to: '/account', label: 'הגדרות חשבון', icon: '⚙️', adminOnly: false },
     ],
   },
 ]
@@ -73,10 +80,16 @@ export function Sidebar({ onClose, collapsed = false, onToggleCollapse }: Props)
     navigate('/login')
   }
 
+  const isAdmin = appUser?.role === 'admin'
+  const isHQ = appUser?.role !== 'coordinator'
   const visibleGroups = navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !item.adminOnly || appUser?.role === 'admin'),
+      items: group.items.filter((item) => {
+        if (item.adminOnly && !isAdmin) return false
+        if (item.hqOnly && !isHQ) return false
+        return true
+      }),
     }))
     .filter((group) => group.items.length > 0)
 

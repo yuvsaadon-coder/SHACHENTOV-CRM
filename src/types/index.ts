@@ -165,6 +165,8 @@ export interface OrgRole {
   reportsTo?: string
   volunteerInfo?: BranchVolunteerInfo | null
   portalBranchId?: string
+  /** UID of the linked AppUser — set when a system user is associated with this role */
+  uid?: string
 }
 
 export const ROLE_LEVELS: RoleLevel[] = ['ועד מנהל', 'מטה', 'סניף חוץ', 'סניף ירושלים', 'בתי קפה נודדים', 'טוסטר', 'סניפים עיתיים', 'יריד']

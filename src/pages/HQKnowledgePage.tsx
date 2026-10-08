@@ -151,6 +151,7 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
   const [keepExistingFile, setKeepExistingFile] = useState(true)
   const [visibleToCoordinators, setVisibleToCoordinators] = useState(initialItem?.visibleToCoordinators ?? false)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   const addTag = () => {
     const t = tag.trim()
@@ -165,6 +166,7 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
       return
     }
     setSaving(true)
+    setSaveError('')
     try {
       const existingFileUrl = isEdit && keepExistingFile && !file ? initialItem?.fileUrl : undefined
       const existingFileName = isEdit && keepExistingFile && !file ? initialItem?.fileName : undefined
@@ -182,6 +184,13 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
         await addItem(payload)
       }
       onClose()
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      if (msg.includes('storage') || msg.includes('unauthorized') || msg.includes('permission')) {
+        setSaveError('שגיאת הרשאות — ייתכן שכללי Firebase Storage אינם מאפשרים העלאה. בדוק את הגדרות Storage.')
+      } else {
+        setSaveError('שגיאה בשמירה: ' + msg)
+      }
     } finally {
       setSaving(false)
     }
@@ -387,6 +396,13 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
           </label>
         </div>
 
+        {saveError && (
+          <div className="px-4 pb-2">
+            <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 leading-relaxed">
+              {saveError}
+            </div>
+          </div>
+        )}
         <div className="sticky bottom-0 bg-white px-4 py-3 border-t border-gray-100 flex gap-3">
           <button
             onClick={() => void handleSave()}

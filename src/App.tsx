@@ -18,6 +18,8 @@ import { PortalChat } from './pages/portal/PortalChat'
 import { BranchesAdminPage } from './pages/admin/BranchesAdminPage'
 import { KnowledgeAdminPage } from './pages/admin/KnowledgeAdminPage'
 import { ReportQuestionsAdminPage } from './pages/admin/ReportQuestionsAdminPage'
+import { UsersAdminPage } from './pages/admin/UsersAdminPage'
+import { AccountPage } from './pages/AccountPage'
 import { BranchesPage } from './pages/BranchesPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { KnowledgeLibraryPage } from './pages/KnowledgeLibraryPage'
@@ -100,6 +102,8 @@ export default function App() {
             <Route path="admin/branches" element={<BranchesAdminPage />} />
             <Route path="admin/knowledge" element={<KnowledgeAdminPage />} />
             <Route path="admin/report-questions" element={<ReportQuestionsAdminPage />} />
+            <Route path="admin/users" element={<UsersAdminPage />} />
+            <Route path="account" element={<AccountPage />} />
           </Route>
 
           <Route path="*" element={<SmartRedirect />} />

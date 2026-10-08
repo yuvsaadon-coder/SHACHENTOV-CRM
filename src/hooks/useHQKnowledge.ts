@@ -11,9 +11,10 @@ async function syncToCoordinators(docId: string, title: string, content: string,
     type: 'document',
     title,
     content,
-    storageUrl: storageUrl ?? null,
+    fileUrl: storageUrl ?? null,
     sourceHQId: docId,
-    createdAt: new Date().toISOString(),
+    tags: [],
+    createdAt: serverTimestamp(),
   }, { merge: true })
 }
 
