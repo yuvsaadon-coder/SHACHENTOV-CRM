@@ -106,15 +106,25 @@ async function chat(event: HandlerEvent): Promise<HandlerResponse> {
 
   // 1. HQ knowledge
   if (scopes.includes('hq')) fetches.push(collect('מאגר מטה', async () => {
-    let hqQuery = db.collection('hq_knowledge').limit(50)
+    let hqQuery = db.collection('hq_knowledge').limit(80)
     if (domainFilter) {
-      hqQuery = db.collection('hq_knowledge').where('domain', 'in', [domainFilter, 'all']).limit(50)
+      hqQuery = db.collection('hq_knowledge').where('domain', 'in', [domainFilter, 'all']).limit(80)
     }
     const hqSnap = await hqQuery.get()
     if (hqSnap.empty) return null
     const lines = hqSnap.docs.map((d) => {
-      const data = d.data() as { title?: string; content?: string; category?: string }
-      return `— [${data.category ?? ''}] **${data.title ?? ''}**: ${data.content ?? ''}`
+      const data = d.data() as { title?: string; content?: string; category?: string; fileUrl?: string; fileName?: string }
+      const hasText = data.content && data.content.trim().length > 0
+      const hasFile = !!data.fileUrl
+      let contentPart: string
+      if (hasText) {
+        contentPart = data.content!.slice(0, 600)
+      } else if (hasFile) {
+        contentPart = `[קובץ מצורף: ${data.fileName ?? 'ללא שם'} — אין תוכן טקסטואלי]`
+      } else {
+        contentPart = ''
+      }
+      return `— [${data.category ?? ''}] **${data.title ?? ''}**: ${contentPart}`
     })
     return `מאגר ידע מטה:\n${lines.join('\n')}`
   }))
@@ -216,8 +226,11 @@ async function chat(event: HandlerEvent): Promise<HandlerResponse> {
 
 ${knowledgeBlock}
 
-כשתשובה נסמכת על פריט ספציפי — ציין את שמו.
-אם אין מידע רלוונטי במאגר הידע — אמור זאת בכנות: "אין לי מידע על זה במקורות שנבחרו." אל תנסה לספק מידע כללי שאינו מבוסס על המסמכים לעיל.`
+הנחיות לגבי פריטי ידע:
+- כשתשובה נסמכת על פריט ספציפי — ציין את שמו.
+- פריטים המסומנים [קובץ מצורף: ...] הם קבצים (Word/PDF) שצורפו למאגר — אני יכול לדעת שהם קיימים ולציין את שמם, אך לא יכול לקרוא את תוכנם. במקרה כזה ציין בתשובה שהמסמך קיים ומאוחסן במאגר הידע ועל המשתמש לפתוח אותו ישירות.
+- אם אין מידע טקסטואלי רלוונטי אך ישנם קבצים קשורים — הצג אותם ואמור שיש לפתוח את הקבצים ישירות.
+- אם אין כלל מידע רלוונטי — אמור בכנות: "אין לי מידע על זה במקורות שנבחרו." אל תספק מידע כללי שאינו מבוסס על המסמכים לעיל.`
 
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return fail(500, 'משתנה הסביבה ANTHROPIC_API_KEY חסר ב-Netlify.')

@@ -5,7 +5,7 @@ import {
   EmailAuthProvider,
 } from 'firebase/auth'
 import { doc, updateDoc, query, collection, where, getDocs, serverTimestamp } from 'firebase/firestore'
-import { auth, db } from '../lib/firebase'
+import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 

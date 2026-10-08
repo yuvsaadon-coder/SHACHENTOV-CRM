@@ -26,8 +26,6 @@ export function HierarchySetupPage() {
     }).catch(e => { setError(String(e)); setLoading(false) })
   }, [])
 
-  const nameMap = useMemo(() => Object.fromEntries(roles.map(r => [r.id, r.roleName])), [roles])
-
   const filteredRoles = useMemo(() => {
     if (!search.trim()) return roles
     const q = search.trim().toLowerCase()
