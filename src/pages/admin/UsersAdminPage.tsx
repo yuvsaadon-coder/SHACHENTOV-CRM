@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import {
-  collection, onSnapshot, doc, setDoc, updateDoc,
+  collection, onSnapshot, doc, setDoc, updateDoc, getDocs, query as fsQuery, where,
   serverTimestamp, query, orderBy,
 } from 'firebase/firestore'
-import { sendPasswordResetEmail } from 'firebase/auth'
+import {
+  sendPasswordResetEmail,
+  EmailAuthProvider, reauthenticateWithCredential, updatePassword,
+} from 'firebase/auth'
 import { initializeApp, deleteApp } from 'firebase/app'
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
 import { db, auth, firebaseConfig } from '../../lib/firebase'
@@ -164,7 +167,9 @@ function AddUserModal({ roles, onClose }: { roles: OrgRole[]; onClose: () => voi
 
 // ─── Edit User Modal ──────────────────────────────────────────────────────────
 
-function EditUserModal({ user, roles, onClose }: { user: AppUser; roles: OrgRole[]; onClose: () => void }) {
+function EditUserModal({
+  user, roles, isSelf, isAdmin: isAdminProp, onClose,
+}: { user: AppUser; roles: OrgRole[]; isSelf: boolean; isAdmin: boolean; onClose: () => void }) {
   const { toast } = useToast()
   const [name, setName] = useState(user.name)
   const [role, setRole] = useState<Role>(user.role)
@@ -175,21 +180,40 @@ function EditUserModal({ user, roles, onClose }: { user: AppUser; roles: OrgRole
   const [sendingReset, setSendingReset] = useState(false)
   const [error, setError] = useState('')
 
+  // self password-change fields
+  const [currentPwd, setCurrentPwd] = useState('')
+  const [newPwd, setNewPwd] = useState('')
+  const [confirmPwd, setConfirmPwd] = useState('')
+  const [savingPwd, setSavingPwd] = useState(false)
+
   const handleSave = async () => {
     if (!name.trim()) { setError('שם הוא שדה חובה'); return }
-    if (role !== 'coordinator' && !linkedRoleId) { setError('יש לקשר את המשתמש לתפקיד בעץ הארגוני'); return }
+    if (isAdminProp && role !== 'coordinator' && !linkedRoleId) { setError('יש לקשר את המשתמש לתפקיד בעץ הארגוני'); return }
     setSaving(true)
     setError('')
     try {
-      await updateDoc(doc(db, 'users', user.uid), { name: name.trim(), role, active, updatedAt: serverTimestamp() })
-      // update org role linkage
-      if (linkedRole && linkedRole.id !== linkedRoleId) {
-        await updateDoc(doc(db, 'roles', linkedRole.id), { uid: null })
+      const updateData: Record<string, unknown> = { name: name.trim(), updatedAt: serverTimestamp() }
+      if (isAdminProp) { updateData.role = role; updateData.active = active }
+      await updateDoc(doc(db, 'users', user.uid), updateData)
+      // update name in all linked roles
+      if (linkedRoleId) {
+        if (linkedRole && linkedRole.id !== linkedRoleId) {
+          await updateDoc(doc(db, 'roles', linkedRole.id), { uid: null })
+        }
+        if (linkedRoleId !== linkedRole?.id) {
+          await updateDoc(doc(db, 'roles', linkedRoleId), { uid: user.uid, holderName: name.trim() })
+        } else if (name.trim() !== user.name) {
+          await updateDoc(doc(db, 'roles', linkedRoleId), { holderName: name.trim() })
+        }
+      } else if (linkedRole && name.trim() !== user.name) {
+        await updateDoc(doc(db, 'roles', linkedRole.id), { holderName: name.trim() })
       }
-      if (linkedRoleId && linkedRoleId !== linkedRole?.id) {
-        await updateDoc(doc(db, 'roles', linkedRoleId), { uid: user.uid, holderName: name.trim() })
-      } else if (linkedRoleId && name.trim() !== user.name) {
-        await updateDoc(doc(db, 'roles', linkedRoleId), { holderName: name.trim() })
+      // also update all other roles linked to this uid (edge case)
+      if (name.trim() !== user.name) {
+        const snap = await getDocs(fsQuery(collection(db, 'roles'), where('uid', '==', user.uid)))
+        for (const d of snap.docs) {
+          if (d.id !== linkedRoleId) await updateDoc(doc(db, 'roles', d.id), { holderName: name.trim() })
+        }
       }
       toast('פרטי המשתמש עודכנו', 'success')
       onClose()
@@ -197,6 +221,32 @@ function EditUserModal({ user, roles, onClose }: { user: AppUser; roles: OrgRole
       setError('שגיאה בעדכון — ' + String(e))
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    if (!currentPwd) { setError('יש להזין את הסיסמא הנוכחית'); return }
+    if (!newPwd || newPwd.length < 6) { setError('סיסמא חדשה חייבת להכיל לפחות 6 תווים'); return }
+    if (newPwd !== confirmPwd) { setError('הסיסמאות אינן תואמות'); return }
+    const fbUser = auth.currentUser
+    if (!fbUser || !fbUser.email) return
+    setSavingPwd(true)
+    setError('')
+    try {
+      const cred = EmailAuthProvider.credential(fbUser.email, currentPwd)
+      await reauthenticateWithCredential(fbUser, cred)
+      await updatePassword(fbUser, newPwd)
+      setCurrentPwd(''); setNewPwd(''); setConfirmPwd('')
+      toast('הסיסמא עודכנה בהצלחה', 'success')
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      if (msg.includes('wrong-password') || msg.includes('invalid-credential')) {
+        setError('הסיסמא הנוכחית שגויה')
+      } else {
+        setError('שגיאה בעדכון סיסמא — ' + msg)
+      }
+    } finally {
+      setSavingPwd(false)
     }
   }
 
@@ -223,50 +273,87 @@ function EditUserModal({ user, roles, onClose }: { user: AppUser; roles: OrgRole
         <div className="p-5 space-y-4">
           <div className="text-xs text-gray-400 font-mono" dir="ltr">{user.email}</div>
 
+          {/* Name — always editable */}
           <div>
             <label className="block text-xs text-gray-500 mb-1">שם מלא *</label>
             <input value={name} onChange={(e) => setName(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
           </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">תפקיד מערכת</label>
-            <select value={role} onChange={(e) => setRole(e.target.value as Role)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]">
-              {ROLE_OPTIONS.map((r) => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
-          </div>
 
-          {role !== 'coordinator' && (
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">
-                קישור לתפקיד בעץ הארגוני *
-              </label>
-              <select value={linkedRoleId} onChange={(e) => setLinkedRoleId(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]">
-                <option value="">— בחר תפקיד —</option>
-                {roles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.roleName} — {r.level}{r.uid && r.uid !== user.uid ? ' (תפוס)' : r.uid === user.uid ? ' ✓ מקושר' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Role + org link — admin only */}
+          {isAdminProp && (
+            <>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">תפקיד מערכת</label>
+                <select value={role} onChange={(e) => setRole(e.target.value as Role)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]">
+                  {ROLE_OPTIONS.map((r) => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {role !== 'coordinator' && (
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">קישור לתפקיד בעץ הארגוני</label>
+                  <select value={linkedRoleId} onChange={(e) => setLinkedRoleId(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]">
+                    <option value="">— בחר תפקיד —</option>
+                    {roles.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.roleName} — {r.level}{r.uid && r.uid !== user.uid ? ' (תפוס)' : r.uid === user.uid ? ' ✓ מקושר' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3">
+                <input type="checkbox" id="active-check" checked={active} onChange={(e) => setActive(e.target.checked)}
+                  className="h-4 w-4 accent-[#189A9F]" />
+                <label htmlFor="active-check" className="text-sm">משתמש פעיל</label>
+              </div>
+            </>
           )}
 
-          <div className="flex items-center gap-3">
-            <input type="checkbox" id="active-check" checked={active} onChange={(e) => setActive(e.target.checked)}
-              className="h-4 w-4 accent-[#189A9F]" />
-            <label htmlFor="active-check" className="text-sm">משתמש פעיל</label>
-          </div>
+          {/* Password section */}
+          <div className="border-t border-gray-100 pt-4 space-y-3">
+            <div className="text-xs font-semibold text-gray-600">שינוי סיסמא</div>
 
-          <div className="border-t border-gray-100 pt-4">
-            <div className="text-xs text-gray-500 mb-2">שינוי סיסמא</div>
-            <button onClick={() => void handlePasswordReset()} disabled={sendingReset}
-              className="text-sm border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50 disabled:opacity-40">
-              {sendingReset ? 'שולח...' : 'שלח מייל לאיפוס סיסמא'}
-            </button>
+            {isSelf ? (
+              /* Self-edit: direct password change */
+              <>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">סיסמא נוכחית</label>
+                  <input type="password" value={currentPwd} onChange={(e) => setCurrentPwd(e.target.value)} dir="ltr"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">סיסמא חדשה</label>
+                  <input type="password" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} dir="ltr"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">אישור סיסמא חדשה</label>
+                  <input type="password" value={confirmPwd} onChange={(e) => setConfirmPwd(e.target.value)} dir="ltr"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
+                </div>
+                <button onClick={() => void handleChangePassword()} disabled={savingPwd || !currentPwd || !newPwd || !confirmPwd}
+                  className="px-4 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-40"
+                  style={{ backgroundColor: '#189A9F' }}>
+                  {savingPwd ? 'מעדכן...' : 'עדכן סיסמא'}
+                </button>
+              </>
+            ) : (
+              /* Admin editing others: send reset email */
+              <div className="space-y-1.5">
+                <button onClick={() => void handlePasswordReset()} disabled={sendingReset}
+                  className="text-sm border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50 disabled:opacity-40">
+                  {sendingReset ? 'שולח...' : 'שלח מייל לאיפוס סיסמא'}
+                </button>
+                <p className="text-xs text-gray-400">יישלח מייל לאיפוס סיסמא לכתובת {user.email}</p>
+              </div>
+            )}
           </div>
 
           {error && <div className="text-xs text-red-500 bg-red-50 rounded px-3 py-2">{error}</div>}
@@ -337,23 +424,26 @@ export function UsersAdminPage() {
               <th className="px-4 py-2.5 text-right font-medium text-gray-600">תפקיד</th>
               <th className="px-4 py-2.5 text-right font-medium text-gray-600">קישור לעץ</th>
               <th className="px-4 py-2.5 text-right font-medium text-gray-600">סטטוס</th>
+              <th className="px-4 py-2.5"></th>
             </tr>
           </thead>
           <tbody>
             {users.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">אין משתמשים</td>
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">אין משתמשים</td>
               </tr>
             )}
             {users.map((u) => {
               const orgRole = linkedRoleByUid[u.uid]
               const isLinked = !!orgRole || u.role === 'coordinator'
               const canEdit = isAdmin || u.uid === appUser?.uid
+              const isSelfRow = u.uid === appUser?.uid
               return (
-                <tr key={u.uid}
-                  onClick={() => canEdit ? setSelected(u) : undefined}
-                  className={`border-b border-gray-50 transition-colors ${canEdit ? 'hover:bg-gray-50 cursor-pointer' : ''}`}>
-                  <td className="px-4 py-2.5 font-medium" style={{ color: '#141348' }}>{u.name}</td>
+                <tr key={u.uid} className="border-b border-gray-50">
+                  <td className="px-4 py-2.5 font-medium" style={{ color: '#141348' }}>
+                    {u.name}
+                    {isSelfRow && <span className="text-xs text-gray-400 mr-1">(אתה)</span>}
+                  </td>
                   <td className="px-4 py-2.5 text-gray-500 font-mono text-xs" dir="ltr">{u.email}</td>
                   <td className="px-4 py-2.5 text-gray-600">
                     {ROLE_OPTIONS.find((r) => r.value === u.role)?.label ?? u.role}
@@ -380,6 +470,16 @@ export function UsersAdminPage() {
                       {u.active ? 'פעיל' : 'לא פעיל'}
                     </span>
                   </td>
+                  <td className="px-4 py-2.5 text-left">
+                    {canEdit && (
+                      <button
+                        onClick={() => setSelected(u)}
+                        className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-600"
+                      >
+                        ערוך
+                      </button>
+                    )}
+                  </td>
                 </tr>
               )
             })}
@@ -388,7 +488,15 @@ export function UsersAdminPage() {
       </div>
 
       {showAdd && <AddUserModal roles={roles} onClose={() => setShowAdd(false)} />}
-      {selected && <EditUserModal user={selected} roles={roles} onClose={() => setSelected(null)} />}
+      {selected && (
+        <EditUserModal
+          user={selected}
+          roles={roles}
+          isSelf={selected.uid === appUser?.uid}
+          isAdmin={isAdmin}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   )
 }

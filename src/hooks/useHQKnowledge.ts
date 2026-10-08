@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { collection, query, where, onSnapshot, addDoc, deleteDoc, updateDoc, setDoc, doc, serverTimestamp } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage } from '../lib/firebase'
+import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import type { HQKnowledgeItem, HQKnowledgeCategory, Domain } from '../types'
 
@@ -22,11 +21,13 @@ async function removeFromCoordinators(docId: string) {
   await deleteDoc(doc(db, 'knowledgeItems', `hq-${docId}`))
 }
 
-async function uploadToStorage(file: File, docId: string): Promise<{ fileUrl: string; fileName: string }> {
-  const storageRef = ref(storage, `hq_knowledge/${docId}/${file.name}`)
-  await uploadBytes(storageRef, file)
-  const fileUrl = await getDownloadURL(storageRef)
-  return { fileUrl, fileName: file.name }
+async function fileToDataUri(file: File): Promise<{ fileUrl: string; fileName: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve({ fileUrl: reader.result as string, fileName: file.name })
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
 }
 
 export function useHQKnowledge(domainFilter?: Domain | 'all' | null) {
@@ -83,7 +84,7 @@ export function useAddHQKnowledge() {
     })
     let fileUrl: string | undefined
     if (file) {
-      const uploaded = await uploadToStorage(file, docRef.id)
+      const uploaded = await fileToDataUri(file)
       fileUrl = uploaded.fileUrl
       await updateDoc(docRef, { fileUrl: uploaded.fileUrl, fileName: uploaded.fileName, updatedAt: serverTimestamp() })
     }
@@ -110,7 +111,7 @@ export function useUpdateHQKnowledge() {
     const { file, visibleToCoordinators, ...rest } = data
     let fileUrl = rest.fileUrl
     if (file) {
-      const uploaded = await uploadToStorage(file, id)
+      const uploaded = await fileToDataUri(file)
       fileUrl = uploaded.fileUrl
       await updateDoc(doc(db, 'hq_knowledge', id), { ...rest, fileUrl: uploaded.fileUrl, fileName: uploaded.fileName, visibleToCoordinators: visibleToCoordinators ?? false, updatedAt: serverTimestamp() })
     } else {
