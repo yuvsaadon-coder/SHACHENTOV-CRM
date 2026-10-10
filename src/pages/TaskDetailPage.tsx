@@ -13,6 +13,11 @@ import { DomainBadge } from '../components/ui/DomainBadge'
 import { Spinner } from '../components/ui/Spinner'
 import type { Task, Comment, Attachment, HistoryEntry, TaskStatus } from '../types'
 import { DOMAIN_LABELS, STATUS_LABELS, FREQUENCY_LABELS } from '../types'
+import {
+  NEW_TASK_DEFAULTS,
+  validateRequiredTaskFields,
+  withInlineStatus,
+} from '../utils/taskForm'
 
 const STATUS_STYLE: Record<string, React.CSSProperties> = {
   'בוצע':    { backgroundColor: '#C6EFCE', color: '#0A6B2E' },
@@ -60,7 +65,7 @@ export function TaskDetailPage() {
   useEffect(() => {
     if (isNew) {
       setEditing(true)
-      setForm({ domain: 'CEO', status: 'לא בוצע', involved: [], contactRefs: [], steps: '', notes: '' })
+      setForm({ ...NEW_TASK_DEFAULTS })
       return
     }
     if (!id) return
@@ -119,7 +124,8 @@ export function TaskDetailPage() {
   const canEdit = !!appUser || isNew
 
   const save = async () => {
-    if (!form.title) { toast('נא למלא כותרת משימה', 'error'); return }
+    const validationError = validateRequiredTaskFields(form)
+    if (validationError) { toast(validationError, 'error'); return }
     setSaving(true)
     try {
       if (isNew) {
@@ -258,7 +264,8 @@ export function TaskDetailPage() {
       await updateDoc(doc(db, 'tasks', id), {
         status: newStatus, updatedAt: serverTimestamp(), updatedBy: appUser?.name,
       })
-      setTask({ ...task, status: newStatus })
+      setTask((current) => current ? { ...current, status: newStatus } : current)
+      setForm((current) => withInlineStatus(current, newStatus))
       toast('סטטוס עודכן', 'success')
     } catch {
       toast('שגיאה בעדכון סטטוס', 'error')
@@ -298,7 +305,10 @@ export function TaskDetailPage() {
         )}
         {canEdit && !editing && (
           <button
-            onClick={() => setEditing(true)}
+            onClick={() => {
+              setForm(task ? { ...task } : { ...NEW_TASK_DEFAULTS })
+              setEditing(true)
+            }}
             className="bg-brand-teal hover:bg-brand-tealDark text-white text-sm px-3 py-1.5 rounded-lg transition-colors"
           >
             עריכה
@@ -337,7 +347,7 @@ export function TaskDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-navy mb-1">תחום</label>
+                <label className="block text-sm font-medium text-brand-navy mb-1">תחום *</label>
                 <select
                   value={form.domain || 'CEO'}
                   onChange={(e) => setForm({ ...form, domain: e.target.value as Task['domain'] })}
@@ -357,7 +367,7 @@ export function TaskDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-navy mb-1">סטטוס</label>
+                <label className="block text-sm font-medium text-brand-navy mb-1">סטטוס *</label>
                 <select
                   value={form.status || 'לא בוצע'}
                   onChange={(e) => setForm({ ...form, status: e.target.value as TaskStatus })}
@@ -367,9 +377,9 @@ export function TaskDetailPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-navy mb-1">תדירות</label>
+                <label className="block text-sm font-medium text-brand-navy mb-1">תדירות *</label>
                 <select
-                  value={form.frequency || ''}
+                  value={form.frequency || 'חד-פעמי'}
                   onChange={(e) => setForm({ ...form, frequency: e.target.value as Task['frequency'] })}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
                 >

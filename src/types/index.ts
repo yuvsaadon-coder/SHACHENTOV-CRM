@@ -30,8 +30,8 @@ export interface Task {
   dependsOn?: string[]
   /** Denormalized count of tasks/{id}/attachments, kept in sync on upload/delete — lets task cards show a 📎 badge without a subcollection read per card. */
   attachmentCount?: number
-  /** Tracks which cycle the current status belongs to (e.g. "2026-Q3", "2026-08", "2026").
-   *  When the current cycle key differs from this value, the task is auto-reset to "לא בוצע". */
+  /** Tracks which recurrence cycle was processed (e.g. "2026-Q3", "2026-08", "2026").
+   *  On rollover, completed/in-progress statuses reset and an already-open task still advances its key. */
   cycleKey?: string
 }
 
