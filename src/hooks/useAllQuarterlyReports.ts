@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { collection, onSnapshot } from 'firebase/firestore'
 import { db } from '../lib/firebase'
+import { normalizeQuarterlyReports } from '../lib/quarterlyReports'
 import type { QuarterlyReport } from '../types'
 
 /** Every branch's reports, newest first — the HQ-wide counterpart of useQuarterlyReports. */
@@ -13,8 +14,9 @@ export function useAllQuarterlyReports() {
     return onSnapshot(
       collection(db, 'quarterlyReports'),
       (snap) => {
-        const sorted = snap.docs
-          .map((d) => ({ id: d.id, ...d.data() } as QuarterlyReport))
+        const sorted = normalizeQuarterlyReports(
+          snap.docs.map((d) => ({ id: d.id, ...d.data() } as QuarterlyReport))
+        )
           .sort((a, b) => (b.year - a.year) || b.quarter.localeCompare(a.quarter))
         setReports(sorted)
         setLoading(false)

@@ -34,6 +34,24 @@ service cloud.firestore {
         && request.auth.uid in get(/databases/$(database)/documents/branches/$(branchId)).data.get('coordinatorUids', []);
     }
 
+    function isQuarter(quarter) {
+      return quarter in ['Q1', 'Q2', 'Q3', 'Q4'];
+    }
+
+    function isCanonicalReport(id, data) {
+      return data.branchId is string
+        && data.year is int
+        && isQuarter(data.quarter)
+        && id == data.branchId + '_' + string(data.year) + '_' + data.quarter;
+    }
+
+    function reportIdentityUnchanged() {
+      return request.resource.data.branchId == resource.data.branchId
+        && request.resource.data.year == resource.data.year
+        && request.resource.data.quarter == resource.data.quarter
+        && request.resource.data.submittedBy == resource.data.submittedBy;
+    }
+
     // ── CRM (HQ staff & admins) ──────────────────────────────────────────────
     match /tasks/{taskId} {
       allow read, write: if isHQ();
@@ -64,11 +82,23 @@ service cloud.firestore {
     // branches they are attached to — without this, "הדיווחים שלי" in the portal
     // is denied.
     match /quarterlyReports/{id} {
-      allow read: if isHQ() || coordinatesBranch(resource.data.branchId);
+      // A transaction must be able to read the canonical path before its first
+      // create. A missing document contains no data; existing reports remain
+      // restricted to HQ or coordinators of that branch.
+      allow read: if isHQ()
+                  || (isCoordinator() && resource == null)
+                  || coordinatesBranch(resource.data.branchId);
       allow create: if isCoordinator()
+                    && isCanonicalReport(id, request.resource.data)
                     && request.resource.data.submittedBy == request.auth.uid
                     && coordinatesBranch(request.resource.data.branchId);
-      allow update, delete: if isAdmin();
+      // Historical random-ID records remain editable, but identity fields are
+      // immutable. Canonical records must also continue matching their ID.
+      allow update: if isAdmin()
+                    && reportIdentityUnchanged()
+                    && (!isCanonicalReport(id, resource.data)
+                        || isCanonicalReport(id, request.resource.data));
+      allow delete: if isAdmin();
     }
 
     // Coordinators read this to render the report form; only admins edit it.

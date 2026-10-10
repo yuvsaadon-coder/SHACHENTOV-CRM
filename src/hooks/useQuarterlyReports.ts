@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { collection, query, where, onSnapshot } from 'firebase/firestore'
 import { db } from '../lib/firebase'
+import { normalizeQuarterlyReports } from '../lib/quarterlyReports'
 import type { QuarterlyReport } from '../types'
 
 export function useQuarterlyReports(branchId: string | null) {
@@ -13,8 +14,9 @@ export function useQuarterlyReports(branchId: string | null) {
     return onSnapshot(
       q,
       (snap) => {
-        const sorted = snap.docs
-          .map((d) => ({ id: d.id, ...d.data() } as QuarterlyReport))
+        const sorted = normalizeQuarterlyReports(
+          snap.docs.map((d) => ({ id: d.id, ...d.data() } as QuarterlyReport))
+        )
           .sort((a, b) => {
             if (b.year !== a.year) return b.year - a.year
             return b.quarter.localeCompare(a.quarter)
