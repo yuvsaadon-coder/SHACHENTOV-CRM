@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from 'react'
 import { useHQKnowledge, useAddHQKnowledge, useUpdateHQKnowledge, useDeleteHQKnowledge } from '../hooks/useHQKnowledge'
+import { extractFileText } from '../lib/extractFileText'
 import { useAuth } from '../context/AuthContext'
 import {
   DOMAINS, DOMAIN_LABELS, DOMAIN_COLORS,
@@ -149,6 +150,8 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
   const [tags, setTags] = useState<string[]>(initialItem?.tags ?? [])
   const [file, setFile] = useState<File | null>(null)
   const [keepExistingFile, setKeepExistingFile] = useState(true)
+  const [extracting, setExtracting] = useState(false)
+  const [autoExtracted, setAutoExtracted] = useState(false)
   const [visibleToCoordinators, setVisibleToCoordinators] = useState(initialItem?.visibleToCoordinators ?? false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -157,6 +160,24 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
     const t = tag.trim()
     if (t && !tags.includes(t)) setTags((p) => [...p, t])
     setTag('')
+  }
+
+  const handleFileChange = async (picked: File | null) => {
+    setFile(picked)
+    setKeepExistingFile(false)
+    setAutoExtracted(false)
+    if (!picked) return
+    if (content.trim()) return  // don't overwrite existing content
+    setExtracting(true)
+    try {
+      const text = await extractFileText(picked)
+      if (text && !content.trim()) {
+        setContent(text)
+        setAutoExtracted(true)
+      }
+    } finally {
+      setExtracting(false)
+    }
   }
 
   const handleSave = async () => {
@@ -343,14 +364,18 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
               ref={fileInputRef}
               type="file"
               className="hidden"
-              onChange={(e) => { setFile(e.target.files?.[0] ?? null); setKeepExistingFile(false) }}
+              onChange={(e) => { void handleFileChange(e.target.files?.[0] ?? null) }}
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="text-sm border border-dashed border-gray-300 rounded-lg px-4 py-2 text-gray-500 hover:border-teal-400 hover:text-teal-600 transition-colors w-full text-center"
+              disabled={extracting}
+              className="text-sm border border-dashed border-gray-300 rounded-lg px-4 py-2 text-gray-500 hover:border-teal-400 hover:text-teal-600 transition-colors w-full text-center disabled:opacity-60"
             >
-              {file ? `📎 ${file.name}` : (isEdit ? '📎 החלף קובץ' : '📎 בחר קובץ')}
+              {extracting ? '⏳ מחלץ טקסט...' : file ? `📎 ${file.name}` : (isEdit ? '📎 החלף קובץ' : '📎 בחר קובץ')}
             </button>
+            {autoExtracted && (
+              <p className="text-xs text-teal-700 mt-1">✓ טקסט חולץ אוטומטית מהקובץ ומולא בשדה "תוכן"</p>
+            )}
           </div>
 
           {/* Tags */}
@@ -406,7 +431,7 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
         <div className="sticky bottom-0 bg-white px-4 py-3 border-t border-gray-100 flex gap-3">
           <button
             onClick={() => void handleSave()}
-            disabled={saving || !title.trim()}
+            disabled={saving || extracting || !title.trim()}
             className="flex-1 py-2.5 rounded-xl text-white text-sm font-medium disabled:opacity-40"
             style={{ backgroundColor: '#141348' }}
           >
