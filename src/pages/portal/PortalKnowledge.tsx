@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { useKnowledge, useAddKnowledge } from '../../hooks/useKnowledge'
+import { extractFileText } from '../../lib/extractFileText'
 import { useAuth } from '../../context/AuthContext'
 import type { PortalOutletContext } from './CoordinatorPortal'
 import { KNOWLEDGE_TAGS, type KnowledgeItem, type KnowledgeItemType, type KnowledgeTag } from '../../types'
@@ -213,6 +214,8 @@ function AddKnowledgeModal({ branchId, onClose }: { branchId: string; onClose: (
   // File upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
+  const [extracting, setExtracting] = useState(false)
+  const [autoExtracted, setAutoExtracted] = useState(false)
 
   // Checklist state
   const [checklistItems, setChecklistItems] = useState<string[]>([''])
@@ -223,11 +226,23 @@ function AddKnowledgeModal({ branchId, onClose }: { branchId: string; onClose: (
   const toggleTag = (t: string) =>
     setSelectedTags((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t])
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     if (!f) return
     setSelectedFile(f)
+    setAutoExtracted(false)
     if (!title) setTitle(f.name.replace(/\.[^/.]+$/, ''))
+    if (content.trim()) return  // don't overwrite manually entered content
+    setExtracting(true)
+    try {
+      const text = await extractFileText(f)
+      if (text && !content.trim()) {
+        setContent(text)
+        setAutoExtracted(true)
+      }
+    } finally {
+      setExtracting(false)
+    }
   }
 
   const addChecklistItem = () => setChecklistItems((p) => [...p, ''])
@@ -343,13 +358,19 @@ function AddKnowledgeModal({ branchId, onClose }: { branchId: string; onClose: (
                 type="file"
                 accept=".pdf,.doc,.docx,.xlsx,.xls,.csv"
                 className="hidden"
-                onChange={handleFileSelect}
+                onChange={(e) => { void handleFileSelect(e) }}
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-gray-200 rounded-xl py-6 text-center hover:border-[#189A9F] transition-colors"
+                disabled={extracting}
+                className="w-full border-2 border-dashed border-gray-200 rounded-xl py-6 text-center hover:border-[#189A9F] transition-colors disabled:opacity-60"
               >
-                {selectedFile ? (
+                {extracting ? (
+                  <div className="space-y-1">
+                    <div className="text-2xl">⏳</div>
+                    <div className="text-sm text-gray-500">מחלץ טקסט...</div>
+                  </div>
+                ) : selectedFile ? (
                   <div className="space-y-1">
                     <div className="text-2xl">{fileIcon(selectedFile.name)}</div>
                     <div className="text-sm font-medium" style={{ color: '#141348' }}>{selectedFile.name}</div>
@@ -363,6 +384,9 @@ function AddKnowledgeModal({ branchId, onClose }: { branchId: string; onClose: (
                   </div>
                 )}
               </button>
+              {autoExtracted && (
+                <p className="text-xs text-teal-700 mt-1">✓ טקסט חולץ אוטומטית ומולא בשדה "תיאור"</p>
+              )}
               {uploadProgress !== null && (
                 <div className="mt-2">
                   <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -472,7 +496,7 @@ function AddKnowledgeModal({ branchId, onClose }: { branchId: string; onClose: (
         </div>
 
         <div className="sticky bottom-0 bg-white px-4 py-3 border-t border-gray-100 flex gap-3">
-          <button onClick={() => void handleSave()} disabled={saving || !title.trim()}
+          <button onClick={() => void handleSave()} disabled={saving || extracting || !title.trim()}
             className="flex-1 py-2.5 rounded-xl text-white text-sm font-medium disabled:opacity-40"
             style={{ backgroundColor: '#141348' }}>
             {saving
