@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מנוע C2 – ניתוח שטח ואיומים</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header>
+  <div class="brand">מנוע C2 <span>ניתוח שטח, תמרון ואיומים · גדוד–חטיבה</span></div>
+  <div id="status" class="status">טוען…</div>
+</header>
+<main>
+  <aside id="side">
+    <section>
+      <h2>גזרה</h2>
+      <div id="scenario-info" class="muted"></div>
+      <div class="row">
+        <label>גודל (תאים) <input id="sc-size" type="number" value="400" min="50" max="1200" step="50"></label>
+        <label>זרע <input id="sc-seed" type="number" value="7"></label>
+        <button id="sc-new">גזרה חדשה</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>כלים <small>(לחיצה על המפה)</small></h2>
+      <div id="tools" class="tools">
+        <button data-tool="inspect" class="active" title="מידע על תא">🔎 בדיקה</button>
+        <button data-tool="observer" title="הוספת עמדת תצפית">👁 תצפית</button>
+        <button data-tool="los" title="קו ראייה בין שתי נקודות">📐 קו ראייה</button>
+        <button data-tool="radio" title="קשר רדיו ואזור פרנל">📡 קשר</button>
+        <button data-tool="route" title="ציר תנועה: מוצא ואז יעד">🛣 ציר</button>
+        <button data-tool="friendly" title="כוחותינו: מוצא ואז יעד">🟦 כוחותינו</button>
+        <button data-tool="position" title="עמדות כוחותינו (להגנה)">◼ עמדה</button>
+        <button data-tool="enemy" title="אויב: לחיצה = מוצא, לחיצה ימנית = יעד">🟥 אויב</button>
+      </div>
+      <div id="tool-hint" class="hint"></div>
+      <button id="clear-marks" class="secondary">ניקוי סימונים</button>
+    </section>
+
+    <section>
+      <h2>פרמטרים</h2>
+      <div class="grid2">
+        <label>כלי (כוחותינו)<select id="p-vehicle"></select></label>
+        <label>כלי (אויב)<select id="p-evehicle"></select></label>
+        <label>גובה צופה [מ']<input id="p-oh" type="number" value="2" step="0.5"></label>
+        <label>גובה מטרה [מ']<input id="p-th" type="number" value="2" step="0.5"></label>
+        <label>טווח [מ']<input id="p-range" type="number" value="5000" step="500"></label>
+        <label>משקעים 72 ש' [מ"מ]<input id="p-rain" type="number" value="0" step="5"></label>
+        <label>תדר [MHz]<input id="p-freq" type="number" value="60" step="1"></label>
+        <label>τ פיזור אויב<input id="p-tau" type="number" value="1" step="0.25" min="0.05"></label>
+      </div>
+    </section>
+
+    <section>
+      <h2>ניתוחים</h2>
+      <div class="actions">
+        <button id="a-mcoo">מפת מכשולים (MCOO)</button>
+        <div class="split">
+          <button id="a-vs" data-mode="binary">נצפות</button>
+          <button id="a-cum" data-mode="cumulative">נצפות מצטברת</button>
+          <button id="a-dead" data-mode="dead_ground">עומק שטח מת</button>
+          <button id="a-prob" data-mode="probability">P(נראה) מונטה-קרלו</button>
+        </div>
+        <button id="a-threat" class="primary">הערכת איום (ECOA/FCOA)</button>
+        <button id="a-change" class="secondary">זיהוי שינויים (דמו)</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>שכבות</h2>
+      <div id="layers"></div>
+    </section>
+
+    <section id="results-sec">
+      <h2>תוצרים</h2>
+      <div id="results"></div>
+    </section>
+
+    <section>
+      <h2>מגבלות נתונים</h2>
+      <ul id="limits" class="limits"></ul>
+    </section>
+  </aside>
+
+  <div id="mapwrap">
+    <canvas id="map"></canvas>
+    <div id="cursor" class="cursor"></div>
+    <div id="legend" class="legend"></div>
+    <div id="profile" class="profile hidden">
+      <div class="profile-head"><span id="profile-title"></span><button id="profile-close" class="x">✕</button></div>
+      <canvas id="profile-canvas"></canvas>
+    </div>
+  </div>
+</main>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-body">
+    <div class="profile-head"><span>זיהוי שינויים דו-זמני (CVA + מסנן עונתי NDVI)</span><button id="modal-close" class="x">✕</button></div>
+    <div class="cd-grid">
+      <figure><canvas id="cd-t1"></canvas><figcaption>T1</figcaption></figure>
+      <figure><canvas id="cd-t2"></canvas><figcaption>T2</figcaption></figure>
+      <figure><canvas id="cd-p"></canvas><figcaption>P(שינוי) + פוליגונים</figcaption></figure>
+    </div>
+    <div id="cd-list" class="muted"></div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
