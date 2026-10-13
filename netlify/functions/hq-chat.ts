@@ -252,12 +252,7 @@ ${knowledgeBlock}
       // matters here because a synchronous Netlify function is killed after a
       // fixed wall-clock budget regardless of what it's doing.
       model: 'claude-haiku-4-5-20251001',
-      // This is a non-streaming call inside a synchronous function with a hard
-      // wall-clock budget — the full completion must finish generating before
-      // anything is returned, so a large max_tokens directly risks a timeout,
-      // not just a long wait. The system prompt already asks for a direct,
-      // concise Hebrew answer, so 900 tokens is generous for that.
-      max_tokens: 900,
+      max_tokens: 1500,
       system: systemPrompt,
       messages: turns,
     }),
@@ -280,8 +275,11 @@ ${knowledgeBlock}
     return fail(502, 'המודל סירב לענות על השאלה הזו. נסח אותה מחדש.')
   }
   const text = result.content.find((c) => c.type === 'text')?.text
+  const truncated = result.stop_reason === 'max_tokens'
   const reply = text?.trim()
-    ? text + (sourceWarnings.length ? `\n\n⚠️ מקורות שלא נטענו: ${sourceWarnings.join(' | ')}` : '')
+    ? text
+        + (truncated ? '\n\n_(התשובה קוצרה — נסח את השאלה בצורה ממוקדת יותר לתשובה מלאה)_' : '')
+        + (sourceWarnings.length ? `\n\n⚠️ מקורות שלא נטענו: ${sourceWarnings.join(' | ')}` : '')
     : 'לא התקבלה תשובה מהמודל.'
 
   return {

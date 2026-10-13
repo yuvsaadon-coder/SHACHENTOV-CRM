@@ -139,8 +139,8 @@ ${localSection}${globalSection}${researchSection}
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: 1000,
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1500,
       system: systemPrompt,
       messages: anthropicMessages,
     }),
@@ -151,8 +151,12 @@ ${localSection}${globalSection}${researchSection}
     return { statusCode: 502, body: JSON.stringify({ error: `Anthropic API error: ${err}` }) }
   }
 
-  const result = await response.json() as { content: { type: string; text: string }[] }
-  const reply = result.content.find((c) => c.type === 'text')?.text ?? 'לא התקבלה תשובה.'
+  const result = await response.json() as { stop_reason?: string; content: { type: string; text: string }[] }
+  const text = result.content.find((c) => c.type === 'text')?.text ?? ''
+  const truncated = result.stop_reason === 'max_tokens'
+  const reply = text
+    ? text + (truncated ? '\n\n_(התשובה קוצרה — נסח את השאלה בצורה ממוקדת יותר לתשובה מלאה)_' : '')
+    : 'לא התקבלה תשובה.'
 
   return {
     statusCode: 200,

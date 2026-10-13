@@ -35,7 +35,9 @@ export function HQChatPage() {
     useChatHistory(appUser?.uid, 'hq')
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messages.length > 0 || loading) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [messages, loading])
 
   const toggleScope = (key: ScopeKey) => {
