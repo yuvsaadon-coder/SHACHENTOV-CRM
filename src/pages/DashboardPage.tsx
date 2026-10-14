@@ -77,15 +77,60 @@ const ROLE_STATUS_CHIP: Record<RoleStatus, { bg: string; text: string }> = {
   'אחר':   { bg: '#E4DFEC', text: '#5F497A' },
 }
 
+function CollapsibleSection({
+  title, badge, badgeColor = 'red', defaultOpen = false, children,
+}: {
+  title: string
+  badge?: number
+  badgeColor?: 'red' | 'orange' | 'teal'
+  defaultOpen?: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  const badgeStyle = {
+    red:    { bg: '#FEE2E2', text: '#B91C1C' },
+    orange: { bg: '#FED7AA', text: '#9A3412' },
+    teal:   { bg: '#E0F7F7', text: '#0F767B' },
+  }[badgeColor]
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 text-right hover:bg-gray-50 transition-colors rounded-xl"
+      >
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-brand-navy text-sm">{title}</span>
+          {badge !== undefined && badge > 0 && (
+            <span
+              className="text-xs font-medium px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: badgeStyle.bg, color: badgeStyle.text }}
+            >
+              {badge}
+            </span>
+          )}
+          {badge === 0 && (
+            <span className="text-xs text-green-600">✓ הכל תקין</span>
+          )}
+        </div>
+        <span className="text-gray-400 text-xs">{open ? '▼' : '▶'}</span>
+      </button>
+      {open && (
+        <div className="px-4 pb-4 border-t border-gray-100 pt-3">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function DashboardPage() {
   const { tasks, loading } = useTasks()
   const { roles } = useRoles()
   const { appUser, orgRole } = useAuth()
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('month')
   const [domainFreqFilter, setDomainFreqFilter] = useState<TaskFrequency | ''>('')
-  const [rolesExpanded, setRolesExpanded] = useState(false)
 
-  // Full access: admin or CEO domain
   const isFullAccess = !appUser || appUser.role === 'admin' || appUser.role === 'CEO'
   const myDomain: Domain | null = (!isFullAccess && DOMAINS.includes(appUser?.role as Domain))
     ? (appUser?.role as Domain)
@@ -96,7 +141,6 @@ export function DashboardPage() {
     [tasks, periodFilter]
   )
 
-  // Org pulse: always org-wide totals
   const orgPulse = useMemo(() => {
     const done = periodTasks.filter((t) => t.status === 'בוצע').length
     const total = periodTasks.length
@@ -106,7 +150,6 @@ export function DashboardPage() {
     return { pct, overdueCount, alertCount, total, done }
   }, [periodTasks, roles])
 
-  // Tasks visible to this user (filtered by domain for non-admins)
   const visibleTasks = useMemo(
     () => myDomain ? periodTasks.filter((t) => t.domain === myDomain) : periodTasks,
     [periodTasks, myDomain]
@@ -150,21 +193,22 @@ export function DashboardPage() {
 
   if (loading) return <Spinner size="lg" />
 
-  const greeting = orgRole
-    ? `${orgRole.roleName}${appUser?.name ? ` · ${appUser.name}` : ''}`
-    : appUser?.name ?? ''
+  const personName = orgRole?.holderName || appUser?.name || ''
+  const roleName = orgRole?.roleName || ''
 
   return (
-    <div className="space-y-4" dir="rtl">
+    <div className="space-y-3" dir="rtl">
 
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-xl font-bold text-brand-navy">לוח בקרה</h1>
-          {greeting && <p className="text-xs text-gray-400 mt-0.5">{greeting}</p>}
+          {personName && (
+            <p className="text-xs text-gray-400 mt-0.5">
+              {roleName ? `${roleName} · ${personName}` : personName}
+            </p>
+          )}
         </div>
-
-        {/* Period filter */}
         <div className="flex gap-1">
           {(Object.keys(PERIOD_LABELS) as PeriodFilter[]).map((p) => (
             <button
@@ -183,43 +227,89 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* Org pulse — compact, non-alarming context strip */}
-      {!isFullAccess && (
-        <div
-          className="rounded-xl px-4 py-3 flex items-center gap-6 flex-wrap text-sm"
-          style={{ backgroundColor: '#F0FAFA', border: '1px solid #C8ECED' }}
-        >
-          <span className="text-xs text-gray-500 shrink-0">כלל ארגוני:</span>
-          <span style={{ color: '#141348' }}>
-            <strong>{orgPulse.pct}%</strong>
-            <span className="text-gray-500 text-xs mr-1">ביצוע</span>
-          </span>
-          {orgPulse.overdueCount > 0 && (
-            <span style={{ color: '#B91C1C' }}>
-              <strong>{orgPulse.overdueCount}</strong>
-              <span className="text-gray-500 text-xs mr-1">באיחור</span>
-            </span>
-          )}
-          {orgPulse.alertCount > 0 && (
-            <span style={{ color: '#9A3412' }}>
-              <strong>{orgPulse.alertCount}</strong>
-              <span className="text-gray-500 text-xs mr-1">תפקידים דורשים טיפול</span>
-            </span>
-          )}
-          {orgPulse.overdueCount === 0 && orgPulse.alertCount === 0 && (
-            <span className="text-xs" style={{ color: '#0A6B2E' }}>✓ הכל תקין</span>
-          )}
+      {/* Org pulse strip — always visible */}
+      <div
+        className="rounded-xl px-4 py-3 flex items-center gap-5 flex-wrap text-sm"
+        style={{ backgroundColor: '#F0FAFA', border: '1px solid #C8ECED' }}
+      >
+        <span className="text-xs text-gray-500 shrink-0">
+          {myDomain ? 'כלל ארגוני:' : 'סיכום:'}
+        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="font-bold text-brand-navy text-sm">{orgPulse.pct}%</span>
+          <span className="text-gray-500 text-xs">ביצוע</span>
+          <span className="text-gray-300 text-xs mx-1">|</span>
+          <span className="text-gray-500 text-xs">{orgPulse.done}/{orgPulse.total} משימות</span>
         </div>
-      )}
+        {orgPulse.overdueCount > 0 && (
+          <span className="flex items-center gap-1">
+            <span className="font-bold text-red-600 text-sm">{orgPulse.overdueCount}</span>
+            <span className="text-gray-500 text-xs">באיחור</span>
+          </span>
+        )}
+        {orgPulse.alertCount > 0 && (
+          <span className="flex items-center gap-1">
+            <span className="font-bold text-orange-700 text-sm">{orgPulse.alertCount}</span>
+            <span className="text-gray-500 text-xs">תפקידים לטיפול</span>
+          </span>
+        )}
+        {orgPulse.overdueCount === 0 && orgPulse.alertCount === 0 && (
+          <span className="text-xs font-medium" style={{ color: '#0A6B2E' }}>✓ הכל תקין</span>
+        )}
+      </div>
 
       {/* Status tiles */}
-      <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
+      <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
         {STATUS_LABELS.map((s) => (
-          <div key={s} className="bg-white rounded-xl shadow-sm p-2 sm:p-4 text-center border border-gray-100">
-            <div className="text-xl sm:text-3xl font-bold text-brand-navy">{stats[s]}</div>
+          <div key={s} className="bg-white rounded-xl shadow-sm p-2 sm:p-3 text-center border border-gray-100">
+            <div className="text-xl sm:text-2xl font-bold text-brand-navy">{stats[s]}</div>
             <StatusBadge status={s} />
           </div>
         ))}
+      </div>
+
+      {/* My tasks — prominent, first */}
+      <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold text-brand-navy text-sm">
+            👤 המשימות שלי
+            {myTasks.length > 0 && (
+              <span
+                className="mr-2 text-xs font-medium px-2 py-0.5 rounded-full"
+                style={{ backgroundColor: '#E0F7F7', color: '#0F767B' }}
+              >
+                {myTasks.length}
+              </span>
+            )}
+          </h2>
+          {myTasks.length > 5 && (
+            <Link to="/tasks" className="text-xs text-brand-teal hover:underline">
+              הצג הכל ←
+            </Link>
+          )}
+        </div>
+        {myTasks.length === 0 ? (
+          <p className="text-sm text-gray-400">אין משימות מוקצות אליך בתקופה זו</p>
+        ) : (
+          <ul className="space-y-2">
+            {myTasks.slice(0, 5).map((t) => (
+              <li key={t.id} className="flex items-center justify-between gap-2">
+                <Link to={`/tasks/${t.id}`} className="text-sm text-brand-navy hover:underline truncate">
+                  {t.title}
+                </Link>
+                <select
+                  value={t.status}
+                  onChange={(e) => updateStatus(t.id, e.target.value as TaskStatus)}
+                  onClick={(e) => e.stopPropagation()}
+                  style={STATUS_STYLE[t.status]}
+                  className="text-xs font-medium px-1.5 py-0.5 rounded border-0 cursor-pointer focus:outline-none shrink-0"
+                >
+                  {STATUS_LABELS.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Domain progress */}
@@ -271,121 +361,84 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Overdue */}
-        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-          <h2 className="font-bold text-red-600 mb-3 text-sm">⚠ באיחור ({overdue.length})</h2>
-          <ul className="space-y-2">
-            {overdue.slice(0, 5).map((t) => (
-              <li key={t.id} className="flex items-center justify-between gap-2">
-                <Link to={`/tasks/${t.id}`} className="text-sm text-brand-navy hover:underline truncate">
-                  {t.title}
-                </Link>
-                <select
-                  value={t.status}
-                  onChange={(e) => updateStatus(t.id, e.target.value as TaskStatus)}
-                  onClick={(e) => e.stopPropagation()}
-                  style={STATUS_STYLE[t.status]}
-                  className="text-xs font-medium px-1.5 py-0.5 rounded border-0 cursor-pointer focus:outline-none shrink-0"
-                >
-                  {STATUS_LABELS.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </li>
-            ))}
-            {overdue.length === 0 && <li className="text-sm text-gray-400">אין משימות באיחור 🎉</li>}
-            {overdue.length > 5 && (
-              <li>
-                <Link to="/tasks" className="text-xs text-brand-teal hover:underline">
-                  +{overdue.length - 5} נוספות ←
-                </Link>
-              </li>
+      {/* Overdue — collapsible, collapsed by default */}
+      <CollapsibleSection
+        title="⚠ משימות באיחור"
+        badge={overdue.length}
+        badgeColor="red"
+        defaultOpen={overdue.length > 0}
+      >
+        {overdue.length === 0 ? (
+          <p className="text-sm text-gray-400">אין משימות באיחור 🎉</p>
+        ) : (
+          <>
+            <ul className="space-y-2">
+              {overdue.slice(0, 8).map((t) => (
+                <li key={t.id} className="flex items-center justify-between gap-2">
+                  <Link to={`/tasks/${t.id}`} className="text-sm text-brand-navy hover:underline truncate">
+                    {t.title}
+                  </Link>
+                  <select
+                    value={t.status}
+                    onChange={(e) => updateStatus(t.id, e.target.value as TaskStatus)}
+                    onClick={(e) => e.stopPropagation()}
+                    style={STATUS_STYLE[t.status]}
+                    className="text-xs font-medium px-1.5 py-0.5 rounded border-0 cursor-pointer focus:outline-none shrink-0"
+                  >
+                    {STATUS_LABELS.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </li>
+              ))}
+            </ul>
+            {overdue.length > 8 && (
+              <Link to="/tasks" className="mt-2 block text-xs text-brand-teal hover:underline">
+                +{overdue.length - 8} נוספות ←
+              </Link>
             )}
-          </ul>
-        </div>
-
-        {/* My tasks */}
-        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-          <h2 className="font-bold text-brand-navy mb-3 text-sm">👤 המשימות שלי ({myTasks.length})</h2>
-          <ul className="space-y-2">
-            {myTasks.slice(0, 5).map((t) => (
-              <li key={t.id} className="flex items-center justify-between gap-2">
-                <Link to={`/tasks/${t.id}`} className="text-sm text-brand-navy hover:underline truncate">
-                  {t.title}
-                </Link>
-                <select
-                  value={t.status}
-                  onChange={(e) => updateStatus(t.id, e.target.value as TaskStatus)}
-                  onClick={(e) => e.stopPropagation()}
-                  style={STATUS_STYLE[t.status]}
-                  className="text-xs font-medium px-1.5 py-0.5 rounded border-0 cursor-pointer focus:outline-none shrink-0"
-                >
-                  {STATUS_LABELS.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </li>
-            ))}
-            {myTasks.length === 0 && <li className="text-sm text-gray-400">אין משימות מוקצות</li>}
-            {myTasks.length > 5 && (
-              <li>
-                <Link to="/tasks" className="text-xs text-brand-teal hover:underline">
-                  +{myTasks.length - 5} נוספות ←
-                </Link>
-              </li>
-            )}
-          </ul>
-        </div>
-      </div>
+          </>
+        )}
+      </CollapsibleSection>
 
       {/* Alert roles — collapsible */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        <button
-          onClick={() => setRolesExpanded((e) => !e)}
-          className="w-full flex items-center justify-between px-4 py-3 text-right hover:bg-gray-50 transition-colors rounded-xl"
-        >
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-brand-navy text-sm">תפקידים הדורשים טיפול</span>
-            {alertRoles.length > 0 && (
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-600">
-                {alertRoles.length}
-              </span>
-            )}
-          </div>
-          <span className="text-gray-400 text-xs">{rolesExpanded ? '▼' : '▶'}</span>
-        </button>
-
-        {rolesExpanded && (
-          <div className="px-4 pb-4 border-t border-gray-100">
-            {alertRoles.length === 0 ? (
-              <p className="text-sm text-gray-400 py-3">אין תפקידים הדורשים טיפול 🎉</p>
-            ) : (
-              <ul className="space-y-2 mt-3">
-                {alertRoles.map((r) => {
-                  const chip = ROLE_STATUS_CHIP[r.status] ?? ROLE_STATUS_CHIP['אחר']
-                  return (
-                    <li key={r.id} className="flex items-center justify-between gap-2 py-1.5 border-b border-gray-50 last:border-0">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-brand-navy truncate">{r.roleName}</div>
-                        {r.area && <div className="text-xs text-gray-400">{r.area} · {r.level}</div>}
-                        {r.delegatedTo && (
-                          <div className="text-xs text-orange-600">מואצל: {r.delegatedTo}</div>
-                        )}
-                      </div>
-                      <span
-                        className="text-xs font-medium px-2 py-0.5 rounded-full shrink-0"
-                        style={{ backgroundColor: chip.bg, color: chip.text }}
-                      >
-                        {r.status}
-                      </span>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
+      <CollapsibleSection
+        title="תפקידים הדורשים טיפול"
+        badge={alertRoles.length}
+        badgeColor="orange"
+        defaultOpen={false}
+      >
+        {alertRoles.length === 0 ? (
+          <p className="text-sm text-gray-400">אין תפקידים הדורשים טיפול 🎉</p>
+        ) : (
+          <>
+            <ul className="space-y-2">
+              {alertRoles.map((r) => {
+                const chip = ROLE_STATUS_CHIP[r.status] ?? ROLE_STATUS_CHIP['אחר']
+                return (
+                  <li key={r.id} className="flex items-center justify-between gap-2 py-1.5 border-b border-gray-50 last:border-0">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-brand-navy truncate">{r.roleName}</div>
+                      {r.area && <div className="text-xs text-gray-400">{r.area} · {r.level}</div>}
+                      {r.delegatedTo && (
+                        <div className="text-xs text-orange-600">מואצל: {r.delegatedTo}</div>
+                      )}
+                    </div>
+                    <span
+                      className="text-xs font-medium px-2 py-0.5 rounded-full shrink-0"
+                      style={{ backgroundColor: chip.bg, color: chip.text }}
+                    >
+                      {r.status}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
             <Link to="/roles" className="mt-3 block text-xs text-brand-teal hover:underline">
               לדף האיוש המלא ←
             </Link>
-          </div>
+          </>
         )}
-      </div>
+      </CollapsibleSection>
+
     </div>
   )
 }
