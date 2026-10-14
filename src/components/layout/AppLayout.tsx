@@ -40,7 +40,7 @@ export function AppLayout() {
           ☰
         </button>
         <div className="flex items-center gap-2">
-          <span className="font-bold text-sm">שכן טוב CRM</span>
+          <span className="font-bold text-sm">שכן טוב</span>
           <img src="/logo_shachentov.png" alt="שכן טוב" className="h-8 w-8 rounded-full object-cover" />
         </div>
       </div>

@@ -13,7 +13,7 @@ export default defineConfig({
       manifest: {
         name: 'שכן טוב — מערכת ניהול',
         short_name: 'שכן טוב',
-        description: 'מערכת CRM לניהול עמותת שכן טוב',
+        description: 'מערכת ניהול לעמותת שכן טוב',
         theme_color: '#141348',
         background_color: '#ffffff',
         display: 'standalone',

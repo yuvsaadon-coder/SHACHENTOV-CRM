@@ -101,7 +101,7 @@ export function Sidebar({ onClose, collapsed = false, onToggleCollapse }: Props)
         {!collapsed && (
           <div className="flex-1">
             <div className="font-bold text-sm">שכן טוב</div>
-            <div className="text-xs text-white/60">מערכת CRM</div>
+            <div className="text-xs text-white/60">מערכת ניהול</div>
           </div>
         )}
         {onClose && (
