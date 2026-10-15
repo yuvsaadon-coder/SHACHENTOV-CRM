@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, Link } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 
 export function AppLayout() {
@@ -39,10 +39,10 @@ export function AppLayout() {
         >
           ☰
         </button>
-        <div className="flex items-center gap-2">
+        <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <span className="font-bold text-sm">שכן טוב</span>
-          <img src="/logo_shachentov.png" alt="שכן טוב" className="h-8 w-8 rounded-full object-cover" />
-        </div>
+          <img src="/logo_shachentov.png" alt="שכן טוב" className="h-8 w-8 object-contain" />
+        </Link>
       </div>
 
       <main className="flex-1 overflow-auto p-4 md:p-6 pt-[72px] md:pt-6">

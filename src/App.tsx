@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { AppLayout } from './components/layout/AppLayout'
 import { LoginPage } from './pages/LoginPage'
+import { HomePage } from './pages/HomePage'
 import { DashboardPage } from './pages/DashboardPage'
 import { TasksPage } from './pages/TasksPage'
 import { PersonalTasksPage } from './pages/PersonalTasksPage'
@@ -60,6 +61,9 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/portal/login" element={<Navigate to="/login" replace />} />
 
+          {/* Home screen — no sidebar */}
+          <Route path="/dashboard" element={<RequireAuth><HomePage /></RequireAuth>} />
+
           {/* Coordinator portal */}
           <Route
             path="/portal"
@@ -76,7 +80,7 @@ export default function App() {
             <Route path="chat" element={<PortalChat />} />
           </Route>
 
-          {/* Admin / CRM */}
+          {/* HQ — with sidebar */}
           <Route
             path="/"
             element={
@@ -86,7 +90,7 @@ export default function App() {
             }
           >
             <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="overview" element={<DashboardPage />} />
             <Route path="tasks" element={<TasksPage />} />
             <Route path="tasks/:id" element={<TaskDetailPage />} />
             <Route path="my-tasks" element={<PersonalTasksPage />} />
