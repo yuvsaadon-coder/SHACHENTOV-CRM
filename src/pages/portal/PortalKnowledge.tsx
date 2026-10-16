@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import { useKnowledge, useAddKnowledge } from '../../hooks/useKnowledge'
+import { useKnowledge, useAddKnowledge, useUpdateKnowledge, useDeleteKnowledge } from '../../hooks/useKnowledge'
+import { extractFileText } from '../../lib/extractFileText'
 import { useAuth } from '../../context/AuthContext'
 import type { PortalOutletContext } from './CoordinatorPortal'
 import { KNOWLEDGE_TAGS, type KnowledgeItem, type KnowledgeItemType, type KnowledgeTag } from '../../types'
@@ -26,7 +27,11 @@ function fileIcon(name: string): string {
 
 // ─── Item Card ────────────────────────────────────────────────────────────────
 
-function ItemCard({ item }: { item: KnowledgeItem }) {
+function ItemCard({ item, onEdit, onDelete }: {
+  item: KnowledgeItem
+  onEdit?: (item: KnowledgeItem) => void
+  onDelete?: (id: string) => void
+}) {
   const [open, setOpen] = useState(false)
   const [checked, setChecked] = useState<Record<number, boolean>>({})
   const date = item.createdAt?.toDate?.().toLocaleDateString('he-IL') ?? ''
@@ -59,7 +64,7 @@ function ItemCard({ item }: { item: KnowledgeItem }) {
               </div>
             )}
             <div className="flex flex-wrap gap-1 mt-1">
-              {item.tags.map((t) => (
+              {(item.tags ?? []).map((t) => (
                 <span key={t} className="px-1.5 py-0.5 text-xs rounded"
                   style={{ backgroundColor: '#E6F4F4', color: '#189A9F' }}>{t}</span>
               ))}
@@ -129,6 +134,31 @@ function ItemCard({ item }: { item: KnowledgeItem }) {
               {item.url}
             </a>
           )}
+
+          {/* Edit / Delete actions */}
+          {(onEdit || onDelete) && (
+            <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+              {onEdit && (
+                <button
+                  onClick={() => onEdit(item)}
+                  className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                  style={{ color: '#141348' }}
+                >
+                  ✏️ ערוך
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={() => {
+                    if (confirm(`למחוק את "${item.title}"?`)) onDelete(item.id)
+                  }}
+                  className="px-3 py-1.5 text-xs rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+                >
+                  🗑 מחק
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -190,7 +220,7 @@ function ResearchCard({ article }: { article: CatalogArticle }) {
   )
 }
 
-// ─── Add Knowledge Modal ──────────────────────────────────────────────────────
+// ─── Add / Edit Knowledge Modal ───────────────────────────────────────────────
 
 const TYPE_OPTIONS: { id: KnowledgeItemType; label: string; icon: string; desc: string }[] = [
   { id: 'file',      label: 'קובץ חפיפה',  icon: '📎', desc: 'PDF, Word, Excel' },
@@ -199,23 +229,35 @@ const TYPE_OPTIONS: { id: KnowledgeItemType; label: string; icon: string; desc: 
   { id: 'link',      label: 'לינק',        icon: '🔗', desc: 'קישור חיצוני' },
 ]
 
-function AddKnowledgeModal({ branchId, onClose }: { branchId: string; onClose: () => void }) {
+function KnowledgeModal({ branchId, initialItem, onClose }: {
+  branchId: string
+  initialItem?: KnowledgeItem
+  onClose: () => void
+}) {
   const { addItem } = useAddKnowledge()
+  const { updateItem } = useUpdateKnowledge()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [type, setType] = useState<KnowledgeItemType>('file')
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const [url, setUrl] = useState('')
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [scope, setScope] = useState<'branch' | 'global'>('branch')
+  const isEditMode = !!initialItem
+
+  const [type, setType] = useState<KnowledgeItemType>(initialItem?.type ?? 'file')
+  const [title, setTitle] = useState(initialItem?.title ?? '')
+  const [content, setContent] = useState(initialItem?.content ?? '')
+  const [url, setUrl] = useState(initialItem?.url ?? '')
+  const [selectedTags, setSelectedTags] = useState<string[]>(initialItem?.tags ?? [])
+  const [scope, setScope] = useState<'branch' | 'global'>(initialItem?.branchId === 'global' ? 'global' : 'branch')
 
   // File upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [keepExistingFile, setKeepExistingFile] = useState(!!initialItem?.fileUrl)
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
+  const [extracting, setExtracting] = useState(false)
+  const [autoExtracted, setAutoExtracted] = useState(false)
 
   // Checklist state
-  const [checklistItems, setChecklistItems] = useState<string[]>([''])
+  const [checklistItems, setChecklistItems] = useState<string[]>(
+    initialItem?.checklistItems?.length ? initialItem.checklistItems : ['']
+  )
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -223,11 +265,24 @@ function AddKnowledgeModal({ branchId, onClose }: { branchId: string; onClose: (
   const toggleTag = (t: string) =>
     setSelectedTags((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t])
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     if (!f) return
     setSelectedFile(f)
+    setKeepExistingFile(false)
+    setAutoExtracted(false)
     if (!title) setTitle(f.name.replace(/\.[^/.]+$/, ''))
+    if (content.trim()) return  // don't overwrite manually entered content
+    setExtracting(true)
+    try {
+      const text = await extractFileText(f)
+      if (text && !content.trim()) {
+        setContent(text)
+        setAutoExtracted(true)
+      }
+    } finally {
+      setExtracting(false)
+    }
   }
 
   const addChecklistItem = () => setChecklistItems((p) => [...p, ''])
@@ -238,7 +293,8 @@ function AddKnowledgeModal({ branchId, onClose }: { branchId: string; onClose: (
 
   const handleSave = async () => {
     if (!title.trim()) { setError('נדרשת כותרת'); return }
-    if (type === 'file' && !selectedFile) { setError('בחר קובץ להעלאה'); return }
+    if (type === 'file' && !isEditMode && !selectedFile) { setError('בחר קובץ להעלאה'); return }
+    if (type === 'file' && isEditMode && !keepExistingFile && !selectedFile) { setError('בחר קובץ להעלאה'); return }
     if (type === 'checklist' && checklistItems.filter((x) => x.trim()).length === 0) {
       setError('הוסף לפחות סעיף אחד'); return
     }
@@ -268,22 +324,40 @@ function AddKnowledgeModal({ branchId, onClose }: { branchId: string; onClose: (
         fileUrl = dataUrl
         fileName = selectedFile.name
         fileSize = selectedFile.size
+      } else if (type === 'file' && keepExistingFile && initialItem?.fileUrl) {
+        fileUrl = initialItem.fileUrl
+        fileName = initialItem.fileName
+        fileSize = initialItem.fileSize
       }
 
       const cleanItems = checklistItems.map((x) => x.trim()).filter(Boolean)
 
-      await addItem({
-        branchId: effectiveBranchId,
-        type,
-        title: title.trim(),
-        content: content.trim(),
-        url: type === 'link' ? url.trim() || undefined : undefined,
-        fileUrl,
-        fileName,
-        fileSize,
-        checklistItems: type === 'checklist' ? cleanItems : undefined,
-        tags: selectedTags,
-      })
+      if (isEditMode && initialItem) {
+        await updateItem(initialItem.id, {
+          type,
+          title: title.trim(),
+          content: content.trim(),
+          url: type === 'link' ? url.trim() || undefined : undefined,
+          fileUrl,
+          fileName,
+          fileSize,
+          checklistItems: type === 'checklist' ? cleanItems : undefined,
+          tags: selectedTags,
+        })
+      } else {
+        await addItem({
+          branchId: effectiveBranchId,
+          type,
+          title: title.trim(),
+          content: content.trim(),
+          url: type === 'link' ? url.trim() || undefined : undefined,
+          fileUrl,
+          fileName,
+          fileSize,
+          checklistItems: type === 'checklist' ? cleanItems : undefined,
+          tags: selectedTags,
+        })
+      }
       onClose()
     } catch (e) {
       setError('שגיאה בשמירה — בדוק חיבור ורשאיות Firebase')
@@ -301,7 +375,7 @@ function AddKnowledgeModal({ branchId, onClose }: { branchId: string; onClose: (
         dir="rtl" onClick={(e) => e.stopPropagation()}>
 
         <div className="sticky top-0 bg-white px-4 py-3 border-b border-gray-100 flex items-center justify-between z-10">
-          <h2 className="font-bold text-sm" style={{ color: '#141348' }}>הוסף לידע הסניף</h2>
+          <h2 className="font-bold text-sm" style={{ color: '#141348' }}>{isEditMode ? 'ערוך פריט' : 'הוסף לידע הסניף'}</h2>
           <button onClick={onClose} className="text-gray-400 text-2xl leading-none">×</button>
         </div>
 
@@ -343,26 +417,57 @@ function AddKnowledgeModal({ branchId, onClose }: { branchId: string; onClose: (
                 type="file"
                 accept=".pdf,.doc,.docx,.xlsx,.xls,.csv"
                 className="hidden"
-                onChange={handleFileSelect}
+                onChange={(e) => { void handleFileSelect(e) }}
               />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-gray-200 rounded-xl py-6 text-center hover:border-[#189A9F] transition-colors"
-              >
-                {selectedFile ? (
-                  <div className="space-y-1">
-                    <div className="text-2xl">{fileIcon(selectedFile.name)}</div>
-                    <div className="text-sm font-medium" style={{ color: '#141348' }}>{selectedFile.name}</div>
-                    <div className="text-xs text-gray-400">{formatBytes(selectedFile.size)}</div>
+              {/* Existing file in edit mode */}
+              {keepExistingFile && initialItem?.fileName && (
+                <div className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2 border border-gray-200 mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-base shrink-0">{fileIcon(initialItem.fileName)}</span>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate" style={{ color: '#141348' }}>{initialItem.fileName}</div>
+                      {initialItem.fileSize && (
+                        <div className="text-xs text-gray-400">{formatBytes(initialItem.fileSize)}</div>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <div className="space-y-1">
-                    <div className="text-2xl">📂</div>
-                    <div className="text-sm text-gray-500">לחץ לבחירת קובץ</div>
-                    <div className="text-xs text-gray-400">PDF, Word, Excel — עד 500KB</div>
-                  </div>
-                )}
-              </button>
+                  <button
+                    onClick={() => { setKeepExistingFile(false); fileInputRef.current?.click() }}
+                    className="text-xs text-[#189A9F] shrink-0 mr-2 hover:underline"
+                  >
+                    החלף
+                  </button>
+                </div>
+              )}
+              {!keepExistingFile && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={extracting}
+                  className="w-full border-2 border-dashed border-gray-200 rounded-xl py-6 text-center hover:border-[#189A9F] transition-colors disabled:opacity-60"
+                >
+                  {extracting ? (
+                    <div className="space-y-1">
+                      <div className="text-2xl">⏳</div>
+                      <div className="text-sm text-gray-500">מחלץ טקסט...</div>
+                    </div>
+                  ) : selectedFile ? (
+                    <div className="space-y-1">
+                      <div className="text-2xl">{fileIcon(selectedFile.name)}</div>
+                      <div className="text-sm font-medium" style={{ color: '#141348' }}>{selectedFile.name}</div>
+                      <div className="text-xs text-gray-400">{formatBytes(selectedFile.size)}</div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <div className="text-2xl">📂</div>
+                      <div className="text-sm text-gray-500">לחץ לבחירת קובץ</div>
+                      <div className="text-xs text-gray-400">PDF, Word, Excel — עד 500KB</div>
+                    </div>
+                  )}
+                </button>
+              )}
+              {autoExtracted && (
+                <p className="text-xs text-teal-700 mt-1">✓ טקסט חולץ אוטומטית ומולא בשדה "תיאור"</p>
+              )}
               {uploadProgress !== null && (
                 <div className="mt-2">
                   <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -472,7 +577,7 @@ function AddKnowledgeModal({ branchId, onClose }: { branchId: string; onClose: (
         </div>
 
         <div className="sticky bottom-0 bg-white px-4 py-3 border-t border-gray-100 flex gap-3">
-          <button onClick={() => void handleSave()} disabled={saving || !title.trim()}
+          <button onClick={() => void handleSave()} disabled={saving || extracting || !title.trim()}
             className="flex-1 py-2.5 rounded-xl text-white text-sm font-medium disabled:opacity-40"
             style={{ backgroundColor: '#141348' }}>
             {saving
@@ -495,10 +600,12 @@ export function PortalKnowledge() {
   const { branch } = useOutletContext<PortalOutletContext>()
   const { appUser } = useAuth()
   const { items, loading } = useKnowledge(branch.id)
+  const { deleteItem } = useDeleteKnowledge()
   const [tab, setTab] = useState<TabId>('branch')
   const [activeTag, setActiveTag] = useState<string>('')
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
+  const [editingItem, setEditingItem] = useState<KnowledgeItem | null>(null)
 
   const branchItems = useMemo(
     () => items.filter((item) => item.branchId === branch.id),
@@ -663,12 +770,20 @@ export function PortalKnowledge() {
         <div className="space-y-2 pb-4">
           {tab === 'research'
             ? (filtered as CatalogArticle[]).map((a) => <ResearchCard key={a.id} article={a} />)
-            : (filtered as KnowledgeItem[]).map((item) => <ItemCard key={item.id} item={item} />)
+            : (filtered as KnowledgeItem[]).map((item) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                onEdit={setEditingItem}
+                onDelete={(id) => { void deleteItem(id) }}
+              />
+            ))
           }
         </div>
       )}
 
-      {showAdd && <AddKnowledgeModal branchId={branch.id} onClose={() => setShowAdd(false)} />}
+      {showAdd && <KnowledgeModal branchId={branch.id} onClose={() => setShowAdd(false)} />}
+      {editingItem && <KnowledgeModal branchId={branch.id} initialItem={editingItem} onClose={() => setEditingItem(null)} />}
     </div>
   )
 }

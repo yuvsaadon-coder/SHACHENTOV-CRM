@@ -69,7 +69,9 @@ export function LoginPage() {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
         {/* Logo */}
         <div className="flex flex-col items-center pt-8 pb-5 px-8">
-          <img src="/logo_shachentov.png" alt="שכן טוב" className="h-20 w-20 rounded-full object-cover mb-3" />
+          <div className="h-24 w-24 rounded-full bg-white shadow-md flex items-center justify-center mb-3 p-2 border border-gray-100">
+            <img src="/logo_shachentov.png" alt="שכן טוב" className="w-full h-full object-contain" />
+          </div>
           <h1 className="text-xl font-bold" style={{ color: '#141348' }}>שכן טוב</h1>
           <p className="text-sm" style={{ color: '#3A3A6B' }}>מערכת ניהול תפעולי</p>
         </div>

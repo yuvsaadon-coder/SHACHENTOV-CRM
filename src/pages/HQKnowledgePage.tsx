@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from 'react'
 import { useHQKnowledge, useAddHQKnowledge, useUpdateHQKnowledge, useDeleteHQKnowledge } from '../hooks/useHQKnowledge'
+import { extractFileText } from '../lib/extractFileText'
 import { useAuth } from '../context/AuthContext'
 import {
   DOMAINS, DOMAIN_LABELS, DOMAIN_COLORS,
@@ -140,20 +141,43 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
   const isEdit = !!initialItem
 
   const [domain, setDomain] = useState<Domain | 'all'>(initialItem?.domain ?? 'all')
-  const [category, setCategory] = useState<HQKnowledgeCategory>(initialItem?.category ?? 'instructions')
+  const [category, setCategory] = useState<string>(initialItem?.category ?? 'instructions')
+  const [customCatInput, setCustomCatInput] = useState('')
+  const [showCustomCat, setShowCustomCat] = useState(false)
   const [title, setTitle] = useState(initialItem?.title ?? '')
   const [content, setContent] = useState(initialItem?.content ?? '')
   const [tag, setTag] = useState('')
   const [tags, setTags] = useState<string[]>(initialItem?.tags ?? [])
   const [file, setFile] = useState<File | null>(null)
   const [keepExistingFile, setKeepExistingFile] = useState(true)
+  const [extracting, setExtracting] = useState(false)
+  const [autoExtracted, setAutoExtracted] = useState(false)
   const [visibleToCoordinators, setVisibleToCoordinators] = useState(initialItem?.visibleToCoordinators ?? false)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   const addTag = () => {
     const t = tag.trim()
     if (t && !tags.includes(t)) setTags((p) => [...p, t])
     setTag('')
+  }
+
+  const handleFileChange = async (picked: File | null) => {
+    setFile(picked)
+    setKeepExistingFile(false)
+    setAutoExtracted(false)
+    if (!picked) return
+    if (content.trim()) return  // don't overwrite existing content
+    setExtracting(true)
+    try {
+      const text = await extractFileText(picked)
+      if (text && !content.trim()) {
+        setContent(text)
+        setAutoExtracted(true)
+      }
+    } finally {
+      setExtracting(false)
+    }
   }
 
   const handleSave = async () => {
@@ -163,11 +187,12 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
       return
     }
     setSaving(true)
+    setSaveError('')
     try {
       const existingFileUrl = isEdit && keepExistingFile && !file ? initialItem?.fileUrl : undefined
       const existingFileName = isEdit && keepExistingFile && !file ? initialItem?.fileName : undefined
       const payload = {
-        domain, category,
+        domain, category: category as HQKnowledgeCategory,
         title: title.trim(), content: content.trim(), tags,
         file: file ?? undefined,
         fileUrl: existingFileUrl,
@@ -180,6 +205,13 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
         await addItem(payload)
       }
       onClose()
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      if (msg.includes('storage') || msg.includes('unauthorized') || msg.includes('permission')) {
+        setSaveError('שגיאת הרשאות — ייתכן שכללי Firebase Storage אינם מאפשרים העלאה. בדוק את הגדרות Storage.')
+      } else {
+        setSaveError('שגיאה בשמירה: ' + msg)
+      }
     } finally {
       setSaving(false)
     }
@@ -236,15 +268,56 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
               {HQ_KNOWLEDGE_CATEGORIES.map((c) => (
                 <button
                   key={c.id}
-                  onClick={() => setCategory(c.id)}
+                  onClick={() => { setCategory(c.id); setShowCustomCat(false) }}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors text-right"
-                  style={category === c.id ? { backgroundColor: '#141348', color: 'white', borderColor: '#141348' } : { borderColor: '#E5E7EB', color: '#374151' }}
+                  style={category === c.id && !showCustomCat ? { backgroundColor: '#141348', color: 'white', borderColor: '#141348' } : { borderColor: '#E5E7EB', color: '#374151' }}
                 >
                   <span>{c.icon}</span>
                   <span className="text-xs">{c.label}</span>
                 </button>
               ))}
+              <button
+                onClick={() => { setShowCustomCat(true); setCustomCatInput('') }}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors text-right"
+                style={showCustomCat ? { backgroundColor: '#189A9F', color: 'white', borderColor: '#189A9F' } : { borderColor: '#E5E7EB', color: '#374151', borderStyle: 'dashed' }}
+              >
+                <span>➕</span>
+                <span className="text-xs">קטגוריה חדשה</span>
+              </button>
             </div>
+            {showCustomCat && (
+              <div className="flex gap-2 mt-2">
+                <input
+                  autoFocus
+                  value={customCatInput}
+                  onChange={(e) => setCustomCatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && customCatInput.trim()) {
+                      e.preventDefault()
+                      setCategory(customCatInput.trim())
+                      setShowCustomCat(false)
+                    }
+                  }}
+                  className="flex-1 border border-[#189A9F] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+                  placeholder="שם הקטגוריה..."
+                />
+                <button
+                  onClick={() => { if (customCatInput.trim()) { setCategory(customCatInput.trim()); setShowCustomCat(false) } }}
+                  disabled={!customCatInput.trim()}
+                  className="px-3 py-1.5 text-sm rounded-lg text-white disabled:opacity-40"
+                  style={{ backgroundColor: '#189A9F' }}
+                >
+                  אשר
+                </button>
+              </div>
+            )}
+            {!HQ_KNOWLEDGE_CATEGORIES.some(c => c.id === category) && !showCustomCat && (
+              <div className="mt-2 flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm" style={{ borderColor: '#189A9F', color: '#189A9F', backgroundColor: '#E6F4F4' }}>
+                <span>📋</span>
+                <span className="text-xs font-medium">{category}</span>
+                <button onClick={() => setShowCustomCat(true)} className="mr-auto text-xs underline">ערוך</button>
+              </div>
+            )}
           </div>
 
           {/* Title */}
@@ -291,14 +364,18 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
               ref={fileInputRef}
               type="file"
               className="hidden"
-              onChange={(e) => { setFile(e.target.files?.[0] ?? null); setKeepExistingFile(false) }}
+              onChange={(e) => { void handleFileChange(e.target.files?.[0] ?? null) }}
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="text-sm border border-dashed border-gray-300 rounded-lg px-4 py-2 text-gray-500 hover:border-teal-400 hover:text-teal-600 transition-colors w-full text-center"
+              disabled={extracting}
+              className="text-sm border border-dashed border-gray-300 rounded-lg px-4 py-2 text-gray-500 hover:border-teal-400 hover:text-teal-600 transition-colors w-full text-center disabled:opacity-60"
             >
-              {file ? `📎 ${file.name}` : (isEdit ? '📎 החלף קובץ' : '📎 בחר קובץ')}
+              {extracting ? '⏳ מחלץ טקסט...' : file ? `📎 ${file.name}` : (isEdit ? '📎 החלף קובץ' : '📎 בחר קובץ')}
             </button>
+            {autoExtracted && (
+              <p className="text-xs text-teal-700 mt-1">✓ טקסט חולץ אוטומטית מהקובץ ומולא בשדה "תוכן"</p>
+            )}
           </div>
 
           {/* Tags */}
@@ -344,10 +421,17 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
           </label>
         </div>
 
+        {saveError && (
+          <div className="px-4 pb-2">
+            <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 leading-relaxed">
+              {saveError}
+            </div>
+          </div>
+        )}
         <div className="sticky bottom-0 bg-white px-4 py-3 border-t border-gray-100 flex gap-3">
           <button
             onClick={() => void handleSave()}
-            disabled={saving || !title.trim()}
+            disabled={saving || extracting || !title.trim()}
             className="flex-1 py-2.5 rounded-xl text-white text-sm font-medium disabled:opacity-40"
             style={{ backgroundColor: '#141348' }}
           >
@@ -367,7 +451,7 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
 export function HQKnowledgePage() {
   const { appUser } = useAuth()
   const [domainFilter, setDomainFilter] = useState<Domain | 'all'>('all')
-  const [catFilter, setCatFilter] = useState<HQKnowledgeCategory | ''>('')
+  const [catFilter, setCatFilter] = useState<string>('')
   const [search, setSearch] = useState('')
   const [coordFilter, setCoordFilter] = useState<'all' | 'shared' | 'hq_only'>('all')
   const [showAdd, setShowAdd] = useState(false)
@@ -391,16 +475,30 @@ export function HQKnowledgePage() {
     })
   }, [items, catFilter, coordFilter, search])
 
+  // Custom category ids found in loaded items
+  const customCategoryIds = useMemo(() => {
+    const presetIds = new Set(HQ_KNOWLEDGE_CATEGORIES.map(c => c.id))
+    const custom = new Set<string>()
+    items.forEach(item => { if (!presetIds.has(item.category)) custom.add(item.category) })
+    return Array.from(custom).sort()
+  }, [items])
+
   // Group filtered by category for display
   const grouped = useMemo(() => {
-    const map = new Map<HQKnowledgeCategory, HQKnowledgeItem[]>()
+    const map = new Map<string, HQKnowledgeItem[]>()
     HQ_KNOWLEDGE_CATEGORIES.forEach((c) => map.set(c.id, []))
     filtered.forEach((item) => {
-      map.get(item.category)?.push(item)
+      if (!map.has(item.category)) map.set(item.category, [])
+      map.get(item.category)!.push(item)
     })
-    return HQ_KNOWLEDGE_CATEGORIES
-      .map((c) => ({ ...c, items: map.get(c.id) ?? [] }))
+    const preset = HQ_KNOWLEDGE_CATEGORIES
+      .map((c) => ({ id: c.id, icon: c.icon, label: c.label, items: map.get(c.id) ?? [] }))
       .filter((g) => g.items.length > 0)
+    const custom = Array.from(map.entries())
+      .filter(([id]) => !HQ_KNOWLEDGE_CATEGORIES.some(c => c.id === id))
+      .map(([id, items]) => ({ id, icon: '📋', label: id, items }))
+      .filter(g => g.items.length > 0)
+    return [...preset, ...custom]
   }, [filtered])
 
   return (
@@ -467,6 +565,17 @@ export function HQKnowledgePage() {
           >
             <span>{c.icon}</span>
             <span>{c.label}</span>
+          </button>
+        ))}
+        {customCategoryIds.map((id) => (
+          <button
+            key={id}
+            onClick={() => setCatFilter(catFilter === id ? '' : id)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border transition-colors"
+            style={catFilter === id ? { backgroundColor: '#141348', color: 'white', borderColor: '#141348' } : { borderColor: '#E5E7EB', color: '#374151' }}
+          >
+            <span>📋</span>
+            <span>{id}</span>
           </button>
         ))}
       </div>

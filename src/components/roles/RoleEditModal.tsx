@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase'
 import type { OrgRole, RoleLevel, RoleStatus, RolePriority, RecruitmentUrgency } from '../../types'
 import { ROLE_LEVELS, ROLE_STATUS_LABELS, ROLE_PRIORITY_LABELS, RECRUITMENT_URGENCY_OPTIONS, RECRUITMENT_NEEDS_STATUS } from '../../types'
 import { useAllBranches } from '../../hooks/useBranch'
+import { useAllUsers } from '../../hooks/useAllUsers'
 
 interface Props {
   role: OrgRole | null
@@ -35,6 +36,7 @@ export function RoleEditModal({ role, allRoles, onClose }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { branches } = useAllBranches()
+  const { users } = useAllUsers()
 
   useEffect(() => {
     setForm(role ? { ...EMPTY, ...role } : { ...EMPTY })
@@ -52,7 +54,7 @@ export function RoleEditModal({ role, allRoles, onClose }: Props) {
     try {
       // Firestore rejects `undefined` values — reportsTo / portalBranchId are
       // undefined whenever "— ללא —" is picked in their dropdowns.
-      const OPTIONAL_KEYS = ['reportsTo', 'portalBranchId'] as const
+      const OPTIONAL_KEYS = ['reportsTo', 'portalBranchId', 'uid'] as const
       const data: Record<string, unknown> = {}
       for (const [key, value] of Object.entries(form)) {
         if (value !== undefined) data[key] = value
@@ -143,13 +145,33 @@ export function RoleEditModal({ role, allRoles, onClose }: Props) {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">ממלא תפקיד</label>
-            <input
-              value={form.holderName}
-              onChange={(e) => set('holderName', e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">ממלא תפקיד</label>
+              <input
+                value={form.holderName}
+                onChange={(e) => set('holderName', e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">משתמש מקושר</label>
+              <select
+                value={form.uid ?? ''}
+                onChange={(e) => {
+                  const uid = e.target.value || undefined
+                  const linked = users.find((u) => u.uid === uid)
+                  set('uid', uid)
+                  if (linked && !form.holderName) set('holderName', linked.name)
+                }}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+              >
+                <option value="">— ללא —</option>
+                {users.map((u) => (
+                  <option key={u.uid} value={u.uid}>{u.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

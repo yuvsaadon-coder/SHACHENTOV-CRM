@@ -120,8 +120,13 @@ export const handler: Handler = async (event) => {
 
 ${localSection}${globalSection}${researchSection}
 
-אם התשובה מגיעה ממסמך ספציפי — ציין את שמו.
-אם אין מידע רלוונטי במאגר הידע — אמור זאת בכנות: "אין לי מידע על זה במאגר הידע של הסניף." אל תנסה לספק מידע כללי שאינו מבוסס על המסמכים לעיל.`
+כללי מבנה תשובה — חובה לקיים:
+• תשובתך חייבת להיות שלמה ומסוכמת תוך 3000 תווים לכל היותר.
+• תכנן את תשובתך מראש כך שתסיים אותה בצורה מלאה ועגולה — אף פעם אל תיקטע באמצע משפט או רעיון.
+• אם הנושא רחב ויש עוד מה לומר — כתוב תשובה ממוקדת על הנקודה המרכזית, ובסוף הוסף שורה אחת: "רוצה שאפרט על [נושא ספציפי]?" כך המשתמש יוכל לבקש המשך.
+• אם אין מידע רלוונטי — אמור זאת בכנות: "אין לי מידע על זה במאגר הידע של הסניף."
+• אם התשובה מגיעה ממסמך ספציפי — ציין את שמו.
+• אל תספק מידע כללי שאינו מבוסס על המסמכים לעיל.`
 
   // Call Anthropic API
   const apiKey = process.env.ANTHROPIC_API_KEY
@@ -139,8 +144,8 @@ ${localSection}${globalSection}${researchSection}
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: 1000,
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1500,
       system: systemPrompt,
       messages: anthropicMessages,
     }),
@@ -151,8 +156,9 @@ ${localSection}${globalSection}${researchSection}
     return { statusCode: 502, body: JSON.stringify({ error: `Anthropic API error: ${err}` }) }
   }
 
-  const result = await response.json() as { content: { type: string; text: string }[] }
-  const reply = result.content.find((c) => c.type === 'text')?.text ?? 'לא התקבלה תשובה.'
+  const result = await response.json() as { stop_reason?: string; content: { type: string; text: string }[] }
+  const text = result.content.find((c) => c.type === 'text')?.text ?? ''
+  const reply = text || 'לא התקבלה תשובה.'
 
   return {
     statusCode: 200,

@@ -165,6 +165,8 @@ export interface OrgRole {
   reportsTo?: string
   volunteerInfo?: BranchVolunteerInfo | null
   portalBranchId?: string
+  /** UID of the linked AppUser — set when a system user is associated with this role */
+  uid?: string
 }
 
 export const ROLE_LEVELS: RoleLevel[] = ['ועד מנהל', 'מטה', 'סניף חוץ', 'סניף ירושלים', 'בתי קפה נודדים', 'טוסטר', 'סניפים עיתיים', 'יריד']
@@ -310,15 +312,16 @@ export interface KnowledgeItem {
   createdAt: Timestamp
 }
 
-export type HQKnowledgeCategory = 'handover' | 'instructions' | 'procedures' | 'sop' | 'tips' | 'other'
+export type HQKnowledgeCategory = 'handover' | 'instructions' | 'procedures' | 'sop' | 'tips' | 'ישיבות ועד' | 'other'
 
 export const HQ_KNOWLEDGE_CATEGORIES: { id: HQKnowledgeCategory; label: string; icon: string }[] = [
-  { id: 'handover',     label: 'קבצי חפיפה',            icon: '🔄' },
-  { id: 'instructions', label: 'הנחיות',                 icon: '📋' },
-  { id: 'procedures',   label: 'שימור מידע תהליכי',     icon: '⚙️' },
-  { id: 'sop',          label: 'סדרי פעולות',            icon: '📌' },
-  { id: 'tips',         label: 'טיפים ועצות',            icon: '💡' },
-  { id: 'other',        label: 'אחר',                    icon: '📎' },
+  { id: 'handover',      label: 'קבצי חפיפה',            icon: '🔄' },
+  { id: 'instructions',  label: 'הנחיות',                 icon: '📋' },
+  { id: 'procedures',    label: 'שימור מידע תהליכי',     icon: '⚙️' },
+  { id: 'sop',           label: 'סדרי פעולות',            icon: '📌' },
+  { id: 'tips',          label: 'טיפים ועצות',            icon: '💡' },
+  { id: 'ישיבות ועד',   label: 'ישיבות ועד',             icon: '📜' },
+  { id: 'other',         label: 'אחר',                    icon: '📎' },
 ]
 
 export interface HQKnowledgeItem {

@@ -1,16 +1,15 @@
 import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { DOMAIN_LABELS, DOMAINS, type Domain } from '../../types'
 
-interface NavItem { to: string; label: string; icon: string; adminOnly: boolean }
+interface NavItem { to: string; label: string; icon: string; adminOnly: boolean; hqOnly?: boolean }
 interface NavGroup { title: string; items: NavItem[] }
 
 const navGroups: NavGroup[] = [
   {
     title: 'משימות',
     items: [
-      { to: '/dashboard', label: 'לוח בקרה', icon: '📊', adminOnly: false },
       { to: '/tasks', label: 'משימות', icon: '✅', adminOnly: false },
       { to: '/my-tasks', label: 'משימות אישיות', icon: '📌', adminOnly: false },
       { to: '/reports', label: 'דיווחים רבעוניים', icon: '📈', adminOnly: false },
@@ -36,6 +35,13 @@ const navGroups: NavGroup[] = [
       { to: '/admin/knowledge', label: 'ניהול ספרייה', icon: '📖', adminOnly: true },
     ],
   },
+  {
+    title: 'מערכת',
+    items: [
+      { to: '/admin/users', label: 'ניהול משתמשים', icon: '👤', adminOnly: false, hqOnly: true },
+      { to: '/account', label: 'הגדרות חשבון', icon: '⚙️', adminOnly: false },
+    ],
+  },
 ]
 
 interface Props {
@@ -47,7 +53,7 @@ interface Props {
 const STORAGE_KEY = 'sidebarCollapsedGroups'
 
 export function Sidebar({ onClose, collapsed = false, onToggleCollapse }: Props) {
-  const { appUser, logOut } = useAuth()
+  const { appUser, orgRole, logOut } = useAuth()
   const navigate = useNavigate()
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
     try {
@@ -73,10 +79,16 @@ export function Sidebar({ onClose, collapsed = false, onToggleCollapse }: Props)
     navigate('/login')
   }
 
+  const isAdmin = appUser?.role === 'admin'
+  const isHQ = appUser?.role !== 'coordinator'
   const visibleGroups = navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !item.adminOnly || appUser?.role === 'admin'),
+      items: group.items.filter((item) => {
+        if (item.adminOnly && !isAdmin) return false
+        if (item.hqOnly && !isHQ) return false
+        return true
+      }),
     }))
     .filter((group) => group.items.length > 0)
 
@@ -84,11 +96,19 @@ export function Sidebar({ onClose, collapsed = false, onToggleCollapse }: Props)
     <aside className={`${collapsed ? 'w-16' : 'w-64'} bg-brand-navy min-h-screen flex flex-col text-white shrink-0 transition-[width] duration-200`}>
       {/* Logo + close/collapse button */}
       <div className={`p-4 border-b border-white/10 flex items-center gap-3 ${collapsed ? 'justify-center px-2' : ''}`}>
-        <img src="/logo_shachentov.png" alt="שכן טוב" className="h-10 w-10 rounded-full object-cover shrink-0" />
+        <Link to="/dashboard" onClick={onClose} className="shrink-0">
+          <img src="/logo_shachentov.png" alt="שכן טוב" className="h-10 w-10 object-contain shrink-0 opacity-90 hover:opacity-100 transition-opacity" />
+        </Link>
         {!collapsed && (
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="font-bold text-sm">שכן טוב</div>
-            <div className="text-xs text-white/60">מערכת CRM</div>
+            {(orgRole?.holderName || appUser?.name) && (
+              <div className="text-xs text-white/70 truncate mt-0.5">
+                {orgRole?.roleName
+                  ? `${orgRole.roleName}${orgRole.holderName ? ` · ${orgRole.holderName}` : ''}`
+                  : appUser?.name}
+              </div>
+            )}
           </div>
         )}
         {onClose && (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import type { KnowledgeItem, KnowledgeItemType } from '../types'
 import { useAuth } from '../context/AuthContext'
@@ -57,4 +57,28 @@ export function useAddKnowledge() {
   }
 
   return { addItem }
+}
+
+export function useUpdateKnowledge() {
+  const updateItem = async (id: string, data: {
+    type: KnowledgeItemType
+    title: string
+    content: string
+    url?: string
+    fileUrl?: string
+    fileName?: string
+    fileSize?: number
+    checklistItems?: string[]
+    tags: string[]
+  }) => {
+    await updateDoc(doc(db, 'knowledgeItems', id), { ...data })
+  }
+  return { updateItem }
+}
+
+export function useDeleteKnowledge() {
+  const deleteItem = async (id: string) => {
+    await deleteDoc(doc(db, 'knowledgeItems', id))
+  }
+  return { deleteItem }
 }

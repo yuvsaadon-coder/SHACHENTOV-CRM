@@ -106,15 +106,25 @@ async function chat(event: HandlerEvent): Promise<HandlerResponse> {
 
   // 1. HQ knowledge
   if (scopes.includes('hq')) fetches.push(collect('מאגר מטה', async () => {
-    let hqQuery = db.collection('hq_knowledge').limit(50)
+    let hqQuery = db.collection('hq_knowledge').limit(80)
     if (domainFilter) {
-      hqQuery = db.collection('hq_knowledge').where('domain', 'in', [domainFilter, 'all']).limit(50)
+      hqQuery = db.collection('hq_knowledge').where('domain', 'in', [domainFilter, 'all']).limit(80)
     }
     const hqSnap = await hqQuery.get()
     if (hqSnap.empty) return null
     const lines = hqSnap.docs.map((d) => {
-      const data = d.data() as { title?: string; content?: string; category?: string }
-      return `— [${data.category ?? ''}] **${data.title ?? ''}**: ${data.content ?? ''}`
+      const data = d.data() as { title?: string; content?: string; category?: string; fileUrl?: string; fileName?: string }
+      const hasText = data.content && data.content.trim().length > 0
+      const hasFile = !!data.fileUrl
+      let contentPart: string
+      if (hasText) {
+        contentPart = data.content!.slice(0, 600)
+      } else if (hasFile) {
+        contentPart = `[קובץ מצורף: ${data.fileName ?? 'ללא שם'} — אין תוכן טקסטואלי]`
+      } else {
+        contentPart = ''
+      }
+      return `— [${data.category ?? ''}] **${data.title ?? ''}**: ${contentPart}`
     })
     return `מאגר ידע מטה:\n${lines.join('\n')}`
   }))
@@ -216,8 +226,14 @@ async function chat(event: HandlerEvent): Promise<HandlerResponse> {
 
 ${knowledgeBlock}
 
-כשתשובה נסמכת על פריט ספציפי — ציין את שמו.
-אם אין מידע רלוונטי במאגר הידע — אמור זאת בכנות: "אין לי מידע על זה במקורות שנבחרו." אל תנסה לספק מידע כללי שאינו מבוסס על המסמכים לעיל.`
+כללי מבנה תשובה — חובה לקיים:
+• תשובתך חייבת להיות שלמה ומסוכמת תוך 3000 תווים לכל היותר.
+• תכנן את תשובתך מראש כך שתסיים אותה בצורה מלאה ועגולה — אף פעם אל תיקטע באמצע משפט או רעיון.
+• אם הנושא רחב ויש עוד מה לומר — כתוב תשובה ממוקדת על הנקודה המרכזית, ובסוף הוסף שורה אחת: "רוצה שאפרט על [נושא ספציפי]?" כך המשתמש יוכל לבקש המשך.
+• כשתשובה נסמכת על פריט ספציפי — ציין את שמו.
+• פריטים המסומנים [קובץ מצורף: ...] הם קבצים שאי אפשר לקרוא את תוכנם — ציין שהמסמך קיים ועל המשתמש לפתוח אותו ישירות.
+• אם אין מידע טקסטואלי אך ישנם קבצים קשורים — הצג אותם בלבד.
+• אם אין כלל מידע רלוונטי — אמור בכנות: "אין לי מידע על זה במקורות שנבחרו." אל תספק מידע כללי שאינו מבוסס על המסמכים לעיל.`
 
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return fail(500, 'משתנה הסביבה ANTHROPIC_API_KEY חסר ב-Netlify.')
@@ -239,12 +255,7 @@ ${knowledgeBlock}
       // matters here because a synchronous Netlify function is killed after a
       // fixed wall-clock budget regardless of what it's doing.
       model: 'claude-haiku-4-5-20251001',
-      // This is a non-streaming call inside a synchronous function with a hard
-      // wall-clock budget — the full completion must finish generating before
-      // anything is returned, so a large max_tokens directly risks a timeout,
-      // not just a long wait. The system prompt already asks for a direct,
-      // concise Hebrew answer, so 900 tokens is generous for that.
-      max_tokens: 900,
+      max_tokens: 1500,
       system: systemPrompt,
       messages: turns,
     }),
