@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, type User } from 'firebase/auth'
+import { onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, type User } from 'firebase/auth'
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase'
 import type { AppUser, OrgRole } from '../types'
@@ -10,6 +10,7 @@ interface AuthContextValue {
   orgRole: OrgRole | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
+  signInWithGoogle: () => Promise<void>
   logOut: () => Promise<void>
 }
 
@@ -54,12 +55,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signInWithEmailAndPassword(auth, email, password)
   }
 
+  const signInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider()
+    const result = await signInWithPopup(auth, provider)
+    // Verify the Google user exists in our users collection
+    const snap = await getDoc(doc(db, 'users', result.user.uid))
+    if (!snap.exists()) {
+      await signOut(auth)
+      throw new Error('המשתמש אינו מורשה למערכת. פנה למנהל המערכת.')
+    }
+  }
+
   const logOut = async () => {
     await signOut(auth)
   }
 
   return (
-    <AuthContext.Provider value={{ firebaseUser, appUser, orgRole, loading, signIn, logOut }}>
+    <AuthContext.Provider value={{ firebaseUser, appUser, orgRole, loading, signIn, signInWithGoogle, logOut }}>
       {children}
     </AuthContext.Provider>
   )
