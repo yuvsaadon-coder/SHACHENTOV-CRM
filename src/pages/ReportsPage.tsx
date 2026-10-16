@@ -5,6 +5,7 @@ import { useAllReportQuestions } from '../hooks/useReportQuestions'
 import { QUARTERS, QUARTER_LABELS, type QuarterLabel } from '../types'
 import type { QuarterlyReport, Branch } from '../types'
 import { Spinner } from '../components/ui/Spinner'
+import { downloadCSV } from '../utils/export'
 
 /** Supplier fields are stored as `{ rating, notes }`. */
 function isRating(v: unknown): v is { rating?: string; notes?: string } {
@@ -192,15 +193,7 @@ export function ReportsPage() {
         }),
       ]
     })
-    const csv = [header, ...rows]
-      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-      .join('\n')
-    const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `דיווחים-רבעוניים-${new Date().toISOString().slice(0, 10)}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadCSV(`דיווחים-רבעוניים-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows])
   }
 
   const selectClass =
