@@ -68,9 +68,10 @@ export function RolesPage() {
       if (statusFilter && r.status !== statusFilter) return false
       if (search) {
         const q = search.toLowerCase()
+        const allHolderNames = [r.holderName, ...(r.coHolders?.map(h => h.name) ?? [])].join(' ')
         return (
           r.roleName.toLowerCase().includes(q) ||
-          r.holderName.toLowerCase().includes(q) ||
+          allHolderNames.toLowerCase().includes(q) ||
           r.area.toLowerCase().includes(q)
         )
       }
@@ -211,7 +212,12 @@ export function RolesPage() {
                       {role.area && <div className="text-xs text-gray-400">{role.area}</div>}
                     </td>
                     <td className="px-4 py-3 text-gray-700">
-                      {role.holderName || <span className="text-gray-300">—</span>}
+                      {(() => {
+                        const names = [role.holderName, ...(role.coHolders?.map(h => h.name) ?? [])].filter(Boolean)
+                        return names.length > 0
+                          ? <>{names.map((n, i) => <div key={i} className={i > 0 ? 'text-xs text-gray-500' : ''}>{n}</div>)}</>
+                          : <span className="text-gray-300">—</span>
+                      })()}
                     </td>
                     <td className="px-4 py-3">
                       <select

@@ -14,16 +14,27 @@ import { useAuth } from '../../context/AuthContext'
 import { useRoles } from '../../hooks/useRoles'
 import { Spinner } from '../../components/ui/Spinner'
 import { useToast } from '../../context/ToastContext'
-import type { AppUser, OrgRole } from '../../types'
+import type { AppUser, OrgRole, Role } from '../../types'
 import { DOMAINS, DOMAIN_LABELS } from '../../types'
 
-type Role = AppUser['role']
+type UserType = 'admin' | 'coordinator' | 'hq'
 
-const ROLE_OPTIONS: { value: Role; label: string }[] = [
-  { value: 'admin', label: 'אדמין' },
-  { value: 'coordinator', label: 'רכז/ת' },
-  ...DOMAINS.map((d) => ({ value: d as Role, label: DOMAIN_LABELS[d] })),
-]
+const BRANCH_LEVELS = ['סניף חוץ', 'סניף ירושלים', 'בתי קפה נודדים', 'טוסטר', 'סניפים עיתיים', 'יריד']
+
+function deriveRoleFromOrgRole(orgRole: OrgRole): Role {
+  if (BRANCH_LEVELS.includes(orgRole.level)) return 'coordinator'
+  const combined = `${orgRole.roleName} ${orgRole.area}`.toLowerCase()
+  for (const domain of DOMAINS) {
+    if (combined.includes(DOMAIN_LABELS[domain].toLowerCase())) return domain
+  }
+  return 'CEO'
+}
+
+const ROLE_LABEL: Record<Role, string> = {
+  admin: 'אדמין',
+  coordinator: 'רכז/ת',
+  ...Object.fromEntries(DOMAINS.map(d => [d, DOMAIN_LABELS[d]])) as Record<typeof DOMAINS[number], string>,
+}
 
 async function createFirebaseUser(email: string, password: string): Promise<string> {
   const appName = `user-create-${Date.now()}`
@@ -44,25 +55,42 @@ function AddUserModal({ roles, onClose }: { roles: OrgRole[]; onClose: () => voi
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<Role>('admin')
+  const [userType, setUserType] = useState<UserType>('hq')
   const [linkedRoleId, setLinkedRoleId] = useState('')
   const [branchId, setBranchId] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+
+  const selectedOrgRole = roles.find(r => r.id === linkedRoleId)
+
+  const handleOrgRoleChange = (id: string) => {
+    setLinkedRoleId(id)
+    const r = roles.find(or => or.id === id)
+    if (r?.phone && !password) setPassword(r.phone.replace(/\D/g, '').slice(0, 20))
+  }
+
+  const derivedRole = (): Role => {
+    if (userType === 'admin') return 'admin'
+    if (userType === 'coordinator') return 'coordinator'
+    return selectedOrgRole ? deriveRoleFromOrgRole(selectedOrgRole) : 'CEO'
+  }
 
   const handleSave = async () => {
     if (!name.trim() || !email.trim() || !password) { setError('שם, אימייל וסיסמא הם שדות חובה'); return }
     if (password.length < 6) { setError('סיסמא חייבת להכיל לפחות 6 תווים'); return }
-    if (role !== 'coordinator' && !linkedRoleId) { setError('יש לקשר את המשתמש לתפקיד בעץ הארגוני'); return }
+    if (userType === 'hq' && !linkedRoleId) { setError('יש לקשר את המשתמש לתפקיד בעץ הארגוני'); return }
     setSaving(true)
     setError('')
     try {
+      const role = derivedRole()
       const uid = await createFirebaseUser(email.trim(), password)
       const userDoc: Omit<AppUser, 'uid'> & { createdAt: unknown } = {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         role,
         active: true,
+        storedPassword: password,
         createdAt: serverTimestamp(),
         ...(branchId ? { branchId } : {}),
       }
@@ -84,8 +112,6 @@ function AddUserModal({ roles, onClose }: { roles: OrgRole[]; onClose: () => voi
     }
   }
 
-  const hqRoles = roles.filter((r) => r.level === 'מטה' || r.level === 'ועד מנהל')
-
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
@@ -106,49 +132,67 @@ function AddUserModal({ roles, onClose }: { roles: OrgRole[]; onClose: () => voi
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">סיסמא ראשונית *</label>
-            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" dir="ltr"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">תפקיד מערכת *</label>
-            <select value={role} onChange={(e) => setRole(e.target.value as Role)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]">
-              {ROLE_OPTIONS.map((r) => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
+            <label className="block text-xs text-gray-500 mb-1 flex items-center justify-between">
+              <span>סיסמא ראשונית *</span>
+              {selectedOrgRole?.phone && (
+                <button type="button" onClick={() => setPassword(selectedOrgRole.phone.replace(/\D/g, '').slice(0, 20))}
+                  className="text-[#189A9F] hover:underline">
+                  מלא מס' טלפון ({selectedOrgRole.phone})
+                </button>
+              )}
+            </label>
+            <div className="relative">
+              <input value={password} onChange={(e) => setPassword(e.target.value)}
+                type={showPassword ? 'text' : 'password'} dir="ltr"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F] pl-10" />
+              <button type="button" onClick={() => setShowPassword(p => !p)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs">
+                {showPassword ? 'הסתר' : 'הצג'}
+              </button>
+            </div>
           </div>
 
-          {role === 'coordinator' ? (
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">סוג משתמש *</label>
+            <div className="flex gap-2">
+              {([['hq', 'צוות מטה'], ['coordinator', 'רכז/ת סניף'], ['admin', 'אדמין']] as [UserType, string][]).map(([val, label]) => (
+                <button key={val} type="button"
+                  onClick={() => setUserType(val)}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors ${userType === val ? 'border-[#189A9F] bg-[#E6F4F4] text-[#147F84]' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {userType === 'coordinator' ? (
             <div>
               <label className="block text-xs text-gray-500 mb-1">מזהה סניף (branchId)</label>
               <input value={branchId} onChange={(e) => setBranchId(e.target.value)} dir="ltr"
                 placeholder="הכנס את ה-ID של הסניף"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
             </div>
-          ) : (
+          ) : userType === 'hq' ? (
             <div>
               <label className="block text-xs text-gray-500 mb-1">
-                קישור לתפקיד בעץ הארגוני *
-                <span className="text-red-400 mr-1">(חובה)</span>
+                תפקיד בעץ הארגוני *
               </label>
-              <select value={linkedRoleId} onChange={(e) => setLinkedRoleId(e.target.value)}
+              <select value={linkedRoleId} onChange={(e) => handleOrgRoleChange(e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]">
                 <option value="">— בחר תפקיד —</option>
-                {hqRoles.map((r) => (
+                {roles.filter(r => r.level === 'מטה' || r.level === 'ועד מנהל').map((r) => (
                   <option key={r.id} value={r.id}>
-                    {r.roleName} ({r.area || r.level}){r.uid ? ' ✓ מקושר' : ''}
+                    {r.roleName} ({r.area || r.level})
                   </option>
                 ))}
-                {roles.filter((r) => r.level !== 'מטה' && r.level !== 'ועד מנהל').map((r) => (
+                {roles.filter(r => r.level !== 'מטה' && r.level !== 'ועד מנהל').map((r) => (
                   <option key={r.id} value={r.id}>
-                    {r.roleName} — {r.level}{r.uid ? ' ✓ מקושר' : ''}
+                    {r.roleName} — {r.level}
                   </option>
                 ))}
               </select>
             </div>
-          )}
+          ) : null}
 
           {error && <div className="text-xs text-red-500 bg-red-50 rounded px-3 py-2">{error}</div>}
         </div>
@@ -172,13 +216,14 @@ function EditUserModal({
 }: { user: AppUser; roles: OrgRole[]; isSelf: boolean; isAdmin: boolean; onClose: () => void }) {
   const { toast } = useToast()
   const [name, setName] = useState(user.name)
-  const [role, setRole] = useState<Role>(user.role)
+  const [isAdminUser, setIsAdminUser] = useState(user.role === 'admin')
   const [active, setActive] = useState(user.active)
   const linkedRole = roles.find((r) => r.uid === user.uid)
   const [linkedRoleId, setLinkedRoleId] = useState(linkedRole?.id ?? '')
   const [saving, setSaving] = useState(false)
   const [sendingReset, setSendingReset] = useState(false)
   const [error, setError] = useState('')
+  const [showStoredPwd, setShowStoredPwd] = useState(false)
 
   // self password-change fields
   const [currentPwd, setCurrentPwd] = useState('')
@@ -186,12 +231,20 @@ function EditUserModal({
   const [confirmPwd, setConfirmPwd] = useState('')
   const [savingPwd, setSavingPwd] = useState(false)
 
+  const selectedOrgRole = roles.find(r => r.id === linkedRoleId)
+
+  const computedRole = (): Role => {
+    if (isAdminUser) return 'admin'
+    if (selectedOrgRole) return deriveRoleFromOrgRole(selectedOrgRole)
+    return user.role
+  }
+
   const handleSave = async () => {
     if (!name.trim()) { setError('שם הוא שדה חובה'); return }
-    if (isAdminProp && role !== 'coordinator' && !linkedRoleId) { setError('יש לקשר את המשתמש לתפקיד בעץ הארגוני'); return }
     setSaving(true)
     setError('')
     try {
+      const role = computedRole()
       const updateData: Record<string, unknown> = { name: name.trim(), updatedAt: serverTimestamp() }
       if (isAdminProp) { updateData.role = role; updateData.active = active }
       await updateDoc(doc(db, 'users', user.uid), updateData)
@@ -208,7 +261,6 @@ function EditUserModal({
       } else if (linkedRole && name.trim() !== user.name) {
         await updateDoc(doc(db, 'roles', linkedRole.id), { holderName: name.trim() })
       }
-      // also update all other roles linked to this uid (edge case)
       if (name.trim() !== user.name) {
         const snap = await getDocs(fsQuery(collection(db, 'roles'), where('uid', '==', user.uid)))
         for (const d of snap.docs) {
@@ -236,6 +288,7 @@ function EditUserModal({
       const cred = EmailAuthProvider.credential(fbUser.email, currentPwd)
       await reauthenticateWithCredential(fbUser, cred)
       await updatePassword(fbUser, newPwd)
+      await updateDoc(doc(db, 'users', user.uid), { storedPassword: newPwd })
       setCurrentPwd(''); setNewPwd(''); setConfirmPwd('')
       toast('הסיסמא עודכנה בהצלחה', 'success')
     } catch (e: unknown) {
@@ -273,55 +326,67 @@ function EditUserModal({
         <div className="p-5 space-y-4">
           <div className="text-xs text-gray-400 font-mono" dir="ltr">{user.email}</div>
 
-          {/* Name — always editable */}
           <div>
             <label className="block text-xs text-gray-500 mb-1">שם מלא *</label>
             <input value={name} onChange={(e) => setName(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]" />
           </div>
 
-          {/* Role + org link — admin only */}
           {isAdminProp && (
             <>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">תפקיד מערכת</label>
-                <select value={role} onChange={(e) => setRole(e.target.value as Role)}
+                <label className="block text-xs text-gray-500 mb-1">תפקיד בעץ הארגוני</label>
+                <select value={linkedRoleId} onChange={(e) => setLinkedRoleId(e.target.value)}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]">
-                  {ROLE_OPTIONS.map((r) => (
-                    <option key={r.value} value={r.value}>{r.label}</option>
+                  <option value="">— בחר תפקיד —</option>
+                  {roles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.roleName} — {r.level}{r.uid && r.uid !== user.uid ? ' (תפוס)' : r.uid === user.uid ? ' ✓ מקושר' : ''}
+                    </option>
                   ))}
                 </select>
               </div>
 
-              {role !== 'coordinator' && (
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">קישור לתפקיד בעץ הארגוני</label>
-                  <select value={linkedRoleId} onChange={(e) => setLinkedRoleId(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]">
-                    <option value="">— בחר תפקיד —</option>
-                    {roles.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.roleName} — {r.level}{r.uid && r.uid !== user.uid ? ' (תפוס)' : r.uid === user.uid ? ' ✓ מקושר' : ''}
-                      </option>
-                    ))}
-                  </select>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="admin-check" checked={isAdminUser} onChange={(e) => setIsAdminUser(e.target.checked)}
+                    className="h-4 w-4 accent-[#189A9F]" />
+                  <label htmlFor="admin-check" className="text-sm">אדמין</label>
                 </div>
-              )}
-
-              <div className="flex items-center gap-3">
-                <input type="checkbox" id="active-check" checked={active} onChange={(e) => setActive(e.target.checked)}
-                  className="h-4 w-4 accent-[#189A9F]" />
-                <label htmlFor="active-check" className="text-sm">משתמש פעיל</label>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="active-check" checked={active} onChange={(e) => setActive(e.target.checked)}
+                    className="h-4 w-4 accent-[#189A9F]" />
+                  <label htmlFor="active-check" className="text-sm">משתמש פעיל</label>
+                </div>
               </div>
             </>
           )}
 
           {/* Password section */}
           <div className="border-t border-gray-100 pt-4 space-y-3">
-            <div className="text-xs font-semibold text-gray-600">שינוי סיסמא</div>
+            <div className="text-xs font-semibold text-gray-600">סיסמא</div>
+
+            {/* Admin sees stored password of other users */}
+            {isAdminProp && !isSelf && (
+              <div className="bg-gray-50 rounded-lg px-3 py-2 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">סיסמא שמורה</span>
+                  <button type="button" onClick={() => setShowStoredPwd(p => !p)}
+                    className="text-xs text-[#189A9F] hover:underline">
+                    {showStoredPwd ? 'הסתר' : 'הצג'}
+                  </button>
+                </div>
+                {showStoredPwd ? (
+                  <div className="font-mono text-sm text-gray-800 select-all" dir="ltr">
+                    {user.storedPassword || <span className="text-gray-400 italic">לא שמורה</span>}
+                  </div>
+                ) : (
+                  <div className="font-mono text-sm text-gray-400">••••••••</div>
+                )}
+              </div>
+            )}
 
             {isSelf ? (
-              /* Self-edit: direct password change */
               <>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">סיסמא נוכחית</label>
@@ -345,7 +410,6 @@ function EditUserModal({
                 </button>
               </>
             ) : (
-              /* Admin editing others: send reset email */
               <div className="space-y-1.5">
                 <button onClick={() => void handlePasswordReset()} disabled={sendingReset}
                   className="text-sm border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50 disabled:opacity-40">
@@ -381,7 +445,7 @@ export function UsersAdminPage() {
   const [showAdd, setShowAdd] = useState(false)
   const { roles } = useRoles()
 
-  const isAdmin = appUser?.role === 'admin'
+  const isAdmin = appUser?.role === 'admin' || appUser?.role === 'CEO'
 
   useEffect(() => {
     const q = query(collection(db, 'users'), orderBy('name'))
@@ -421,8 +485,7 @@ export function UsersAdminPage() {
             <tr>
               <th className="px-4 py-2.5 text-right font-medium text-gray-600">שם</th>
               <th className="px-4 py-2.5 text-right font-medium text-gray-600">אימייל</th>
-              <th className="px-4 py-2.5 text-right font-medium text-gray-600">תפקיד</th>
-              <th className="px-4 py-2.5 text-right font-medium text-gray-600">קישור לעץ</th>
+              <th className="px-4 py-2.5 text-right font-medium text-gray-600">תפקיד בארגון</th>
               <th className="px-4 py-2.5 text-right font-medium text-gray-600">סטטוס</th>
               <th className="px-4 py-2.5"></th>
             </tr>
@@ -430,7 +493,7 @@ export function UsersAdminPage() {
           <tbody>
             {users.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">אין משתמשים</td>
+                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">אין משתמשים</td>
               </tr>
             )}
             {users.map((u) => {
@@ -443,16 +506,14 @@ export function UsersAdminPage() {
                   <td className="px-4 py-2.5 font-medium" style={{ color: '#141348' }}>
                     {u.name}
                     {isSelfRow && <span className="text-xs text-gray-400 mr-1">(אתה)</span>}
+                    {u.role === 'admin' && <span className="text-xs bg-[#141348] text-white px-1.5 py-0.5 rounded mr-1">אדמין</span>}
                   </td>
                   <td className="px-4 py-2.5 text-gray-500 font-mono text-xs" dir="ltr">{u.email}</td>
-                  <td className="px-4 py-2.5 text-gray-600">
-                    {ROLE_OPTIONS.find((r) => r.value === u.role)?.label ?? u.role}
-                  </td>
                   <td className="px-4 py-2.5">
                     {isLinked ? (
                       <span className="text-xs px-2 py-0.5 rounded font-medium"
                         style={{ backgroundColor: '#C6EFCE', color: '#0A6B2E' }}>
-                        {orgRole ? orgRole.roleName : 'רכז/ת'}
+                        {orgRole ? orgRole.roleName : (u.role === 'coordinator' ? 'רכז/ת' : ROLE_LABEL[u.role] ?? u.role)}
                       </span>
                     ) : (
                       <span className="text-xs px-2 py-0.5 rounded font-medium"

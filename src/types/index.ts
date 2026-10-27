@@ -60,6 +60,7 @@ export interface AppUser {
   role: Role
   branchId?: string
   active: boolean
+  storedPassword?: string
 }
 
 // Private per-user to-dos, kept in users/{uid}/personalTasks — not part of the
@@ -167,6 +168,8 @@ export interface OrgRole {
   portalBranchId?: string
   /** UID of the linked AppUser — set when a system user is associated with this role */
   uid?: string
+  /** Additional holders beyond the primary holderName/uid */
+  coHolders?: Array<{name: string; uid?: string}>
 }
 
 export const ROLE_LEVELS: RoleLevel[] = ['ועד מנהל', 'מטה', 'סניף חוץ', 'סניף ירושלים', 'בתי קפה נודדים', 'טוסטר', 'סניפים עיתיים', 'יריד']

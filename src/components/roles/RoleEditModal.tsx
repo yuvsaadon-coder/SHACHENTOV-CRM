@@ -29,8 +29,17 @@ const EMPTY: Omit<OrgRole, 'id'> = {
   portalBranchId: undefined,
 }
 
+function buildHolders(role: OrgRole | null): Array<{name: string; uid?: string}> {
+  if (!role) return [{ name: '', uid: undefined }]
+  const primary = { name: role.holderName, uid: role.uid }
+  const co = role.coHolders ?? []
+  const all = [primary, ...co]
+  return all.length > 0 ? all : [{ name: '', uid: undefined }]
+}
+
 export function RoleEditModal({ role, allRoles, onClose }: Props) {
   const [form, setForm] = useState<Omit<OrgRole, 'id'>>(role ? { ...EMPTY, ...role } : { ...EMPTY })
+  const [holders, setHolders] = useState<Array<{name: string; uid?: string}>>(buildHolders(role))
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -40,9 +49,16 @@ export function RoleEditModal({ role, allRoles, onClose }: Props) {
 
   useEffect(() => {
     setForm(role ? { ...EMPTY, ...role } : { ...EMPTY })
+    setHolders(buildHolders(role))
     setError(null)
     setConfirmDelete(false)
   }, [role])
+
+  const setHolder = (i: number, field: 'name' | 'uid', val: string | undefined) =>
+    setHolders((prev) => prev.map((h, idx) => idx === i ? { ...h, [field]: val || undefined } : h))
+
+  const addHolder = () => setHolders((prev) => [...prev, { name: '', uid: undefined }])
+  const removeHolder = (i: number) => setHolders((prev) => prev.length > 1 ? prev.filter((_, idx) => idx !== i) : [{ name: '', uid: undefined }])
 
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
@@ -52,22 +68,34 @@ export function RoleEditModal({ role, allRoles, onClose }: Props) {
     setSaving(true)
     setError(null)
     try {
-      // Firestore rejects `undefined` values — reportsTo / portalBranchId are
-      // undefined whenever "— ללא —" is picked in their dropdowns.
-      const OPTIONAL_KEYS = ['reportsTo', 'portalBranchId', 'uid'] as const
+      const OPTIONAL_KEYS = ['reportsTo', 'portalBranchId', 'uid', 'coHolders'] as const
       const data: Record<string, unknown> = {}
       for (const [key, value] of Object.entries(form)) {
         if (value !== undefined) data[key] = value
       }
 
+      // Merge holders into holderName / uid / coHolders
+      const validHolders = holders.filter(h => h.name.trim() || h.uid)
+      const primary = validHolders[0] ?? { name: '', uid: undefined }
+      data.holderName = primary.name.trim()
+      if (primary.uid) data.uid = primary.uid
+      else data.uid = undefined
+
+      const co = validHolders.slice(1)
+      if (co.length > 0) data.coHolders = co
+      else data.coHolders = undefined
+
       if (role) {
-        // On update, clearing a field must remove it rather than leave the old value.
         for (const key of OPTIONAL_KEYS) {
           if (data[key] === undefined) data[key] = deleteField()
         }
         await updateDoc(doc(db, 'roles', role.id), data)
       } else {
-        await addDoc(collection(db, 'roles'), data)
+        const clean: Record<string, unknown> = {}
+        for (const [k, v] of Object.entries(data)) {
+          if (v !== undefined) clean[k] = v
+        }
+        await addDoc(collection(db, 'roles'), clean)
       }
       onClose()
     } catch (e: unknown) {
@@ -145,32 +173,42 @@ export function RoleEditModal({ role, allRoles, onClose }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">ממלא תפקיד</label>
-              <input
-                value={form.holderName}
-                onChange={(e) => set('holderName', e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
-              />
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-medium text-gray-600">ממלאי תפקיד</label>
+              <button type="button" onClick={addHolder}
+                className="text-xs text-[#189A9F] hover:underline">+ הוסף ממלא</button>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">משתמש מקושר</label>
-              <select
-                value={form.uid ?? ''}
-                onChange={(e) => {
-                  const uid = e.target.value || undefined
-                  const linked = users.find((u) => u.uid === uid)
-                  set('uid', uid)
-                  if (linked && !form.holderName) set('holderName', linked.name)
-                }}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
-              >
-                <option value="">— ללא —</option>
-                {users.map((u) => (
-                  <option key={u.uid} value={u.uid}>{u.name}</option>
-                ))}
-              </select>
+            <div className="space-y-2">
+              {holders.map((h, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <input
+                    value={h.name}
+                    onChange={(e) => setHolder(i, 'name', e.target.value)}
+                    placeholder="שם ממלא התפקיד"
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+                  />
+                  <select
+                    value={h.uid ?? ''}
+                    onChange={(e) => {
+                      const uid = e.target.value || undefined
+                      const linked = users.find((u) => u.uid === uid)
+                      setHolder(i, 'uid', uid)
+                      if (linked && !h.name) setHolder(i, 'name', linked.name)
+                    }}
+                    className="w-36 border border-gray-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#189A9F]"
+                  >
+                    <option value="">— משתמש —</option>
+                    {users.map((u) => (
+                      <option key={u.uid} value={u.uid}>{u.name}</option>
+                    ))}
+                  </select>
+                  {holders.length > 1 && (
+                    <button type="button" onClick={() => removeHolder(i)}
+                      className="text-gray-300 hover:text-red-500 text-lg leading-none px-1">×</button>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 
