@@ -79,6 +79,11 @@ h2::after{content:"";position:absolute;inset:auto -4px 2px -4px;height:11px;back
 .cd div::before{content:"";position:absolute;left:0;right:0;top:42%;height:2px;background:rgba(255,255,255,.18)}
 .cd b{display:block;font-family:var(--display);font-size:46px;line-height:1;font-weight:700;color:var(--sun)}
 .cd small{color:#e9e3cf;font-size:12px;direction:rtl;display:block}
+.bigdays{display:flex;align-items:center;gap:16px;margin:18px 0 8px}
+.bigdays b{font-family:var(--display);font-weight:700;font-size:96px;line-height:.9;background:var(--ink);color:var(--sun);border-radius:20px;padding:10px 18px 6px;box-shadow:5px 5px 0 var(--pink);transform:rotate(-2deg);min-width:120px;text-align:center}
+.bigdays span{display:block;font-family:var(--display);font-weight:600;font-size:20px}
+.bigdays strong{display:block;font-family:var(--display);font-size:26px;line-height:1.1}
+@media (max-width:480px){.bigdays b{font-size:72px;min-width:96px}.bigdays strong{font-size:22px}}
 .cdlabel{font-family:var(--display);font-size:22px;font-weight:700}
 .quip{display:inline-block;margin-top:8px;background:var(--paper2);border:2px solid var(--ink);border-radius:14px 14px 14px 2px;padding:4px 12px;font-weight:500;font-size:14px}
 .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px}
@@ -328,7 +333,7 @@ footer{font-size:12px;text-align:center;background:var(--paper);border:2px solid
     <div class="log" id="log"></div>
   </section>
 
-  <footer>מבוסס על קובץ השבצ"ק (shabtzak_12). דרישת נוכחות: 51% מימי הצו, יום יציאה נספר. לניר: יעד 10 ימי סגירה בתע"מ.</footer>
+  <footer>מבוסס על קובץ השבצ"ק (shabtzak_12). בכל יום: לפחות 3 בבסיס, מהם לפחות קצין אחד. דרישת נוכחות: 51% מימי הצו, יום יציאה נספר. לניר: יעד 10 ימי סגירה בתע"מ.</footer>
 </div>
 
 <dialog id="dlg">
@@ -462,12 +467,11 @@ const QUIPS={
 };
 function quip(k,i){const a=QUIPS[k];return a[(i+Math.max(T,0))%a.length]}
 
-let cdTarget=null;
 function renderHero(){
   const main=document.getElementById("heroMain"), side=document.getElementById("heroSide");
   if(me===null){
     main.innerHTML='<h2>בחר את השם שלך למעלה</h2><p class="muted">ותקבל ספירה לאחור, הסגירה הבאה, עם מי אתה סוגר וכמה נשאר.</p>';
-    side.innerHTML="";cdTarget=null;return;
+    side.innerHTML="";return;
   }
   const i=me, st=stats(i,T), s=S(T,i);
   let cls,label,cdLbl,target,qk;
@@ -479,7 +483,6 @@ function renderHero(){
     if(st.next){cdLbl="עד החזרה לבסיס";target=st.next[0]}
     else{cdLbl="עד סוף הצו, בלי עוד סגירות";target=st.end+1}
   }
-  cdTarget=target;
   const focus=st.cur||st.next;
   let nextHtml="";
   if(focus){
@@ -492,7 +495,7 @@ function renderHero(){
       (mates.length?"":'<span class="muted">אף אחד, רק אתה והשמיים</span>')+'</div></div>';
   } else if(T<=st.end){nextHtml='<div class="next"><strong>אין עוד סגירות עד סוף הצו</strong></div>'}
   main.innerHTML='<div class="row between"><span class="status '+cls+'">'+label+'</span><span class="muted num">'+(T>=0&&T<N?phase(T)+" · ":"")+fmtLong(T)+'</span></div>'+
-    (target!==null?'<div class="cd" id="cd"><div><b id="cdS">00</b><small>שניות</small></div><div><b id="cdM">00</b><small>דקות</small></div><div><b id="cdH">00</b><small>שעות</small></div><div><b id="cdD">0</b><small>ימים</small></div></div><div class="cdlabel">'+cdLbl+'</div>'
+    (target!==null?bigDays(target-T,cdLbl)
       :'<div style="font-family:var(--display);font-size:64px;line-height:1;color:var(--accent);margin:16px 0 4px">חופשי!</div>')+
     '<div class="quip">'+esc(quip(qk,i))+'</div>'+nextHtml;
   // side: tiles + ring
@@ -511,18 +514,13 @@ function renderHero(){
     '<div class="tiles">'+
     tile(st.closingLeft,"ימי סגירה נשארו")+tile(st.homeLeft,"ימים בבית נשארו")+
     tile(T>st.end?"0":Math.max(0,st.toEnd),"ימים עד סוף הצו ("+fmt(st.end)+")")+tile(st.bl.length,"סגירות בסך הכל")+'</div>';
-  tickCountdown();
+}
+function bigDays(n,lbl){
+  const word=n===1?"יום אחד":n===2?"יומיים":n+" ימים";
+  return '<div class="bigdays"><b class="num">'+(n<=1?(n===1?"מחר":"היום"):n)+'</b><div><span>'+(n<=1?"":"עוד "+word)+'</span><strong>'+lbl+'</strong></div></div>';
 }
 function tile(v,l){return '<div class="tile"><b class="num">'+v+'</b><span>'+l+'</span></div>'}
-function tickCountdown(){
-  const el=document.getElementById("cdD");if(!el||cdTarget===null)return;
-  const now=new Date(), simNow=new Date(dateOf(T).getTime()+(now-new Date(now.getFullYear(),now.getMonth(),now.getDate())));
-  let ms=Math.max(0,dateOf(cdTarget)-simNow);
-  const d=Math.floor(ms/864e5);ms-=d*864e5;const h=Math.floor(ms/36e5);ms-=h*36e5;const m=Math.floor(ms/6e4);ms-=m*6e4;const s=Math.floor(ms/1e3);
-  el.textContent=d;document.getElementById("cdH").textContent=String(h).padStart(2,"0");
-  document.getElementById("cdM").textContent=String(m).padStart(2,"0");document.getElementById("cdS").textContent=String(s).padStart(2,"0");
-}
-setInterval(tickCountdown,1000);
+
 
 function renderStrip(){
   const el=document.getElementById("strip");el.innerHTML="";el.style.setProperty("--pc",PC[me===null?2:me]);
@@ -565,7 +563,6 @@ function renderBadges(){
   const list=[
     ["🪖","עלית על מדים","היום הראשון באל\"ת",T>=0],
     ["🔓","סגירה ראשונה","יצאת הביתה בפעם הראשונה",done.length>=1],
-    ["🧱","ברזל","סגירה של 7 ימים ומעלה",done.some(b=>b[1]-b[0]+1>=7)],
     ["⛺","חצי הדרך","עברה חצי מתקופת הצו",T>=Math.ceil(st.days/2)],
     ["🤝","צמד חמד","10 ימים עם אותו חבר",buddyMax>=10],
     ["🎯",isNir?"10 ימי תע״מ":"51% בכיס","עמדת בדרישת הנוכחות",isNir?done.reduce((a,[s,e])=>{for(let d=s;d<=e;d++)if(phase(d)==='תע"מ')a++;return a},0)>=NIR_TARGET:st.soFar>=st.need],
@@ -612,10 +609,10 @@ document.getElementById("copyBtn").addEventListener("click",async()=>{
 const boardEl=document.getElementById("board");
 function dayIssues(d){
   if(d>=47) return null;
-  const off=OFFICERS.filter(i=>inBase(d,i)).length, ms=MASHAK.filter(i=>inBase(d,i)).length;
+  const off=OFFICERS.filter(i=>inBase(d,i)).length, all=NAMES.filter((n,i)=>inBase(d,i)).length;
+  if(all<3&&off<1) return {cls:"bad",t:"רק "+all+", בלי קצין"};
+  if(all<3) return {cls:"bad",t:"רק "+all+" בבסיס"};
   if(off<1) return {cls:"bad",t:"אין קצין"};
-  if(ms<1) return {cls:"bad",t:"אין משק"};
-  if(ms<2) return {cls:"warn",t:"משק אחד"};
   return {cls:"ok",t:"✓"};
 }
 function cellFlags(d,i){
@@ -760,13 +757,11 @@ function renderTicker(){
     const comeIn=NAMES.map((n,i)=>i).filter(i=>inBase(d,i)&&!inBase(d-1,i)&&d>0);
     if(goHome.length)items.push("יוצאים הביתה היום: "+names(goHome)+" 🏠");
     if(comeIn.length)items.push("חוזרים לבסיס היום: "+names(comeIn)+" ⛺");
-    items.push("בבסיס עכשיו: "+NAMES.filter((n,i)=>inBase(d,i)).length+" לוחמים");
+    items.push("בבסיס עכשיו: "+NAMES.filter((n,i)=>inBase(d,i)).length+" לוחמים (צריך לפחות 3, מהם קצין)");
   }
   NAMES.forEach((n,i)=>{const left=END_IDX[i]-T;if(left>=0&&left<=7)items.push(left===0?n+" מסיים את הצו היום! 🎉":"עוד "+left+" ימים לשחרור של "+n)});
   let best=0,bi=0,bj=1;for(let i=0;i<P;i++)for(let j=i+1;j<P;j++){const k=together(i,j);if(k>best){best=k;bi=i;bj=j}}
   items.push("הזוג הכי סגור בצוות: "+NAMES[bi]+" ו"+NAMES[bj]+" עם "+best+" ימים ביחד 💛");
-  const iron=NAMES.map((n,i)=>({n,m:Math.max(...blocks(i).map(b=>b[1]-b[0]+1))})).sort((a,b)=>b.m-a.m)[0];
-  items.push("הסגירה הכי ארוכה: "+iron.n+" עם "+iron.m+" ימים ברצף 🧱");
   items.push("נשארו "+Math.max(0,N-Math.max(T,0))+" ימים עד הזיכויים");
   const html=items.map(x=>"<span>"+esc(x)+"</span>").join("");
   const el=document.getElementById("ticker");el.innerHTML=html;
