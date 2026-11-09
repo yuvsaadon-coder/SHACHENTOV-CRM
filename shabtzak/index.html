@@ -123,7 +123,7 @@ h2::after{content:"";position:absolute;inset:auto -4px 2px -4px;height:11px;back
 .cl.past{opacity:.45;text-decoration:line-through;text-decoration-thickness:2px}
 .cl.now{background:var(--sun);box-shadow:3px 3px 0 var(--ink);transform:rotate(-.6deg)}
 .cl .when{font-weight:700}
-.cl .len{font-family:var(--display);font-size:30px;line-height:1;grid-row:span 2;text-align:center;min-width:46px;background:var(--pc,var(--sun));border:2px solid var(--ink);border-radius:10px;padding:2px 4px}
+.cl .len{font-family:var(--display);font-size:30px;line-height:1;grid-row:span 3;text-align:center;min-width:46px;background:var(--pc,var(--sun));border:2px solid var(--ink);border-radius:10px;padding:2px 4px}
 .cl .len small{display:block;font-family:var(--body);font-size:10px;font-weight:700}
 .cl .who{font-size:13px;color:var(--muted)}
 .cl.now .who{color:var(--ink)}
@@ -208,6 +208,15 @@ table.board{border-collapse:separate;border-spacing:0;width:100%;min-width:430px
 .syncbar .src{font-family:var(--display);font-weight:700;font-size:17px}
 .syncbar #syncTxt{font-size:13px;font-weight:500;flex:1;min-width:150px}
 .btn.spin{opacity:.7;pointer-events:none}
+.cell.ex span{background:repeating-linear-gradient(45deg,var(--pc) 0 4px,var(--paper) 4px 8px);border:2px dashed var(--ink)}
+.cell.ex::before{content:"🚪";position:absolute;inset:0;display:grid;place-items:center;font-size:13px;z-index:1}
+.sw-exit{display:inline-grid!important;place-items:center;font-size:9px;font-style:normal;background:repeating-linear-gradient(45deg,var(--sun) 0 3px,var(--paper) 3px 6px)!important}
+.cdot{position:absolute;top:-4px;left:-4px;width:14px;height:14px;border-radius:50%;background:var(--red);color:#fff;font-size:10px;line-height:12px;text-align:center;border:1.5px solid var(--ink)}
+.strip i.e{background:repeating-linear-gradient(45deg,var(--pc,var(--sun)) 0 3px,var(--paper) 3px 6px)}
+.exitline{display:inline-flex;align-items:center;gap:6px;margin-top:8px;background:var(--paper2);border:2px dashed var(--ink);border-radius:12px;padding:3px 10px;font-weight:700;font-size:14px}
+.cl .exit{font-size:13px;font-weight:700}
+.board.solo{min-width:0;max-width:340px;margin-inline:auto}
+.board.solo .cell span{height:26px}
 .notice{font-size:13px;font-weight:500;border-radius:12px;padding:8px 12px;background:#d9f1ff;border:2px solid var(--ink)}
 
 /* log */
@@ -251,7 +260,7 @@ footer{font-size:12px;text-align:center;background:var(--paper);border:2px solid
   <header class="top">
     <div class="brand">
       <div>
-        <h1>שבצ"ק<span class="tag">אל"ת + תע"מ</span></h1>
+        <h1>שבצ"ק<span class="tag">מודיעין 7020</span></h1>
         <div class="sub" id="subTxt"></div>
       </div>
       <div class="num" id="progressTxt"></div>
@@ -263,15 +272,6 @@ footer{font-size:12px;text-align:center;background:var(--paper);border:2px solid
       <strong id="tmLbl" class="num"></strong>
       <button class="chipbtn" id="tmReset" type="button">חזרה להיום</button>
     </div>
-    <div class="syncbar" id="syncbar">
-      <span class="src">📗 המקור: גוגל שיטס</span>
-      <span id="syncTxt" class="num">טוען…</span>
-      <div class="row">
-        <button class="btn pri" id="syncBtn" type="button">🔄 סנכרון עכשיו</button>
-        <a class="btn" id="sheetLink" href="https://docs.google.com/spreadsheets/d/11ywUZWgERKUbGkJg_vAkkwsZENL_TTn6/edit" target="_blank" rel="noopener">✏️ עריכה בשיטס</a>
-      </div>
-    </div>
-    <div id="syncNote" class="notice" hidden></div>
   </header>
 
   <section aria-labelledby="whoH">
@@ -288,9 +288,28 @@ footer{font-size:12px;text-align:center;background:var(--paper);border:2px solid
   </section>
 
   <section class="panel" style="--hl:var(--sky)">
-    <div class="row between"><h2>השבצ"ק שלי</h2><span class="muted" style="font-size:13px">כל משבצת = יום. צבעוני = בסיס, נקודה אדומה = אילוץ</span></div>
+    <div class="row between"><h2>השבצ"ק שלי</h2><span class="muted" style="font-size:13px">כל משבצת = יום. צבעוני = בסיס, פסים = יום יציאה, נקודה אדומה = אילוץ</span></div>
     <div class="strip" id="strip"></div>
     <div class="striplbl" id="stripLbl"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="boardH" style="--hl:var(--sky)">
+    <div class="boardbar">
+      <div>
+        <h2 id="boardH">לוח הצוות</h2>
+        <div class="muted" style="font-size:13px">🚪 יום יציאה = היום הראשון בבית אחרי סגירה (נספר לנוכחות)</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="onlyMe"> רק אני</label>
+    </div>
+    <div class="legend" style="margin:8px 0">
+      <span><i class="sw" style="background:linear-gradient(90deg,var(--pink),var(--sun),var(--mint),var(--sky))"></i>בבסיס (כל אחד בצבע שלו)</span>
+      <span><i class="sw sw-exit">🚪</i>יום יציאה</span>
+      <span><i class="sw"></i>בבית</span>
+      <span><i class="sw" style="background:repeating-linear-gradient(45deg,var(--org) 0 3px,transparent 3px 6px)"></i>התארגנות</span>
+      <span><i class="sw" style="position:relative"><b class="cdot">!</b></i>אילוץ</span>
+      <span><i class="sw" style="background:repeating-linear-gradient(-45deg,#d6ccb2 0 2px,var(--paper) 2px 6px)"></i>אחרי סוף הצו</span>
+    </div>
+    <div class="boardscroll"><table class="board" id="board"></table></div>
   </section>
 
   <section class="grid2">
@@ -302,43 +321,22 @@ footer{font-size:12px;text-align:center;background:var(--paper);border:2px solid
     </div>
   </section>
 
+  <section class="panel" id="todayPanel" style="--hl:var(--mint)"></section>
+
   <section class="panel" style="--hl:var(--pink)">
     <div class="row between"><h2>הישגים</h2><span class="muted num" id="badgeCount" style="font-size:13px"></span></div>
     <div class="badges" id="badges"></div>
   </section>
 
-  <section class="grid2">
-    <div class="panel tilt-r" id="todayPanel" style="--hl:var(--mint)"></div>
-    <div class="panel share tilt-l" style="--hl:#4be37c">
-      <h2>שליחה לקבוצה</h2>
-      <div class="muted" style="font-size:13px;margin-bottom:8px">הודעה מוכנה עם הסגירה הבאה שלך</div>
-      <textarea id="shareTxt" readonly aria-label="טקסט לשיתוף"></textarea>
-      <div class="row" style="margin-top:8px">
-        <button class="btn pri" id="copyBtn" type="button">העתקה</button>
-        <a class="btn wa" id="waBtn" href="#" target="_blank" rel="noopener">פתיחה בוואטסאפ</a>
-      </div>
+  <section class="syncbar" id="syncbar">
+    <span class="src">📗 המקור: גוגל שיטס</span>
+    <span id="syncTxt" class="num">טוען…</span>
+    <div class="row">
+      <button class="btn pri" id="syncBtn" type="button">🔄 עדכון מהשיטס</button>
+      <a class="btn" id="sheetLink" href="https://docs.google.com/spreadsheets/d/11ywUZWgERKUbGkJg_vAkkwsZENL_TTn6/edit" target="_blank" rel="noopener">✏️ עריכה בשיטס</a>
     </div>
   </section>
-
-  <section class="panel" aria-labelledby="boardH" style="--hl:var(--sky)">
-    <div class="boardbar">
-      <div>
-        <h2 id="boardH">לוח הצוות</h2>
-        <div class="muted" style="font-size:13px">משתנה רק דרך השיטס. אחרי עריכה שם לוחצים "סנכרון עכשיו" למעלה</div>
-      </div>
-    </div>
-    <div class="legend" style="margin:8px 0">
-      <span><i class="sw" style="background:linear-gradient(90deg,var(--pink),var(--sun),var(--mint),var(--sky))"></i>בבסיס (כל אחד בצבע שלו)</span>
-      <span><i class="sw"></i>בבית</span>
-      <span><i class="sw" style="background:repeating-linear-gradient(45deg,var(--org) 0 3px,transparent 3px 6px)"></i>התארגנות</span>
-      <span><i class="sw" style="outline:3px solid var(--bad)"></i>בבסיס ביום אילוץ או ביום שלפניו</span>
-      <span><i class="sw" style="outline:3px dotted var(--warn)"></i>יותר מ-7 ימים ברצף</span>
-      <span><i class="sw" style="background:repeating-linear-gradient(-45deg,#d6ccb2 0 2px,var(--paper) 2px 6px)"></i>אחרי סוף הצו</span>
-    </div>
-    <div class="boardscroll"><table class="board" id="board"></table></div>
-    <div class="issues" id="issues"></div>
-  </section>
-
+  <div id="syncNote" class="notice" hidden></div>
 
 </div>
 
@@ -454,6 +452,7 @@ function blocks(i){
   return out;
 }
 function together(i,j,from=0,to=N-1){let n=0;for(let d=from;d<=to;d++)if(inBase(d,i)&&inBase(d,j))n++;return n}
+function exitDay(d,i){return d>0&&d<N&&!inBase(d,i)&&inBase(d-1,i)}
 function isExit(e){return e+1>=TAM0&&e+1<N} // exit day counts toward presence, from תע"מ onward (as in the sheet)
 
 function stats(i,t){
@@ -509,7 +508,7 @@ function renderHero(){
   let cls,label,cdLbl,target,qk;
   if(T<0){cls="st-pre";label="⏳ המילואים עוד לא התחילו";cdLbl="עד העלייה ל"+PH[0];target=0;qk="pre"}
   else if(T>st.end){cls="st-done";label="🎉 סיימת את הצו";cdLbl="";target=null;qk="done"}
-  else if(s==="1"){cls="st-base";label="⛺ בבסיס עכשיו";cdLbl="עד היציאה הביתה";target=st.cur[1]+1;qk="base"}
+  else if(s==="1"){cls="st-base";label="⛺ בבסיס עכשיו";cdLbl="עד יום היציאה הביתה";target=st.cur[1]+1;qk="base"}
   else{
     cls=s==="o"?"st-org":"st-home";label=s==="o"?"📦 התארגנות":"🏠 בבית עכשיו";qk="home";
     if(st.next){cdLbl="עד החזרה לבסיס";target=st.next[0]}else{cdLbl="עד סוף הצו, בלי עוד סגירות";target=st.end+1}
@@ -520,6 +519,7 @@ function renderHero(){
     const len=focus[1]-focus[0]+1;
     nextHtml='<div class="next"><div class="row between"><strong>'+(st.cur?"הסגירה הנוכחית":"הסגירה הבאה")+'</strong><span class="muted num">'+len+' ימים</span></div>'+
       '<div class="num dates">'+fmtLong(focus[0])+' עד '+fmtLong(focus[1])+'</div>'+
+      (focus[1]+1<N?'<div class="exitline num">🚪 יום יציאה: '+fmtLong(focus[1]+1)+'</div>':'<div class="exitline">🚪 סוגר עד סוף המילואים</div>')+
       '<div class="muted" style="font-size:13px;margin-top:6px">סוגרים איתך:</div><div class="mates">'+
       mates.map(m=>'<span class="mate">'+av(m.j)+esc(m.n)+' <em class="num">'+m.k+'/'+len+'</em></span>').join("")+
       (mates.length?"":'<span class="muted">אף אחד, רק אתה והשמיים</span>')+'</div></div>';
@@ -551,8 +551,8 @@ function renderStrip(){
   if(me===null){el.parentElement.hidden=true;return}el.parentElement.hidden=false;el.style.setProperty("--pc",PC[me]);
   for(let d=0;d<N;d++){
     const v=S(d,me),i=document.createElement("i");
-    i.className=(d>END_IDX[me]?"x":v==="1"?"b":v==="o"?"o":"")+(d===T?" t":"")+(C(d,me)?" c":"");
-    i.title=fmtLong(d)+": "+(v==="1"?"בסיס":v==="o"?"התארגנות":"בית")+(C(d,me)?" · "+C(d,me):"");
+    i.className=(exitDay(d,me)?"e":d>END_IDX[me]?"x":v==="1"?"b":v==="o"?"o":"")+(d===T?" t":"")+(C(d,me)?" c":"");
+    i.title=fmtLong(d)+": "+(exitDay(d,me)?"יום יציאה":v==="1"?"בסיס":v==="o"?"התארגנות":"בית")+(C(d,me)?" · "+C(d,me):"");
     el.appendChild(i);
   }
   const phases=[];PH.forEach(p=>{if(phases[phases.length-1]!==p)phases.push(p)});
@@ -567,7 +567,7 @@ function renderClosings(){
     const len=e-s+1;
     const mates=NAMES.map((n,j)=>({n,k:j===me?0:together(me,j,s,e)})).filter(m=>m.k>0).sort((a,b)=>b.k-a.k).map(m=>m.n+(m.k<len?" ("+m.k+")":"")).join(", ");
     const cls=e<T?"past":s<=T&&T<=e?"now":"";
-    return '<div class="cl '+cls+'"><div class="len num">'+len+'<small>ימים</small></div><div class="when num">'+fmtLong(s)+' – '+fmtLong(e)+(cls==="now"?' · עכשיו':"")+'</div><div class="who">עם: '+esc(mates||"לבד")+'</div></div>';
+    return '<div class="cl '+cls+'"><div class="len num">'+len+'<small>ימים</small></div><div class="when num">'+fmtLong(s)+' – '+fmtLong(e)+(cls==="now"?' · עכשיו':"")+'</div><div class="who">עם: '+esc(mates||"לבד")+'</div><div class="exit num">🚪 '+(e+1<N?'יום יציאה: '+fmtLong(e+1):'עד סוף המילואים')+'</div></div>';
   }).join("")||'<span class="muted">אין סגירות</span>';
 }
 
@@ -606,69 +606,41 @@ function renderBadges(){
 function renderToday(){
   const el=document.getElementById("todayPanel"),d=Math.max(0,Math.min(N-1,T));
   const list=g=>g.filter(i=>inBase(d,i)).map(i=>'<span class="mate">'+av(i)+esc(NAMES[i])+'</span>').join("")||'<span class="muted">אף אחד</span>';
-  const home=NAMES.map((n,i)=>i).filter(i=>!inBase(d,i)&&d<=END_IDX[i]);
+  const exits=NAMES.map((n,i)=>i).filter(i=>exitDay(d,i));
+  const home=NAMES.map((n,i)=>i).filter(i=>!inBase(d,i)&&!exitDay(d,i)&&d<=END_IDX[i]);
   el.innerHTML='<h2>מי בבסיס '+(T===realToday&&T>=0&&T<N?"היום":"ב-"+fmt(d))+'</h2><div class="muted num" style="font-size:13px">'+fmtLong(d)+" · "+esc(phase(d))+(T<0?" (היום הראשון)":"")+'</div>'+
     '<div class="todaygrid"><div><h3>קצינים</h3><div class="mates">'+list(OFFICERS)+'</div></div><div><h3>משקים</h3><div class="mates">'+list(MASHAK)+'</div></div></div>'+
+    (exits.length?'<div style="margin-top:12px"><h3 class="h3s">🚪 יום יציאה '+(T===realToday?"היום":"ביום הזה")+'</h3><div class="mates">'+exits.map(i=>'<span class="mate">'+av(i)+esc(NAMES[i])+'</span>').join("")+'</div></div>':"")+
     '<div style="margin-top:12px"><h3 class="h3s">בבית</h3><div class="mates">'+(home.map(i=>'<span class="mate">'+av(i)+esc(NAMES[i])+'</span>').join("")||'<span class="muted">כולם בפנים</span>')+'</div></div>';
 }
 
-/* ===== share text ===== */
-function renderShare(){
-  const ta=document.getElementById("shareTxt"),wa=document.getElementById("waBtn");
-  if(me===null){ta.value="בחר שם למעלה";wa.href="https://wa.me/";return}
-  const i=me,st=stats(i,T),f=st.cur||st.next;let txt="🪖 "+NAMES[i]+" | שבצ\"ק\n";
-  if(f){
-    const mates=NAMES.filter((n,j)=>j!==i&&together(i,j,f[0],f[1])>0).join(", ");
-    txt+=(st.cur?"בסגירה עכשיו: ":"סגירה הבאה: ")+fmtLong(f[0])+" עד "+fmtLong(f[1])+"\nעם: "+(mates||"לבד")+"\n";
-  }else txt+="אין עוד סגירות 🎉\n";
-  txt+="נשארו "+st.closingLeft+" ימי סגירה ו-"+st.homeLeft+" ימים בבית\n";
-  txt+=T>st.end?"סיימתי את הצו!":"עוד "+Math.max(0,st.toEnd)+" ימים לסוף הצו ("+fmt(st.end)+")";
-  ta.value=txt;wa.href="https://wa.me/?text="+encodeURIComponent(txt);
-}
-document.getElementById("copyBtn").addEventListener("click",async()=>{
-  const ta=document.getElementById("shareTxt");
-  try{await navigator.clipboard.writeText(ta.value);toast("הועתק, אפשר להדביק בקבוצה")}catch(e){ta.select();toast("סמן והעתק ידנית")}
-});
 
 /* ===== board ===== */
 const boardEl=document.getElementById("board");
-function dayIssues(d){
-  if(phase(d)==="זיכויים")return null;
-  const off=OFFICERS.filter(i=>inBase(d,i)).length,all=NAMES.filter((n,i)=>inBase(d,i)).length;
-  if(all<3&&off<1)return {cls:"bad",t:"רק "+all+", בלי קצין"};
-  if(all<3)return {cls:"bad",t:"רק "+all+" בבסיס"};
-  if(off<1)return {cls:"bad",t:"אין קצין"};
-  return {cls:"ok",t:"✓"};
-}
-function cellFlags(d,i){
-  const f={conf:false,long:false};
-  if(inBase(d,i)&&(C(d,i)||C(d+1,i)))f.conf=true;
-  if(inBase(d,i)&&!NO_STREAK_LIMIT.has(i)){let k=0;for(let x=d;x>=0&&inBase(x,i);x--)k++;if(k>7)f.long=true}
-  return f;
-}
+let onlyMe=false;
+document.getElementById("onlyMe").addEventListener("change",e=>{
+  if(e.target.checked&&me===null){e.target.checked=false;toast("קודם בחר את השם שלך למעלה");return}
+  onlyMe=e.target.checked;renderBoard();
+});
 function renderBoard(){
-  let h='<thead><tr><th style="right:0;position:sticky;z-index:3">תאריך</th>'+NAMES.map((n,i)=>'<th class="'+(i===me?"me":"")+'">'+av(i)+esc(n)+'<small>'+esc(ROLES[i])+'</small></th>').join("")+'<th>בדיקה</th></tr></thead><tbody>';
-  const problems=[];
+  const cols=onlyMe&&me!==null?[me]:NAMES.map((n,i)=>i);
+  boardEl.classList.toggle("solo",cols.length===1);
+  let h='<thead><tr><th style="right:0;position:sticky;z-index:3">תאריך</th>'+cols.map(i=>'<th class="'+(i===me?"me":"")+'">'+av(i)+esc(NAMES[i])+'<small>'+esc(ROLES[i])+'</small></th>').join("")+'</tr></thead><tbody>';
   for(let d=0;d<N;d++){
-    const dow=dateOf(d).getDay(),iss=dayIssues(d);
-    if(iss&&iss.cls!=="ok")problems.push({cls:iss.cls,t:fmt(d)+": "+iss.t});
+    const dow=dateOf(d).getDay();
     h+='<tr class="'+(d===T?"today ":"")+(d>0&&PH[d]!==PH[d-1]?"ph-start ":"")+(dow>=5?"wknd":"")+'"><td class="d">'+fmt(d)+'<small>'+DOW[dow]+'׳</small></td>';
-    for(let i=0;i<P;i++){
-      const v=S(d,i),out=d>END_IDX[i]&&v!=="1",fl=cellFlags(d,i),c=C(d,i);
-      if(fl.conf)problems.push({cls:"bad",t:fmt(d)+": "+NAMES[i]+" בבסיס ליד אילוץ"});
-      if(fl.long)problems.push({cls:"warn",t:fmt(d)+": "+NAMES[i]+" מעל 7 ימים ברצף"});
-      const cls=(out?"x":v==="1"?"b":v==="o"?"o":"h")+(fl.conf?" conf":"")+(fl.long?" long":"")+(c?" has-c":"");
-      const lbl=NAMES[i]+" "+fmt(d)+": "+(v==="1"?"בסיס":v==="o"?"התארגנות":"בית")+(c?", אילוץ: "+c:"");
+    cols.forEach(i=>{
+      const v=S(d,i),ex=exitDay(d,i),out=d>END_IDX[i]&&v!=="1"&&!ex,c=C(d,i);
+      const cls=(ex?"ex":out?"x":v==="1"?"b":v==="o"?"o":"h")+(c?" has-c":"");
+      const lbl=NAMES[i]+" "+fmtLong(d)+": "+(ex?"יום יציאה":v==="1"?"בסיס":v==="o"?"התארגנות":"בית")+(c?", אילוץ: "+c:"");
       h+='<td style="--pc:'+PC[i]+'"><span class="cell '+cls+'" title="'+esc(lbl)+'" role="img" aria-label="'+esc(lbl)+'"><span></span></span></td>';
-    }
-    h+='<td>'+(iss&&iss.cls==="ok"?'<span class="flag ok">✓</span>':iss?'<span class="flag '+iss.cls+'">'+esc(iss.t)+'</span>':'<span class="flag ok">'+esc(phase(d))+'</span>')+'</td></tr>';
+    });
+    h+='</tr>';
   }
   h+='</tbody><tfoot><tr><td class="d">נוכחות</td>';
-  for(let i=0;i<P;i++){const st=stats(i,T),have=i===NIR?st.tam:st.presence,need=i===NIR?NIR_TARGET:st.need;h+='<td class="num '+(have>=need?"okv":"badv")+'" title="'+(i===NIR?"ימי תע״מ / יעד":"נוכחות / נדרש")+'">'+have+'/'+need+'</td>'}
-  h+='<td></td></tr></tfoot>';
+  cols.forEach(i=>{const st=stats(i,T),have=i===NIR?st.tam:st.presence,need=i===NIR?NIR_TARGET:st.need;h+='<td class="num '+(have>=need?"okv":"badv")+'" title="'+(i===NIR?"ימי תע״מ / יעד":"נוכחות / נדרש")+'">'+have+'/'+need+'</td>'});
+  h+='</tr></tfoot>';
   boardEl.innerHTML=h;
-  const seen=new Set(),uniq=problems.filter(p=>!seen.has(p.t)&&seen.add(p.t));
-  document.getElementById("issues").innerHTML=uniq.length?'<strong style="font-size:13px">'+uniq.length+' דברים לבדוק:</strong>'+uniq.slice(0,24).map(p=>'<span class="issue '+p.cls+'">'+esc(p.t)+'</span>').join("")+(uniq.length>24?'<span class="issue">ועוד '+(uniq.length-24)+'</span>':""):'<span class="issue">הכל תקין 👌</span>';
 }
 
 /* ===== sync ===== */
@@ -680,9 +652,9 @@ function ago(ms){
 }
 function renderSync(){
   const el=document.getElementById("syncTxt");
-  if(!sync){el.textContent=db?"עוד לא בוצע סנכרון. מוצג השבצ\"ק מהקובץ המקורי":"מוצג השבצ\"ק מהקובץ המקורי";return}
+  if(!sync){el.textContent="ערכת בשיטס? לחץ \"עדכון מהשיטס\" כדי שהאפליקציה תציג את השינוי";return}
   const d=new Date(sync.at);
-  el.textContent="עודכן "+ago(sync.at)+" ("+d.toLocaleString("he-IL",{day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"})+")"+(sync.via==="auto"?" · סנכרון אוטומטי":" · סנכרון ידני")+" · מתעדכן לבד כל 12 שעות";
+  el.textContent="עודכן מהשיטס "+ago(sync.at)+" ("+d.toLocaleString("he-IL",{day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"})+"). ערכת בשיטס? לחץ \"עדכון מהשיטס\"";
 }
 function showSync(m){const n=document.getElementById("syncNote");n.textContent=m||"";n.hidden=!m}
 const syncBtn=document.getElementById("syncBtn");
@@ -690,15 +662,15 @@ syncBtn.addEventListener("click",syncNow);
 async function syncNow(){
   if(!db){showSync("הסנכרון עובד רק כשפותחים את האפליקציה דרך claude.ai.");return}
   let mcp=null;try{mcp=await window.claude.use("mcp")}catch(e){}
-  if(!mcp){showSync("סנכרון ידני זמין רק למי שחיבר Google Drive לחשבון Claude שלו. הסנכרון האוטומטי ממשיך לרוץ כל 12 שעות.");return}
-  syncBtn.classList.add("spin");syncBtn.textContent="⏳ מסנכרן…";showSync("");
+  if(!mcp){showSync("העדכון מהשיטס זמין רק למי שחיבר Google Drive לחשבון Claude שלו.");return}
+  syncBtn.classList.add("spin");syncBtn.textContent="⏳ מעדכן…";showSync("");
   try{
     const res=await mcp.callTool(DRIVE,"read_file_content",{fileId:SHEET_FILE_ID},{cache:false});
     let p=res.payload;if(typeof p==="string"){try{p=JSON.parse(p)}catch(e){}}
     const text=p&&typeof p==="object"?p.fileContent:p;
     parseSheet(text); // throws if the sheet no longer has the expected layout
     await db.doc("sheet/raw").set({text,at:Date.now(),via:"button",by:myId||""});
-    toast("סונכרן מהשיטס ✔");
+    toast("עודכן מהשיטס ✔");
   }catch(err){
     const code=err&&err.code;
     const msg={
@@ -710,11 +682,11 @@ async function syncNow(){
       blocked_by_policy:"הארגון שלך חוסם את Google Drive כאן.",
       tool_error:"אין לך גישה לקובץ השבצ\"ק בדרייב. בקש מבעל הקובץ לשתף אותו איתך.",
       server_unavailable:"גוגל דרייב לא עונה כרגע. נסה שוב בעוד דקה.",
-      invalid_argument:"יש לך הרשאת צפייה בלבד, אז אי אפשר לסנכרן מכאן. הסנכרון האוטומטי ימשיך כל 12 שעות.",
+      invalid_argument:"יש לך הרשאת צפייה בלבד, אז אי אפשר לעדכן מכאן.",
       quota_exceeded:"מאגר השמירה מלא, הסנכרון לא נשמר."
     }[code];
     showSync(msg||(err&&err.message&&/expected|header|rows|names|empty|range/.test(err.message)?"הגיליון לא במבנה המוכר (לשונית שבצק עם תאריך, יום, שלב ושמות). בדוק שלא נמחקו עמודות או כותרות.":"הסנכרון נכשל. נסה שוב בעוד רגע."));
-  }finally{syncBtn.classList.remove("spin");syncBtn.textContent="🔄 סנכרון עכשיו"}
+  }finally{syncBtn.classList.remove("spin");syncBtn.textContent="🔄 עדכון מהשיטס"}
 }
 
 /* ===== misc ===== */
@@ -749,7 +721,7 @@ function renderTicker(){
 }
 function renderAll(){
   document.querySelectorAll(".person").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.i===me)));
-  renderHeader();renderSync();renderTicker();renderHero();renderStrip();renderClosings();renderBuddies();renderBadges();renderToday();renderShare();renderBoard();
+  renderHeader();renderSync();renderTicker();renderHero();renderStrip();renderClosings();renderBuddies();renderBadges();renderToday();renderBoard();
 }
 
 /* confetti */
