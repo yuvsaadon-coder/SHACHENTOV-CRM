@@ -7,7 +7,7 @@ import { auth } from '../lib/firebase'
 type LoginMode = 'hq' | 'coordinator'
 
 export function LoginPage() {
-  const { signIn, signInWithGoogle } = useAuth()
+  const { signIn, signInWithGoogle, authError } = useAuth()
   const navigate = useNavigate()
   const [mode, setMode] = useState<LoginMode>('hq')
 
@@ -101,6 +101,9 @@ export function LoginPage() {
         </div>
 
         <div className="px-8 pb-8">
+          {authError && !error && (
+            <div className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{authError}</div>
+          )}
           {mode === 'hq' ? (
             <form onSubmit={handleHQ} className="space-y-4">
               <div>

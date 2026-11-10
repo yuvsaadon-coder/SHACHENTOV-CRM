@@ -8,6 +8,7 @@ const base: Omit<OrgRole, 'id' | 'roleName' | 'level' | 'reportsTo'> = {
   status: 'מאויש',
   priority: 'רגיל',
   holderName: 'יובל',
+  holders: [{ uid: 'u1', name: 'יובל', phone: '', email: '' }],
   linkedTaskIds: [],
   area: '',
   email: '',

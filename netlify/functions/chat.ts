@@ -62,14 +62,12 @@ export const handler: Handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Missing branchId' }) }
   }
 
-  // Authorize: uid must be in branches/{branchId}.coordinatorUids
+  // Authorize: the branch must be one of the caller's portal branches — those of
+  // the positions they hold, kept on their person record.
   const db = getFirestore()
-  const branchDoc = await db.collection('branches').doc(branchId).get()
-  if (!branchDoc.exists) {
-    return { statusCode: 403, body: JSON.stringify({ error: 'Branch not found' }) }
-  }
-  const branchData = branchDoc.data() as { coordinatorUids?: string[] }
-  if (!(branchData.coordinatorUids ?? []).includes(uid)) {
+  const callerDoc = await db.collection('users').doc(uid).get()
+  const caller = (callerDoc.data() ?? {}) as { active?: boolean; branchIds?: string[] }
+  if (!callerDoc.exists || caller.active === false || !(caller.branchIds ?? []).includes(branchId)) {
     return { statusCode: 403, body: JSON.stringify({ error: 'Not authorized for this branch' }) }
   }
 

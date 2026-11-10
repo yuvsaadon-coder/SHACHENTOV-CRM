@@ -38,7 +38,7 @@ const navGroups: NavGroup[] = [
   {
     title: 'מערכת',
     items: [
-      { to: '/admin/users', label: 'ניהול משתמשים', icon: '👤', adminOnly: false, hqOnly: true },
+      { to: '/admin/users', label: 'אנשים ומשתמשים', icon: '👤', adminOnly: false, hqOnly: true },
       { to: '/account', label: 'הגדרות חשבון', icon: '⚙️', adminOnly: false },
     ],
   },
@@ -53,7 +53,7 @@ interface Props {
 const STORAGE_KEY = 'sidebarCollapsedGroups'
 
 export function Sidebar({ onClose, collapsed = false, onToggleCollapse }: Props) {
-  const { appUser, orgRole, logOut } = useAuth()
+  const { appUser, orgRole, access, logOut } = useAuth()
   const navigate = useNavigate()
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
     try {
@@ -80,7 +80,7 @@ export function Sidebar({ onClose, collapsed = false, onToggleCollapse }: Props)
   }
 
   const isAdmin = appUser?.role === 'admin'
-  const isHQ = appUser?.role !== 'coordinator'
+  const isHQ = access === 'hq' || access === 'admin'
   const visibleGroups = navGroups
     .map((group) => ({
       ...group,
@@ -102,11 +102,9 @@ export function Sidebar({ onClose, collapsed = false, onToggleCollapse }: Props)
         {!collapsed && (
           <div className="flex-1 min-w-0">
             <div className="font-bold text-sm">שכן טוב</div>
-            {(orgRole?.holderName || appUser?.name) && (
+            {appUser?.name && (
               <div className="text-xs text-white/70 truncate mt-0.5">
-                {orgRole?.roleName
-                  ? `${orgRole.roleName}${orgRole.holderName ? ` · ${orgRole.holderName}` : ''}`
-                  : appUser?.name}
+                {orgRole?.roleName ? `${orgRole.roleName} · ${appUser.name}` : appUser.name}
               </div>
             )}
           </div>

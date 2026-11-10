@@ -1,7 +1,9 @@
 import type { Timestamp } from 'firebase/firestore'
 
 export type Domain = 'CEO' | 'JLM' | 'SUP' | 'FIN' | 'DON' | 'DES' | 'PUB' | 'VOL'
-export type Role = Domain | 'admin' | 'coordinator'
+/** Access level stored on a person. Domain codes are legacy values left on older docs; they behave as 'hq'. */
+export type Role = Domain | 'admin' | 'hq' | 'coordinator' | 'none'
+export type AccessLevel = 'admin' | 'hq' | 'coordinator' | 'none'
 export type TaskStatus = 'בוצע' | 'בעבודה' | 'בהמתנה' | 'לא בוצע' | 'אחר'
 export type TaskFrequency = 'חד-פעמי' | 'חודשי' | 'רבעוני' | 'חצי-שנתי' | 'שנתי' | 'שוטף' | 'לפי חג'
 export type ContactType = 'מטה' | 'ספק' | 'תורם'
@@ -51,16 +53,29 @@ export interface Contact {
   cadence?: string
   /** Set when the sheet had no phone or email for this contact. */
   needsInfo?: boolean
+  /** Set on contacts archived automatically when a person left a position. */
+  formerPersonId?: string
+  formerRoleId?: string
+  endedAt?: Timestamp
 }
 
+/**
+ * A person in the organisation — the single place where "who" is stored.
+ * Which positions they hold (roleIds) lives here and nowhere else; the org
+ * tree, branch coordinators and contact details are all derived from it.
+ */
 export interface AppUser {
+  /** Document id. Equals the Firebase Auth uid once the person has a login. */
   uid: string
   name: string
   email: string
+  /** Digits only. Coordinators sign in to the portal with name + phone. */
+  phone?: string
   role: Role
-  branchId?: string
+  roleIds?: string[]
+  /** Portal branches of the positions in roleIds. Recomputed on every save; security rules read it. */
+  branchIds?: string[]
   active: boolean
-  storedPassword?: string
 }
 
 // Private per-user to-dos, kept in users/{uid}/personalTasks — not part of the
@@ -148,17 +163,21 @@ export interface BranchVolunteerInfo {
   generalVolunteerStatus?: VolunteerStatus
 }
 
+export interface RoleHolder {
+  uid: string
+  name: string
+  phone: string
+  email: string
+}
+
 export interface OrgRole {
   id: string
   roleName: string
   level: RoleLevel
   area: string
-  holderName: string
   status: RoleStatus
   priority: RolePriority
   recruitmentUrgency?: RecruitmentUrgency
-  email: string
-  phone: string
   linkedTaskIds: string[]
   affectsTasks: boolean
   delegatedTo: string | null
@@ -166,11 +185,19 @@ export interface OrgRole {
   reportsTo?: string
   volunteerInfo?: BranchVolunteerInfo | null
   portalBranchId?: string
-  /** UID of the linked AppUser — set when a system user is associated with this role */
-  uid?: string
-  /** Additional holders beyond the primary holderName/uid */
-  coHolders?: Array<{name: string; uid?: string}>
+  /** Task domain this position owns, when it is an HQ position. */
+  domain?: Domain
+  /** Derived from the people directory when roles are loaded — never stored on the role. */
+  holders: RoleHolder[]
+  /** Derived: holder names joined with ", ". */
+  holderName: string
+  /** Derived: the first holder's phone / email. */
+  phone: string
+  email: string
 }
+
+export const DERIVED_ROLE_FIELDS = ['id', 'holders', 'holderName', 'phone', 'email'] as const
+export type StoredOrgRole = Omit<OrgRole, (typeof DERIVED_ROLE_FIELDS)[number]>
 
 export const ROLE_LEVELS: RoleLevel[] = ['ועד מנהל', 'מטה', 'סניף חוץ', 'סניף ירושלים', 'בתי קפה נודדים', 'טוסטר', 'סניפים עיתיים', 'יריד']
 export const ROLE_STATUS_LABELS: RoleStatus[] = ['מאויש', 'חסר', 'חלקי', 'בסיכון', 'אחר']
@@ -199,17 +226,6 @@ export const DOMAIN_LABELS: Record<Domain, string> = {
   VOL: 'מתנדבים',
 }
 
-export const DOMAIN_OWNERS: Record<Domain, string> = {
-  CEO: 'יובל סעדון',
-  JLM: 'יובל סעדון',
-  SUP: 'שלמה דרורי',
-  FIN: 'אילן אמסל',
-  DON: 'אפרת בנימין / דלית סין משה',
-  DES: 'דיקלה',
-  PUB: 'יעל',
-  VOL: 'שיר בתאל סומך',
-}
-
 export const DOMAIN_COLORS: Record<Domain, string> = {
   CEO: '#141348',
   JLM: '#189A9F',
@@ -232,8 +248,6 @@ export interface Branch {
   name: string
   type: 'food' | 'cafe_youth'
   city: string
-  coordinatorUids: string[]
-  coordinatorNames?: string[]
   createdAt: Timestamp
   // Operational data (from Excel / manual edit)
   distributionFrequency?: string

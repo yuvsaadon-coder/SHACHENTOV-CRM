@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { collection, getDocs, writeBatch, doc } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import type { OrgRole } from '../types'
+import type { AppUser, OrgRole, StoredOrgRole } from '../types'
+import { attachHolders } from '../lib/peopleLogic'
 
 interface RowState { reportsTo: string | null }
 
@@ -15,8 +16,12 @@ export function HierarchySetupPage() {
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    getDocs(collection(db, 'roles')).then(snap => {
-      const loaded = snap.docs.map(d => ({ id: d.id, ...d.data() } as OrgRole))
+    Promise.all([getDocs(collection(db, 'roles')), getDocs(collection(db, 'users'))]).then(([snap, usersSnap]) => {
+      const people = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() } as AppUser))
+      const loaded = attachHolders(
+        snap.docs.map(d => ({ ...d.data(), id: d.id } as StoredOrgRole & { id: string })),
+        people,
+      )
       setRoles(loaded)
       // seed changes from existing reportsTo
       const seed: Record<string, RowState> = {}

@@ -1,34 +1,48 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import type { OrgRole } from '../types'
+import type { OrgRole, StoredOrgRole } from '../types'
+import { attachHolders } from '../lib/peopleLogic'
+import { usePeople } from './usePeople'
 
+/**
+ * Positions with their holders. Holders are not stored on the role — they are
+ * the people whose `roleIds` include it, joined here on every change.
+ */
 export function useRoles() {
-  const [roles, setRoles] = useState<OrgRole[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [stored, setStored] = useState<(StoredOrgRole & { id: string })[]>([])
+  const [rolesLoading, setRolesLoading] = useState(true)
+  const [rolesError, setRolesError] = useState<string | null>(null)
+  const { people, loading: peopleLoading, error: peopleError } = usePeople()
 
   useEffect(() => {
     const q = query(collection(db, 'roles'), orderBy('level'))
     return onSnapshot(
       q,
       (snap) => {
-        setRoles(snap.docs.map((d) => ({ id: d.id, ...d.data() } as OrgRole)))
-        setLoading(false)
+        setStored(snap.docs.map((d) => ({ ...d.data(), id: d.id } as StoredOrgRole & { id: string })))
+        setRolesLoading(false)
       },
       (err) => {
-        setError(err.message)
-        setLoading(false)
+        setRolesError(err.message)
+        setRolesLoading(false)
       }
     )
   }, [])
 
-  return { roles, loading, error }
+  const roles = useMemo(() => attachHolders(stored, people), [stored, people])
+
+  return {
+    roles,
+    people,
+    loading: rolesLoading || peopleLoading,
+    error: rolesError ?? peopleError,
+  }
 }
 
 export function applyDelegation(role: OrgRole): OrgRole {
   if (role.level === 'מטה' && role.status === 'חסר' && !role.delegatedTo) {
-    return { ...role, delegatedTo: 'מנכ"ל (יובל)' }
+    return { ...role, delegatedTo: 'מנכ"ל' }
   }
   return role
 }

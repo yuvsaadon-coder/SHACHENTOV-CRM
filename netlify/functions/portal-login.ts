@@ -44,8 +44,11 @@ export const handler: Handler = async (event) => {
 
   const inputDigits = digitsOnly(phone)
   const match = snap.docs.find((d) => {
-    const stored = digitsOnly((d.data() as { phone?: string }).phone ?? '')
-    return stored === inputDigits
+    const person = d.data() as { phone?: string; active?: boolean }
+    // A coordinator who left is deactivated — the phone must stop working as a password.
+    if (person.active === false) return false
+    const stored = digitsOnly(person.phone ?? '')
+    return stored !== '' && stored === inputDigits
   })
 
   if (!match) {

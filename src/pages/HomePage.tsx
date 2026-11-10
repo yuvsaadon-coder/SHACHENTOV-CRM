@@ -37,7 +37,7 @@ export function HomePage() {
 
   if (loading) return <Spinner size="lg" />
 
-  const name = orgRole?.holderName || appUser?.name || ''
+  const name = appUser?.name || ''
   const roleName = orgRole?.roleName || ''
   const isAdmin = appUser?.role === 'admin'
 

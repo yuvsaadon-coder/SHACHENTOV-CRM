@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react'
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { useAllBranches } from '../../hooks/useBranch'
+import { useRoles } from '../../hooks/useRoles'
+import { coordinatorsOfBranch } from '../../lib/peopleLogic'
 import { useQuarterlyReports } from '../../hooks/useQuarterlyReports'
 import { Spinner } from '../../components/ui/Spinner'
 import { QUARTER_LABELS, QUARTERS, type Branch, type QuarterLabel, type QuarterlyReport } from '../../types'
@@ -130,6 +132,9 @@ function BranchReportAccordion({ report }: { report: QuarterlyReport }) {
 
 function BranchDetail({ branch, onClose }: { branch: Branch; onClose: () => void }) {
   const { reports, loading } = useQuarterlyReports(branch.id)
+  const { roles } = useRoles()
+  const coordinators = coordinatorsOfBranch(branch.id, roles)
+  const emails = coordinators.map((c) => c.email).filter(Boolean)
   const q = currentQuarter()
   const thisQuarter = reports.find((r) => r.quarter === q && r.year === new Date().getFullYear())
 
@@ -163,14 +168,19 @@ function BranchDetail({ branch, onClose }: { branch: Branch; onClose: () => void
             </span>
           </div>
 
-          {/* Reminder button */}
-          <a
-            href={`mailto:${branch.coordinatorUids.join(',')}?subject=תזכורת דיווח רבעוני — ${branch.name}&body=שלום,\nתזכורת להגשת הדיווח הרבעוני עבור ${branch.name}.`}
-            className="inline-block px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            style={{ color: '#141348' }}
-          >
-            📧 שלח תזכורת
-          </a>
+          {/* Coordinators + reminder */}
+          <div className="text-xs text-gray-600">
+            רכזים: {coordinators.length > 0 ? coordinators.map((c) => c.name).join(', ') : 'אין רכזים משויכים'}
+          </div>
+          {emails.length > 0 && (
+            <a
+              href={`mailto:${emails.join(',')}?subject=${encodeURIComponent(`תזכורת דיווח רבעוני — ${branch.name}`)}&body=${encodeURIComponent(`שלום,\nתזכורת להגשת הדיווח הרבעוני עבור ${branch.name}.`)}`}
+              className="inline-block px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              style={{ color: '#141348' }}
+            >
+              📧 שלח תזכורת
+            </a>
+          )}
 
           {/* Charts */}
           {!loading && reports.length > 1 && (
@@ -212,7 +222,6 @@ function AddBranchModal({ onClose }: { onClose: () => void }) {
         name: name.trim(),
         city: city.trim(),
         type,
-        coordinatorUids: [],
         createdAt: serverTimestamp(),
       })
       onClose()

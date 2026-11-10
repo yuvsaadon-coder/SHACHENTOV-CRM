@@ -1,13 +1,20 @@
 import { useState, useMemo } from 'react'
 import { useContacts } from '../hooks/useContacts'
 import { useTasks } from '../hooks/useTasks'
+import { useRoles } from '../hooks/useRoles'
+import { PersonEditModal } from '../components/people/PersonEditModal'
+import { FORMER_CATEGORY, ORG_NAME, isActive, roleLabel } from '../lib/peopleLogic'
 import { Spinner } from '../components/ui/Spinner'
 import { exportContacts } from '../utils/export'
 import type { Contact, ContactType } from '../types'
 import { DOMAINS, DOMAIN_LABELS } from '../types'
 
-const ROLE_CONTACT_CATEGORY = 'רכזי סניפים ופעילי עמותה'
-type Section = 'all' | 'general' | 'roles'
+// Stored copies of role holders from the original import. Superseded by the
+// live people directory, so they are never shown.
+const LEGACY_ROLE_CONTACT_CATEGORY = 'רכזי סניפים ופעילי עמותה'
+const ACTIVE_CATEGORY = 'רכזים ופעילי עמותה'
+const PERSON_PREFIX = 'person:'
+type Section = 'all' | 'general' | 'roles' | 'former'
 
 const EMPTY_CONTACT: Omit<Contact, 'id'> = {
   name: '', type: 'מטה', phone: '', email: '', notes: '', domainTags: [],
@@ -252,23 +259,56 @@ function ContactEditModal({ contact, onSave, onDelete, onClose }: {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function ContactsPage() {
-  const { contacts, loading, addContact, updateContact, deleteContact } = useContacts()
+  const { contacts: stored, loading, addContact, updateContact, deleteContact } = useContacts()
+  const { roles, people } = useRoles()
   const { tasks } = useTasks()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<ContactType | ''>('')
   const [section, setSection] = useState<Section>('all')
   const [selected, setSelected] = useState<string | null>(null)
   const [editing, setEditing] = useState<Contact | null>(null)
+  const [editingPersonUid, setEditingPersonUid] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
 
-  const generalCount = useMemo(() => contacts.filter((c) => c.category !== ROLE_CONTACT_CATEGORY).length, [contacts])
-  const roleCount = useMemo(() => contacts.filter((c) => c.category === ROLE_CONTACT_CATEGORY).length, [contacts])
+  // Current role holders come straight from the people directory — nothing to keep in sync.
+  const activeHolders = useMemo<Contact[]>(() => {
+    const byId = new Map(roles.map((r) => [r.id, r]))
+    return people
+      .filter(isActive)
+      .map((p) => ({ p, positions: (p.roleIds ?? []).map((id) => byId.get(id)).filter((r) => !!r) }))
+      .filter(({ positions }) => positions.length > 0)
+      .map(({ p, positions }) => ({
+        id: PERSON_PREFIX + p.uid,
+        name: p.name,
+        type: 'מטה' as ContactType,
+        domainTags: [],
+        phone: p.phone ?? '',
+        email: p.email ?? '',
+        notes: '',
+        organization: ORG_NAME,
+        role: positions.map(roleLabel).join(' · '),
+        category: ACTIVE_CATEGORY,
+      }))
+  }, [people, roles])
+
+  const contacts = useMemo(
+    () => [...stored.filter((c) => c.category !== LEGACY_ROLE_CONTACT_CATEGORY), ...activeHolders]
+      .sort((a, b) => a.name.localeCompare(b.name, 'he')),
+    [stored, activeHolders],
+  )
+
+  const sectionOf = (c: Contact): Exclude<Section, 'all'> =>
+    c.id.startsWith(PERSON_PREFIX) ? 'roles' : c.category === FORMER_CATEGORY ? 'former' : 'general'
+
+  const counts = useMemo(() => {
+    const n = { general: 0, roles: 0, former: 0 }
+    for (const c of contacts) n[sectionOf(c)]++
+    return n
+  }, [contacts])
 
   const filtered = useMemo(() => {
     return contacts.filter((c) => {
-      const isRoleContact = c.category === ROLE_CONTACT_CATEGORY
-      if (section === 'general' && isRoleContact) return false
-      if (section === 'roles' && !isRoleContact) return false
+      if (section !== 'all' && sectionOf(c) !== section) return false
       if (typeFilter && c.type !== typeFilter) return false
       if (search) {
         const q = search.toLowerCase()
@@ -285,6 +325,11 @@ export function ContactsPage() {
     })
   }, [contacts, search, typeFilter, section])
 
+  const startEdit = (c: Contact) => {
+    if (c.id.startsWith(PERSON_PREFIX)) setEditingPersonUid(c.id.slice(PERSON_PREFIX.length))
+    else setEditing(c)
+  }
+
   const selectedContact = selected ? contacts.find((c) => c.id === selected) : null
   const contactTasks = selectedContact
     ? tasks.filter((t) => t.contactRefs.includes(selectedContact.id) || t.activator === selectedContact.name)
@@ -294,8 +339,9 @@ export function ContactsPage() {
 
   const sections: { key: Section; label: string; count: number }[] = [
     { key: 'all', label: 'הכל', count: contacts.length },
-    { key: 'general', label: 'אנשי קשר כלליים', count: generalCount },
-    { key: 'roles', label: 'רכזים ופעילים', count: roleCount },
+    { key: 'general', label: 'אנשי קשר כלליים', count: counts.general },
+    { key: 'roles', label: 'רכזים ופעילים', count: counts.roles },
+    { key: 'former', label: 'בעלי תפקידים לשעבר', count: counts.former },
   ]
 
   return (
@@ -415,7 +461,7 @@ export function ContactsPage() {
                   <td className="px-4 py-2.5 text-gray-600 text-xs max-w-[120px] truncate">{c.email || '—'}</td>
                   <td className="px-3 py-2.5">
                     <button
-                      onClick={(e) => { e.stopPropagation(); setEditing(c) }}
+                      onClick={(e) => { e.stopPropagation(); startEdit(c) }}
                       className="text-gray-300 hover:text-[#189A9F] transition-colors p-1 rounded"
                       title="עריכה"
                     >
@@ -444,7 +490,7 @@ export function ContactsPage() {
                 <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded">{selectedContact.type}</span>
               </div>
               <div className="flex gap-1">
-                <button onClick={() => setEditing(selectedContact)}
+                <button onClick={() => startEdit(selectedContact)}
                   className="text-gray-400 hover:text-[#189A9F] text-sm p-1" title="עריכה">✏️</button>
                 <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">×</button>
               </div>
@@ -528,6 +574,14 @@ export function ContactsPage() {
         <ContactAddModal
           onSave={addContact}
           onClose={() => setAdding(false)}
+        />
+      )}
+
+      {editingPersonUid && (
+        <PersonEditModal
+          person={people.find((p) => p.uid === editingPersonUid) ?? null}
+          org={{ people, roles }}
+          onClose={() => setEditingPersonUid(null)}
         />
       )}
 
