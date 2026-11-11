@@ -132,6 +132,9 @@ h2::after{content:"";position:absolute;inset:auto -4px 2px -4px;height:11px;back
 .cl.home .len{background:var(--mint)}
 .cl.home.now{background:var(--mint)}
 .cl.past{opacity:.5}
+.cl.notin{background:#ececec;border-style:dotted}
+.cl.notin .len{background:#cfcfcf}
+.cl.notin.now{background:#dcdcdc}
 .cl.now{background:var(--sun);box-shadow:3px 3px 0 var(--ink);transform:rotate(-.6deg)}
 .cl .when{font-weight:700}
 .cl .len{display:block;font-family:var(--display);font-size:28px;line-height:1;text-align:center;min-width:46px;background:var(--pc,var(--sun));border:2px solid var(--ink);border-radius:10px;padding:2px 4px}
@@ -236,6 +239,8 @@ table.board{border-collapse:separate;border-spacing:0;width:100%;min-width:430px
 .linkbtn{background:none;border:0;padding:0;font-weight:700;text-decoration:underline;color:var(--ink);font-size:13px}
 .wm{background:var(--paper2);border:2px solid var(--ink);border-radius:14px;padding:8px 10px}
 .mate em{font-style:normal;font-size:11px;color:var(--muted)}
+.cell.n span{background:repeating-linear-gradient(90deg,#cfcfcf 0 3px,#ececec 3px 6px);border:2px dotted #8a8a8a}
+.strip i.n{background:#cfcfcf}
 .notice{font-size:13px;font-weight:500;border-radius:12px;padding:8px 12px;background:#d9f1ff;border:2px solid var(--ink)}
 
 /* log */
@@ -335,6 +340,7 @@ footer{font-size:12px;text-align:center;background:var(--paper);border:2px solid
       <span><i class="sw" style="background:linear-gradient(90deg,var(--pink),var(--sun),var(--mint),var(--sky))"></i>בבסיס (כל אחד בצבע שלו)</span>
       <span><i class="sw sw-exit">🚪</i>יום יציאה</span>
       <span><i class="sw"></i>בבית</span>
+      <span><i class="sw" style="background:#d6d6d6;border-style:dotted"></i>לא בצו</span>
       <span><i class="sw" style="background:repeating-linear-gradient(45deg,var(--org) 0 3px,transparent 3px 6px)"></i>התארגנות</span>
       <span><i class="sw" style="position:relative"><b class="cdot">!</b></i>אילוץ</span>
       <span><i class="sw" style="background:repeating-linear-gradient(-45deg,#d6ccb2 0 2px,var(--paper) 2px 6px)"></i>אחרי סוף הצו</span>
@@ -443,7 +449,7 @@ function parseSheet(text){
   const N=Math.max(...rows.map(r=>idx(r.date)))+1;if(N>400)throw new Error("range");
   const S=Array.from({length:N},()=>"0".repeat(P)),ph=Array(N).fill("");
   rows.forEach(r=>{const d=idx(r.date);if(d<0||d>=N)return;ph[d]=r.f[2]||"";
-    S[d]=names.map((n,i)=>{const v=(r.f[3+i]||"").trim();return /התארגנות/.test(v)?"o":/^(✓|✔|1|v|V|x|X)$/.test(v)?"1":"0"}).join("")});
+    S[d]=names.map((n,i)=>{const v=(r.f[3+i]||"").trim();return /לא\s*בצו/.test(v)?"n":/התארגנות/.test(v)?"o":/^(✓|✔|1|v|V|x|X)$/.test(v)?"1":"0"}).join("")});
   for(let d=1;d<N;d++)if(!ph[d])ph[d]=ph[d-1];
   const C=[];dateRows(secC).forEach(r=>{const d=idx(r.date);if(d<0||d>=N)return;
     names.forEach((n,i)=>{const t=(r.f[3+i]||"").trim();if(t)C.push([d,i,t.slice(0,40)])})});
@@ -483,20 +489,23 @@ function blocks(i){
   return out;
 }
 function together(i,j,from=0,to=N-1){let n=0;for(let d=from;d<=to;d++)if(inBase(d,i)&&inBase(d,j))n++;return n}
-function exitDay(d,i){return d>0&&d<N&&!inBase(d,i)&&inBase(d-1,i)}
+function notIn(d,i){return S(d,i)==="n"}
+function exitDay(d,i){return d>0&&d<N&&!inBase(d,i)&&!notIn(d,i)&&inBase(d-1,i)}
 function isExit(e){return e+1>=TAM0&&e+1<N} // exit day counts toward presence, from תע"מ onward (as in the sheet)
 
 function stats(i,t){
-  const end=END_IDX[i],days=end+1,bl=blocks(i);
+  const end=END_IDX[i],bl=blocks(i);
+  let notInDays=0;for(let d=0;d<=end;d++)if(notIn(d,i))notInDays++;
+  const days=end+1-notInDays; // days marked "לא בצו" don't count as צו days
   let baseDays=0,tam=0;for(let d=0;d<N;d++)if(inBase(d,i)){baseDays++;if(phase(d)==='תע"מ')tam++}
-  const exits=bl.filter(b=>isExit(b[1])).length;
+  const exits=bl.filter(b=>isExit(b[1])&&!notIn(b[1]+1,i)).length;
   const presence=baseDays+exits;
   const need=Math.ceil(REQ_FRAC*days-1e-9);
-  let soFar=0;bl.forEach(([s,e])=>{for(let d=s;d<=Math.min(e,t-1);d++)soFar++;if(isExit(e)&&e+1<=t-1)soFar++});
+  let soFar=0;bl.forEach(([s,e])=>{for(let d=s;d<=Math.min(e,t-1);d++)soFar++;if(isExit(e)&&!notIn(e+1,i)&&e+1<=t-1)soFar++});
   let closingLeft=0,homeLeft=0;
-  for(let d=Math.max(t,0);d<=end;d++){if(inBase(d,i))closingLeft++;else homeLeft++}
+  for(let d=Math.max(t,0);d<=end;d++){if(inBase(d,i))closingLeft++;else if(!notIn(d,i))homeLeft++}
   const cur=bl.find(b=>b[0]<=t&&t<=b[1])||null,next=bl.find(b=>b[0]>t)||null;
-  return {end,days,bl,baseDays,tam,exits,presence,need,soFar,closingLeft,homeLeft,cur,next,toEnd:end-t};
+  return {end,days,notInDays,bl,baseDays,tam,exits,presence,need,soFar,closingLeft,homeLeft,cur,next,toEnd:end-t};
 }
 
 /* ===== people picker ===== */
@@ -541,7 +550,7 @@ function renderHero(){
   else if(T>st.end){cls="st-done";label="🎉 סיימת את הצו";cdLbl="";target=null;qk="done"}
   else if(s==="1"){cls="st-base";label="⛺ בבסיס עכשיו";cdLbl="עד היציאה הביתה";target=st.cur[1]+1;qk="base"}
   else{
-    cls=s==="o"?"st-org":"st-home";label=s==="o"?"📦 התארגנות":"🏠 בבית עכשיו";qk="home";
+    cls=s==="o"?"st-org":s==="n"?"st-pre":"st-home";label=s==="o"?"📦 התארגנות":s==="n"?"⏸️ לא בצו היום":"🏠 בבית עכשיו";qk="home";
     if(st.next){cdLbl="עד החזרה לבסיס";target=st.next[0]}else{cdLbl="עד סוף הצו, בלי עוד סגירות";target=st.end+1}
   }
   const focus=st.cur||st.next;let nextHtml="";
@@ -566,7 +575,7 @@ function renderHero(){
     '<text x="59" y="62" text-anchor="middle" font-size="31" font-weight="700">'+have+'/'+need+'</text>'+
     '<text x="59" y="84" text-anchor="middle" font-size="16" style="fill:var(--muted)">'+(isNir?"ימי תע״מ":"ימי נוכחות")+'</text></svg>'+
     '<div><strong>'+(ok?"עומד ביעד":"חסרים "+(need-have)+" ימים ליעד")+'</strong><div class="muted" style="font-size:13px">'+
-    (isNir?"יעד: "+NIR_TARGET+" ימי סגירה בתע״מ":"נדרש "+Math.round(REQ_FRAC*100)+"% מ-"+st.days+" ימי צו (יום יציאה נספר). אחוז מתוכנן: "+Math.round(st.presence/st.days*100)+"%")+'</div>'+
+    (isNir?"יעד: "+NIR_TARGET+" ימי סגירה בתע״מ":"נדרש "+Math.round(REQ_FRAC*100)+"% מ-"+st.days+" ימי צו"+(st.notInDays?" (בלי "+st.notInDays+" ימים שלא בצו)":"")+" (יום יציאה נספר). אחוז מתוכנן: "+Math.round(st.presence/st.days*100)+"%")+'</div>'+
     '<div class="muted num" style="font-size:13px;margin-top:4px">נצבר עד היום: '+st.soFar+'</div></div></div>'+
     '<div class="tiles">'+tile(st.closingLeft,"ימי סגירה נשארו")+tile(st.homeLeft,"ימים בבית נשארו")+
     tile(T>st.end?"0":Math.max(0,st.toEnd),"ימים עד סוף הצו ("+fmt(st.end)+")")+tile(st.bl.length,"סגירות בסך הכל")+'</div>';
@@ -582,8 +591,8 @@ function renderStrip(){
   if(me===null){el.parentElement.hidden=true;return}el.parentElement.hidden=false;el.style.setProperty("--pc",PC[me]);
   for(let d=0;d<N;d++){
     const v=S(d,me),i=document.createElement("i");
-    i.className=(exitDay(d,me)?"e":d>END_IDX[me]?"x":v==="1"?"b":v==="o"?"o":"")+(d===T?" t":"")+(C(d,me)?" c":"");
-    i.title=fmtLong(d)+": "+(exitDay(d,me)?"יום יציאה":v==="1"?"בסיס":v==="o"?"התארגנות":"בית")+(C(d,me)?" · "+C(d,me):"");
+    i.className=(exitDay(d,me)?"e":v==="n"?"n":d>END_IDX[me]?"x":v==="1"?"b":v==="o"?"o":"")+(d===T?" t":"")+(C(d,me)?" c":"");
+    i.title=fmtLong(d)+": "+(exitDay(d,me)?"יום יציאה":v==="n"?"לא בצו":v==="1"?"בסיס":v==="o"?"התארגנות":"בית")+(C(d,me)?" · "+C(d,me):"");
     el.appendChild(i);
   }
   const phases=[];PH.forEach(p=>{if(phases[phases.length-1]!==p)phases.push(p)});
@@ -596,7 +605,14 @@ function renderClosings(){
   el.style.setProperty("--pc",PC[me]);
   const bl=blocks(me),end=END_IDX[me],items=[];
   const card=(o)=>items.push(o);
-  const home=(a,b,ret)=>{if(a>b)return;const n=b-a+1;
+  const home=(a,b,ret)=>{
+    if(a>b)return;
+    for(let x=a;x<=b;){let y=x;const isN=notIn(x,me);while(y+1<=b&&notIn(y+1,me)===isN)y++;
+      if(isN){const n=y-x+1;card({kind:"notin",a:x,b:y,title:"⏸️ לא בצו: "+fmtLong(x)+(n>1?" – "+fmtLong(y):""),len:n,unit:n===1?"יום":"ימים",body:'<div class="who">'+n+' ימים שלא בצו, לא נספרים בימי המילואים</div>'+(y===b?'<div class="exit num">'+ret+'</div>':'')})}
+      else homeRun(x,y,y===b?ret:"⏸️ אחריו: לא בצו מ-"+fmtLong(y+1));
+      x=y+1;}
+  };
+  const homeRun=(a,b,ret)=>{const n=b-a+1;
     card({kind:"home",a,b,title:"🏠 בבית: "+fmtLong(a)+(n>1?" – "+fmtLong(b):""),len:n,unit:n===1?"יום":"ימים",body:'<div class="who">'+n+' ימים מלאים בבית</div><div class="exit num">'+ret+'</div>'});};
   if(bl.length&&bl[0][0]>0)home(0,Math.min(bl[0][0]-1,end),"⛺ חוזרים לבסיס: "+fmtLong(bl[0][0]));
   bl.forEach(([s,e],k)=>{
@@ -611,7 +627,7 @@ function renderClosings(){
   });
   const openIdx=items.findIndex(o=>o.b>=T);
   el.innerHTML=items.map((o,k)=>{
-    const cls=(o.kind==="home"?"home ":"")+(o.b<T?"past":o.a<=T&&T<=o.b?"now":"");
+    const cls=(o.kind==="home"?"home ":o.kind==="notin"?"notin ":"")+(o.b<T?"past":o.a<=T&&T<=o.b?"now":"");
     return '<details class="cl '+cls+'"'+(k===openIdx?" open":"")+'><summary><span class="len num">'+o.len+'<small>'+o.unit+'</small></span><span class="when num">'+o.title+(o.a<=T&&T<=o.b?' · עכשיו':"")+(o.note?'<small class="note">'+esc(o.note)+'</small>':"")+'</span><span class="chev" aria-hidden="true">▾</span></summary><div class="clbody">'+o.body+'</div></details>';
   }).join("")||'<span class="muted">אין סגירות</span>';
 }
@@ -635,7 +651,7 @@ function renderWithMe(){
       const others=NAMES.map((n,i)=>i).filter(i=>i!==me&&(inBase(d,i)||exitDay(d,i)));
       body=(exitDay(d,me)?'<div class="muted" style="font-size:13px;margin-bottom:4px">יוצא הביתה באותו יום</div>':'')+
         '<div class="mates">'+(others.map(i=>'<span class="mate">'+av(i)+esc(NAMES[i])+(exitDay(d,i)&&!exitDay(d,me)?' <em>(יוצא)</em>':'')+'</span>').join("")||'<span class="muted">אתה לבד</span>')+'</div>';
-    }else body='<span class="muted">🏠 אתה בבית</span>';
+    }else body=notIn(d,me)?'<span class="muted">⏸️ אתה לא בצו</span>':'<span class="muted">🏠 אתה בבית</span>';
     return '<div class="wm"><h3 class="h3s">'+label+' <span class="muted num">'+fmtLong(d)+'</span></h3>'+body+'</div>';
   };
   el.innerHTML='<h2>מי איתי</h2><div class="todaygrid">'+col(T,"היום")+col(T+1,"מחר")+'</div>';
@@ -669,10 +685,12 @@ function renderToday(){
   const el=document.getElementById("todayPanel"),d=Math.max(0,Math.min(N-1,T));
   const list=g=>g.filter(i=>inBase(d,i)||exitDay(d,i)).map(i=>'<span class="mate">'+av(i)+esc(NAMES[i])+(exitDay(d,i)?' <em>(יוצא היום)</em>':'')+'</span>').join("")||'<span class="muted">אף אחד</span>';
   const exits=NAMES.map((n,i)=>i).filter(i=>exitDay(d,i));
-  const home=NAMES.map((n,i)=>i).filter(i=>!inBase(d,i)&&!exitDay(d,i)&&d<=END_IDX[i]);
+  const home=NAMES.map((n,i)=>i).filter(i=>!inBase(d,i)&&!exitDay(d,i)&&!notIn(d,i)&&d<=END_IDX[i]);
+  const off=NAMES.map((n,i)=>i).filter(i=>notIn(d,i));
   el.innerHTML='<h2>מי בבסיס '+(T===realToday&&T>=0&&T<N?"היום":"ב-"+fmt(d))+'</h2><div class="muted num" style="font-size:13px">'+fmtLong(d)+" · "+esc(phase(d))+(T<0?" (היום הראשון)":"")+'</div>'+
     '<div class="todaygrid"><div><h3>קצינים</h3><div class="mates">'+list(OFFICERS)+'</div></div><div><h3>משקים</h3><div class="mates">'+list(MASHAK)+'</div></div></div>'+
-    '<div style="margin-top:12px"><h3 class="h3s">בבית</h3><div class="mates">'+(home.map(i=>'<span class="mate">'+av(i)+esc(NAMES[i])+'</span>').join("")||'<span class="muted">כולם בפנים</span>')+'</div></div>';
+    '<div style="margin-top:12px"><h3 class="h3s">בבית</h3><div class="mates">'+(home.map(i=>'<span class="mate">'+av(i)+esc(NAMES[i])+'</span>').join("")||'<span class="muted">כולם בפנים</span>')+'</div></div>'+
+    (off.length?'<div style="margin-top:12px"><h3 class="h3s">⏸️ לא בצו</h3><div class="mates">'+off.map(i=>'<span class="mate">'+av(i)+esc(NAMES[i])+'</span>').join("")+'</div></div>':"");
 }
 
 
@@ -692,8 +710,8 @@ function renderBoard(){
     h+='<tr class="'+(d===T?"today ":"")+(d>0&&PH[d]!==PH[d-1]?"ph-start ":"")+(dow>=5?"wknd":"")+'"><td class="d">'+fmt(d)+'<small>'+DOW[dow]+'׳</small></td>';
     cols.forEach(i=>{
       const v=S(d,i),ex=exitDay(d,i),out=d>END_IDX[i]&&v!=="1"&&!ex,c=C(d,i);
-      const cls=(ex?"ex":out?"x":v==="1"?"b":v==="o"?"o":"h")+(c?" has-c":"");
-      const lbl=NAMES[i]+" "+fmtLong(d)+": "+(ex?"יום יציאה":v==="1"?"בסיס":v==="o"?"התארגנות":"בית")+(c?", אילוץ: "+c:"");
+      const cls=(ex?"ex":v==="n"?"n":out?"x":v==="1"?"b":v==="o"?"o":"h")+(c?" has-c":"");
+      const lbl=NAMES[i]+" "+fmtLong(d)+": "+(ex?"יום יציאה":v==="n"?"לא בצו":v==="1"?"בסיס":v==="o"?"התארגנות":"בית")+(c?", אילוץ: "+c:"");
       h+='<td style="--pc:'+PC[i]+'"><span class="cell '+cls+'" title="'+esc(lbl)+'" role="img" aria-label="'+esc(lbl)+'"><span></span></span></td>';
     });
     h+='</tr>';
