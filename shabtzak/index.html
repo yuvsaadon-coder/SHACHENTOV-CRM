@@ -119,11 +119,22 @@ h2::after{content:"";position:absolute;inset:auto -4px 2px -4px;height:11px;back
 
 /* closings */
 .closings{display:grid;gap:10px;margin-top:12px}
-.cl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;background:var(--paper);border:2px solid var(--ink);border-radius:14px;padding:8px 12px}
-.cl.past{opacity:.45;text-decoration:line-through;text-decoration-thickness:2px}
+.cl summary{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;cursor:pointer;list-style:none}
+.cl summary::-webkit-details-marker{display:none}
+.cl .chev{font-size:18px;transition:transform .2s}
+.cl[open] .chev{transform:rotate(180deg)}
+.cl .note{display:block;font-size:12px;font-weight:500;color:var(--muted)}
+.cl .clbody{padding:6px 2px 2px;margin-inline-start:58px}
+.cl.past summary{text-decoration:line-through;text-decoration-thickness:2px}
+.cl{display:block;background:var(--paper);border:2px solid var(--ink);border-radius:14px;padding:8px 12px}
+.clx{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;background:var(--paper);border:2px solid var(--ink);border-radius:14px;padding:8px 12px}
+.cl.home{background:#e3f7ea;border-style:dashed}
+.cl.home .len{background:var(--mint)}
+.cl.home.now{background:var(--mint)}
+.cl.past{opacity:.5}
 .cl.now{background:var(--sun);box-shadow:3px 3px 0 var(--ink);transform:rotate(-.6deg)}
 .cl .when{font-weight:700}
-.cl .len{font-family:var(--display);font-size:30px;line-height:1;grid-row:span 3;text-align:center;min-width:46px;background:var(--pc,var(--sun));border:2px solid var(--ink);border-radius:10px;padding:2px 4px}
+.cl .len{display:block;font-family:var(--display);font-size:28px;line-height:1;text-align:center;min-width:46px;background:var(--pc,var(--sun));border:2px solid var(--ink);border-radius:10px;padding:2px 4px}
 .cl .len small{display:block;font-family:var(--body);font-size:10px;font-weight:700}
 .cl .who{font-size:13px;color:var(--muted)}
 .cl.now .who{color:var(--ink)}
@@ -217,6 +228,14 @@ table.board{border-collapse:separate;border-spacing:0;width:100%;min-width:430px
 .cl .exit{font-size:13px;font-weight:700}
 .board.solo{min-width:0;max-width:340px;margin-inline:auto}
 .board.solo .cell span{height:26px}
+.install{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--sky);border:var(--bw) solid var(--ink);border-radius:var(--r);padding:12px 14px;box-shadow:4px 4px 0 var(--ink);transform:rotate(-.5deg)}
+.install>div:nth-child(2){flex:1;min-width:200px}
+.install strong{font-family:var(--display);font-size:20px;display:block}
+.install #installHow{font-size:14px;font-weight:500}
+.install-ic{font-size:34px}
+.linkbtn{background:none;border:0;padding:0;font-weight:700;text-decoration:underline;color:var(--ink);font-size:13px}
+.wm{background:var(--paper2);border:2px solid var(--ink);border-radius:14px;padding:8px 10px}
+.mate em{font-style:normal;font-size:11px;color:var(--muted)}
 .notice{font-size:13px;font-weight:500;border-radius:12px;padding:8px 12px;background:#d9f1ff;border:2px solid var(--ink)}
 
 /* log */
@@ -274,6 +293,15 @@ footer{font-size:12px;text-align:center;background:var(--paper);border:2px solid
     </div>
   </header>
 
+  <section class="install" id="install" hidden>
+    <div class="install-ic" aria-hidden="true">📲</div>
+    <div>
+      <strong>שים את השבצ"ק במסך הבית</strong>
+      <div id="installHow"></div>
+    </div>
+    <button class="btn ghost" type="button" id="installClose">לא עכשיו</button>
+  </section>
+
   <section aria-labelledby="whoH">
     <div class="row between" style="margin-bottom:8px">
       <h2 id="whoH">מי אתה?</h2>
@@ -286,6 +314,8 @@ footer{font-size:12px;text-align:center;background:var(--paper);border:2px solid
     <div class="panel" id="heroMain"></div>
     <div class="panel" id="heroSide"></div>
   </section>
+
+  <section class="panel" id="withMe" style="--hl:var(--sun)"></section>
 
   <section class="panel" style="--hl:var(--sky)">
     <div class="row between"><h2>השבצ"ק שלי</h2><span class="muted" style="font-size:13px">כל משבצת = יום. צבעוני = בסיס, פסים = יום יציאה, נקודה אדומה = אילוץ</span></div>
@@ -313,7 +343,7 @@ footer{font-size:12px;text-align:center;background:var(--paper);border:2px solid
   </section>
 
   <section class="grid2">
-    <div class="panel tilt-l" style="--hl:var(--pink)"><h2>הסגירות שלי</h2><div class="closings" id="closings"></div></div>
+    <div class="panel tilt-l" style="--hl:var(--pink)"><h2>הסגירות והבית שלי</h2><div class="closings" id="closings"></div></div>
     <div class="panel tilt-r" style="--hl:var(--mint)">
       <h2>חבר לסגירה 💛</h2>
       <div class="muted" style="font-size:13px">עם מי סגרת (ותסגור) הכי הרבה ימים</div>
@@ -333,6 +363,7 @@ footer{font-size:12px;text-align:center;background:var(--paper);border:2px solid
     <span id="syncTxt" class="num">טוען…</span>
     <div class="row">
       <button class="btn pri" id="syncBtn" type="button">🔄 עדכון מהשיטס</button>
+      <button class="linkbtn" type="button" id="installShow">📲 איך מתקינים?</button>
       <a class="btn" id="sheetLink" href="https://docs.google.com/spreadsheets/d/11ywUZWgERKUbGkJg_vAkkwsZENL_TTn6/edit" target="_blank" rel="noopener">✏️ עריכה בשיטס</a>
     </div>
   </section>
@@ -508,7 +539,7 @@ function renderHero(){
   let cls,label,cdLbl,target,qk;
   if(T<0){cls="st-pre";label="⏳ המילואים עוד לא התחילו";cdLbl="עד העלייה ל"+PH[0];target=0;qk="pre"}
   else if(T>st.end){cls="st-done";label="🎉 סיימת את הצו";cdLbl="";target=null;qk="done"}
-  else if(s==="1"){cls="st-base";label="⛺ בבסיס עכשיו";cdLbl="עד יום היציאה הביתה";target=st.cur[1]+1;qk="base"}
+  else if(s==="1"){cls="st-base";label="⛺ בבסיס עכשיו";cdLbl="עד היציאה הביתה";target=st.cur[1]+1;qk="base"}
   else{
     cls=s==="o"?"st-org":"st-home";label=s==="o"?"📦 התארגנות":"🏠 בבית עכשיו";qk="home";
     if(st.next){cdLbl="עד החזרה לבסיס";target=st.next[0]}else{cdLbl="עד סוף הצו, בלי עוד סגירות";target=st.end+1}
@@ -517,9 +548,9 @@ function renderHero(){
   if(focus){
     const mates=NAMES.map((n,j)=>({n,j,k:j===i?0:together(i,j,focus[0],focus[1])})).filter(m=>m.k>0).sort((a,b)=>b.k-a.k);
     const len=focus[1]-focus[0]+1;
-    nextHtml='<div class="next"><div class="row between"><strong>'+(st.cur?"הסגירה הנוכחית":"הסגירה הבאה")+'</strong><span class="muted num">'+len+' ימים</span></div>'+
-      '<div class="num dates">'+fmtLong(focus[0])+' עד '+fmtLong(focus[1])+'</div>'+
-      (focus[1]+1<N?'<div class="exitline num">🚪 יום יציאה: '+fmtLong(focus[1]+1)+'</div>':'<div class="exitline">🚪 סוגר עד סוף המילואים</div>')+
+    nextHtml='<div class="next"><div class="row between"><strong>'+(st.cur?"הסגירה הנוכחית":"הסגירה הבאה")+'</strong><span class="muted num">'+len+' לילות</span></div>'+
+      '<div class="num dates">'+fmtLong(focus[0])+' עד '+fmtLong(focus[1]+1<N?focus[1]+1:focus[1])+'</div>'+
+      '<div class="muted num" style="font-size:13px">'+(focus[1]+1<N?'יציאה ב-'+fmt(focus[1]+1)+' באותו יום':'עד סוף המילואים')+'</div>'+
       '<div class="muted" style="font-size:13px;margin-top:6px">סוגרים איתך:</div><div class="mates">'+
       mates.map(m=>'<span class="mate">'+av(m.j)+esc(m.n)+' <em class="num">'+m.k+'/'+len+'</em></span>').join("")+
       (mates.length?"":'<span class="muted">אף אחד, רק אתה והשמיים</span>')+'</div></div>';
@@ -563,11 +594,25 @@ function renderClosings(){
   const el=document.getElementById("closings");
   if(me===null){el.innerHTML='<span class="muted">בחר שם</span>';return}
   el.style.setProperty("--pc",PC[me]);
-  el.innerHTML=blocks(me).map(([s,e])=>{
-    const len=e-s+1;
-    const mates=NAMES.map((n,j)=>({n,k:j===me?0:together(me,j,s,e)})).filter(m=>m.k>0).sort((a,b)=>b.k-a.k).map(m=>m.n+(m.k<len?" ("+m.k+")":"")).join(", ");
-    const cls=e<T?"past":s<=T&&T<=e?"now":"";
-    return '<div class="cl '+cls+'"><div class="len num">'+len+'<small>ימים</small></div><div class="when num">'+fmtLong(s)+' – '+fmtLong(e)+(cls==="now"?' · עכשיו':"")+'</div><div class="who">עם: '+esc(mates||"לבד")+'</div><div class="exit num">🚪 '+(e+1<N?'יום יציאה: '+fmtLong(e+1):'עד סוף המילואים')+'</div></div>';
+  const bl=blocks(me),end=END_IDX[me],items=[];
+  const card=(o)=>items.push(o);
+  const home=(a,b,ret)=>{if(a>b)return;const n=b-a+1;
+    card({kind:"home",a,b,title:"🏠 בבית: "+fmtLong(a)+(n>1?" – "+fmtLong(b):""),len:n,unit:n===1?"יום":"ימים",body:'<div class="who">'+n+' ימים מלאים בבית</div><div class="exit num">'+ret+'</div>'});};
+  if(bl.length&&bl[0][0]>0)home(0,Math.min(bl[0][0]-1,end),"⛺ חוזרים לבסיס: "+fmtLong(bl[0][0]));
+  bl.forEach(([s,e],k)=>{
+    const nights=e-s+1,out=e+1<N?e+1:e;
+    const mates=NAMES.map((n,j)=>({n,k:j===me?0:together(me,j,s,e)})).filter(m=>m.k>0).sort((a,b)=>b.k-a.k).map(m=>m.n+(m.k<nights?" ("+m.k+")":"")).join(", ");
+    card({kind:"close",a:s,b:out,title:"⛺ סגירה: "+fmtLong(s)+" – "+fmtLong(out),len:nights,unit:nights===1?"לילה":"לילות",
+      note:e+1<N?"יציאה ב-"+fmt(e+1)+" באותו יום":"עד סוף המילואים",
+      body:'<div class="who">עם: '+esc(mates||"לבד")+'</div>'});
+    const next=bl[k+1];
+    if(next&&next[0]-1<=end)home(e+2,next[0]-1,"⛺ חוזרים לבסיס: "+fmtLong(next[0]));
+    else if(e+2<=end)home(e+2,end,"🎉 "+fmtLong(end)+" סוף הצו"+(end+1<N&&S(end+1,me)==="o"?", ואחריו התארגנות":""));
+  });
+  const openIdx=items.findIndex(o=>o.b>=T);
+  el.innerHTML=items.map((o,k)=>{
+    const cls=(o.kind==="home"?"home ":"")+(o.b<T?"past":o.a<=T&&T<=o.b?"now":"");
+    return '<details class="cl '+cls+'"'+(k===openIdx?" open":"")+'><summary><span class="len num">'+o.len+'<small>'+o.unit+'</small></span><span class="when num">'+o.title+(o.a<=T&&T<=o.b?' · עכשיו':"")+(o.note?'<small class="note">'+esc(o.note)+'</small>':"")+'</span><span class="chev" aria-hidden="true">▾</span></summary><div class="clbody">'+o.body+'</div></details>';
   }).join("")||'<span class="muted">אין סגירות</span>';
 }
 
@@ -577,6 +622,23 @@ function renderBuddies(){
   const arr=NAMES.map((n,j)=>({n,j,k:together(me,j)})).filter(x=>x.j!==me).sort((a,b)=>b.k-a.k);
   const max=Math.max(1,arr[0].k);
   el.innerHTML=arr.map((x,idx)=>'<div class="bud'+(idx===0?" top":"")+'" style="--pc:'+PC[x.j]+'"><span>'+(idx===0?"👑 ":"")+esc(x.n)+'</span><div class="bar"><i style="width:'+(x.k/max*100)+'%"></i></div><span class="num">'+x.k+'</span></div>').join("");
+}
+
+/* ===== who is with me today / tomorrow ===== */
+function renderWithMe(){
+  const el=document.getElementById("withMe");
+  if(me===null){el.hidden=true;return}el.hidden=false;
+  const col=(d,label)=>{
+    let body;
+    if(d<0||d>=N||d>END_IDX[me]&&!inBase(d,me))body='<span class="muted">לא בסגירה</span>';
+    else if(inBase(d,me)||exitDay(d,me)){
+      const others=NAMES.map((n,i)=>i).filter(i=>i!==me&&(inBase(d,i)||exitDay(d,i)));
+      body=(exitDay(d,me)?'<div class="muted" style="font-size:13px;margin-bottom:4px">יוצא הביתה באותו יום</div>':'')+
+        '<div class="mates">'+(others.map(i=>'<span class="mate">'+av(i)+esc(NAMES[i])+(exitDay(d,i)&&!exitDay(d,me)?' <em>(יוצא)</em>':'')+'</span>').join("")||'<span class="muted">אתה לבד</span>')+'</div>';
+    }else body='<span class="muted">🏠 אתה בבית</span>';
+    return '<div class="wm"><h3 class="h3s">'+label+' <span class="muted num">'+fmtLong(d)+'</span></h3>'+body+'</div>';
+  };
+  el.innerHTML='<h2>מי איתי</h2><div class="todaygrid">'+col(T,"היום")+col(T+1,"מחר")+'</div>';
 }
 
 /* ===== badges ===== */
@@ -605,12 +667,11 @@ function renderBadges(){
 /* ===== today panel ===== */
 function renderToday(){
   const el=document.getElementById("todayPanel"),d=Math.max(0,Math.min(N-1,T));
-  const list=g=>g.filter(i=>inBase(d,i)).map(i=>'<span class="mate">'+av(i)+esc(NAMES[i])+'</span>').join("")||'<span class="muted">אף אחד</span>';
+  const list=g=>g.filter(i=>inBase(d,i)||exitDay(d,i)).map(i=>'<span class="mate">'+av(i)+esc(NAMES[i])+(exitDay(d,i)?' <em>(יוצא היום)</em>':'')+'</span>').join("")||'<span class="muted">אף אחד</span>';
   const exits=NAMES.map((n,i)=>i).filter(i=>exitDay(d,i));
   const home=NAMES.map((n,i)=>i).filter(i=>!inBase(d,i)&&!exitDay(d,i)&&d<=END_IDX[i]);
   el.innerHTML='<h2>מי בבסיס '+(T===realToday&&T>=0&&T<N?"היום":"ב-"+fmt(d))+'</h2><div class="muted num" style="font-size:13px">'+fmtLong(d)+" · "+esc(phase(d))+(T<0?" (היום הראשון)":"")+'</div>'+
     '<div class="todaygrid"><div><h3>קצינים</h3><div class="mates">'+list(OFFICERS)+'</div></div><div><h3>משקים</h3><div class="mates">'+list(MASHAK)+'</div></div></div>'+
-    (exits.length?'<div style="margin-top:12px"><h3 class="h3s">🚪 יום יציאה '+(T===realToday?"היום":"ביום הזה")+'</h3><div class="mates">'+exits.map(i=>'<span class="mate">'+av(i)+esc(NAMES[i])+'</span>').join("")+'</div></div>':"")+
     '<div style="margin-top:12px"><h3 class="h3s">בבית</h3><div class="mates">'+(home.map(i=>'<span class="mate">'+av(i)+esc(NAMES[i])+'</span>').join("")||'<span class="muted">כולם בפנים</span>')+'</div></div>';
 }
 
@@ -721,7 +782,7 @@ function renderTicker(){
 }
 function renderAll(){
   document.querySelectorAll(".person").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.i===me)));
-  renderHeader();renderSync();renderTicker();renderHero();renderStrip();renderClosings();renderBuddies();renderBadges();renderToday();renderBoard();
+  renderHeader();renderSync();renderTicker();renderHero();renderWithMe();renderStrip();renderClosings();renderBuddies();renderBadges();renderToday();renderBoard();
 }
 
 /* confetti */
@@ -751,8 +812,26 @@ function reload(D){
   const oldStart=START.getTime();applyData(D);
   realToday=dayIndexOf(new Date());if(START.getTime()!==oldStart)T=realToday;
   buildPeople();setupTM();renderAll();
+
 }
 buildPeople();setupTM();renderAll();
+
+/* ===== add-to-home-screen hint ===== */
+(function(){
+  const box=document.getElementById("install"),how=document.getElementById("installHow");
+  const ua=navigator.userAgent||"";
+  const ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+  const android=/Android/.test(ua);
+  const standalone=(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone;
+  how.innerHTML=ios
+    ?'פותחים את הלינק ב-Safari (לא מתוך אפליקציית Claude), לוחצים על כפתור השיתוף <b>⬆️</b> ואז <b>"הוספה למסך הבית"</b>.'
+    :android
+    ?'פותחים את הלינק ב-Chrome (לא מתוך אפליקציית Claude), לוחצים על התפריט <b>⋮</b> ואז <b>"הוספה למסך הבית"</b>.'
+    :'בטלפון: פותחים את הלינק בדפדפן ובוחרים <b>"הוספה למסך הבית"</b> (באייפון דרך כפתור השיתוף ⬆️, באנדרואיד דרך התפריט ⋮).';
+  if(!standalone&&!load("shabtzak.installDismissed",false))box.hidden=false;
+  document.getElementById("installClose").addEventListener("click",()=>{box.hidden=true;save("shabtzak.installDismissed",true)});
+  document.getElementById("installShow").addEventListener("click",()=>{box.hidden=false;box.scrollIntoView({behavior:"smooth",block:"center"})});
+})();
 
 /* ===== shared storage: latest sheet snapshot ===== */
 (async()=>{
