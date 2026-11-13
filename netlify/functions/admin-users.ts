@@ -2,6 +2,7 @@ import type { Handler } from '@netlify/functions'
 import { cert, initializeApp, getApps } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
+import { corsHeaders, handleOptions } from './_cors'
 
 /**
  * Opens (or repairs) an HQ person's e-mail login and sets its password — the
@@ -17,8 +18,8 @@ function initFirebase() {
   initializeApp({ credential: cert(JSON.parse(raw) as Record<string, string>) })
 }
 
-const JSON_HEADERS = { 'Content-Type': 'application/json' }
-const fail = (statusCode: number, error: string) => ({ statusCode, headers: JSON_HEADERS, body: JSON.stringify({ error }) })
+const jsonHeaders = (cors: Record<string, string>) => ({ ...cors, 'Content-Type': 'application/json' })
+const fail = (cors: Record<string, string>, statusCode: number, error: string) => ({ statusCode, headers: jsonHeaders(cors), body: JSON.stringify({ error }) })
 
 const MANAGER_ROLES = ['admin', 'CEO']
 const NO_STAFF_LOGIN = ['', 'coordinator', 'none']
@@ -28,21 +29,24 @@ interface PersonDoc { name?: string; email?: string; phone?: string; role?: stri
 const errorCode = (err: unknown) => (err as { code?: string }).code ?? ''
 
 export const handler: Handler = async (event) => {
-  if (event.httpMethod !== 'POST') return fail(405, 'Method Not Allowed')
+  const origin = event.headers['origin']
+  const cors = corsHeaders(origin)
+  if (event.httpMethod === 'OPTIONS') return handleOptions(origin)
+  if (event.httpMethod !== 'POST') return fail(cors, 405, 'Method Not Allowed')
 
   const authHeader = event.headers['authorization'] ?? ''
   const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
-  if (!idToken) return fail(401, 'לא מחובר — התחבר מחדש ונסה שוב.')
+  if (!idToken) return fail(cors, 401, 'לא מחובר — התחבר מחדש ונסה שוב.')
 
   try { initFirebase() } catch {
-    return fail(500, 'משתנה הסביבה FIREBASE_SERVICE_ACCOUNT חסר או שגוי ב-Netlify.')
+    return fail(cors, 500, 'משתנה הסביבה FIREBASE_SERVICE_ACCOUNT חסר או שגוי ב-Netlify.')
   }
 
   let callerUid: string
   try {
     callerUid = (await getAuth().verifyIdToken(idToken)).uid
   } catch {
-    return fail(401, 'ההתחברות פגה — רענן את הדף והתחבר מחדש.')
+    return fail(cors, 401, 'ההתחברות פגה — רענן את הדף והתחבר מחדש.')
   }
 
   const db = getFirestore()
@@ -51,21 +55,21 @@ export const handler: Handler = async (event) => {
   const callerSnap = await db.collection('users').doc(callerUid).get()
   const caller = (callerSnap.data() ?? {}) as PersonDoc
   if (!callerSnap.exists || caller.active === false || !MANAGER_ROLES.includes(caller.role ?? '')) {
-    return fail(403, 'רק מנהל/ת מערכת רשאי/ת לנהל כניסות וסיסמאות.')
+    return fail(cors, 403, 'רק מנהל/ת מערכת רשאי/ת לנהל כניסות וסיסמאות.')
   }
 
   const { personId, password } = JSON.parse(event.body ?? '{}') as { personId?: string; password?: string }
-  if (!personId) return fail(400, 'חסר מזהה אדם.')
+  if (!personId) return fail(cors, 400, 'חסר מזהה אדם.')
 
   const personSnap = await db.collection('users').doc(personId).get()
-  if (!personSnap.exists) return fail(404, 'האדם לא נמצא.')
+  if (!personSnap.exists) return fail(cors, 404, 'האדם לא נמצא.')
   const person = personSnap.data() as PersonDoc
 
-  if (NO_STAFF_LOGIN.includes(person.role ?? '')) return fail(400, 'לאדם זה אין גישת מטה, ולכן אין לו סיסמה.')
+  if (NO_STAFF_LOGIN.includes(person.role ?? '')) return fail(cors, 400, 'לאדם זה אין גישת מטה, ולכן אין לו סיסמה.')
   const email = (person.email ?? '').trim().toLowerCase()
-  if (!email || email.endsWith('.internal')) return fail(400, 'חסרה כתובת אימייל לכניסה.')
+  if (!email || email.endsWith('.internal')) return fail(cors, 400, 'חסרה כתובת אימייל לכניסה.')
   const newPassword = (password ?? '').trim() || (person.phone ?? '').replace(/\D/g, '')
-  if (newPassword.length < 6) return fail(400, 'נדרש מספר טלפון (6 ספרות לפחות) כדי לקבוע סיסמה.')
+  if (newPassword.length < 6) return fail(cors, 400, 'נדרש מספר טלפון (6 ספרות לפחות) כדי לקבוע סיסמה.')
 
   try {
     let exists = true
@@ -82,10 +86,10 @@ export const handler: Handler = async (event) => {
     }
   } catch (err) {
     if (errorCode(err) === 'auth/email-already-exists') {
-      return fail(409, 'כתובת האימייל כבר רשומה לכניסה של משתמש אחר.')
+      return fail(cors, 409, 'כתובת האימייל כבר רשומה לכניסה של משתמש אחר.')
     }
-    if (errorCode(err) === 'auth/invalid-email') return fail(400, 'כתובת האימייל אינה תקינה.')
-    return fail(500, `שגיאה בהגדרת הכניסה: ${err instanceof Error ? err.message : String(err)}`)
+    if (errorCode(err) === 'auth/invalid-email') return fail(cors, 400, 'כתובת האימייל אינה תקינה.')
+    return fail(cors, 500, `שגיאה בהגדרת הכניסה: ${err instanceof Error ? err.message : String(err)}`)
   }
 
   await db.collection('userSecrets').doc(personId).set({
@@ -94,5 +98,5 @@ export const handler: Handler = async (event) => {
     setAt: FieldValue.serverTimestamp(),
   })
 
-  return { statusCode: 200, headers: JSON_HEADERS, body: JSON.stringify({ password: newPassword }) }
+  return { statusCode: 200, headers: jsonHeaders(cors), body: JSON.stringify({ password: newPassword }) }
 }

@@ -1,3 +1,4 @@
+import { corsHeaders, handleOptions } from './_cors'
 import type { Handler } from '@netlify/functions'
 import { cert, initializeApp, getApps } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
@@ -30,21 +31,24 @@ interface KnowledgeDoc {
 }
 
 export const handler: Handler = async (event) => {
+  const origin = event.headers['origin']
+  const cors = corsHeaders(origin)
+  if (event.httpMethod === 'OPTIONS') return handleOptions(origin)
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' }
+    return { statusCode: 405, headers: cors, body: 'Method Not Allowed' }
   }
 
   // Auth: verify Firebase ID token
   const authHeader = event.headers['authorization'] ?? ''
   const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
   if (!idToken) {
-    return { statusCode: 401, body: JSON.stringify({ error: 'Missing token' }) }
+    return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'Missing token' }) }
   }
 
   try {
     initFirebase()
   } catch {
-    return { statusCode: 500, body: JSON.stringify({ error: 'Server configuration error' }) }
+    return { statusCode: 500, headers: cors, body: JSON.stringify({ error: 'Server configuration error' }) }
   }
 
   let uid: string
@@ -52,14 +56,14 @@ export const handler: Handler = async (event) => {
     const decoded = await getAuth().verifyIdToken(idToken)
     uid = decoded.uid
   } catch {
-    return { statusCode: 401, body: JSON.stringify({ error: 'Invalid token' }) }
+    return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'Invalid token' }) }
   }
 
   const body = JSON.parse(event.body ?? '{}') as RequestBody
   const { branchId, mode, messages } = body
 
   if (!branchId) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Missing branchId' }) }
+    return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'Missing branchId' }) }
   }
 
   // Authorize: the branch must be one of the caller's portal branches — those of
@@ -68,7 +72,7 @@ export const handler: Handler = async (event) => {
   const callerDoc = await db.collection('users').doc(uid).get()
   const caller = (callerDoc.data() ?? {}) as { active?: boolean; branchIds?: string[] }
   if (!callerDoc.exists || caller.active === false || !(caller.branchIds ?? []).includes(branchId)) {
-    return { statusCode: 403, body: JSON.stringify({ error: 'Not authorized for this branch' }) }
+    return { statusCode: 403, headers: cors, body: JSON.stringify({ error: 'Not authorized for this branch' }) }
   }
 
   // Fetch knowledge items
@@ -129,7 +133,7 @@ ${localSection}${globalSection}${researchSection}
   // Call Anthropic API
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'Missing API key' }) }
+    return { statusCode: 500, headers: cors, body: JSON.stringify({ error: 'Missing API key' }) }
   }
 
   const anthropicMessages = messages.map((m) => ({ role: m.role, content: m.content }))
@@ -151,7 +155,7 @@ ${localSection}${globalSection}${researchSection}
 
   if (!response.ok) {
     const err = await response.text()
-    return { statusCode: 502, body: JSON.stringify({ error: `Anthropic API error: ${err}` }) }
+    return { statusCode: 502, headers: cors, body: JSON.stringify({ error: `Anthropic API error: ${err}` }) }
   }
 
   const result = await response.json() as { stop_reason?: string; content: { type: string; text: string }[] }
@@ -160,7 +164,7 @@ ${localSection}${globalSection}${researchSection}
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...cors, 'Content-Type': 'application/json' },
     body: JSON.stringify({ reply }),
   }
 }

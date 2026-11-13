@@ -1,3 +1,4 @@
+import { corsHeaders, handleOptions } from './_cors'
 import type { Handler, HandlerEvent } from '@netlify/functions'
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? ''
