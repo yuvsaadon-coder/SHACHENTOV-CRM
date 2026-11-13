@@ -22,5 +22,8 @@ dist/
 # Netlify
 .netlify/
 
+# Generated source bundle; Git is the source of truth
+shachentovcrmsource.zip
+
 # Firebase service account — never commit
 serviceAccountKey.json
