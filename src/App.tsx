@@ -30,25 +30,26 @@ import { Spinner } from './components/ui/Spinner'
 import { ToastProvider } from './context/ToastContext'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { firebaseUser, appUser, loading } = useAuth()
+  const { firebaseUser, appUser, access, loading } = useAuth()
   if (loading) return <Spinner size="lg" />
-  if (!firebaseUser) return <Navigate to="/login" replace />
-  if (appUser?.role === 'coordinator') return <Navigate to="/portal/home" replace />
+  if (!firebaseUser || !appUser) return <Navigate to="/login" replace />
+  if (access === 'coordinator') return <Navigate to="/portal/home" replace />
   return <>{children}</>
 }
 
 function RequireCoordinator({ children }: { children: React.ReactNode }) {
-  const { firebaseUser, appUser, loading } = useAuth()
+  const { firebaseUser, appUser, access, loading } = useAuth()
   if (loading) return <Spinner size="lg" />
-  if (!firebaseUser) return <Navigate to="/login" replace />
-  if (appUser && appUser.role !== 'coordinator') return <Navigate to="/dashboard" replace />
+  if (!firebaseUser || !appUser) return <Navigate to="/login" replace />
+  if (access !== 'coordinator') return <Navigate to="/dashboard" replace />
   return <>{children}</>
 }
 
 function SmartRedirect() {
-  const { appUser, loading } = useAuth()
+  const { appUser, access, loading } = useAuth()
   if (loading) return <Spinner size="lg" />
-  if (appUser?.role === 'coordinator') return <Navigate to="/portal/home" replace />
+  if (!appUser) return <Navigate to="/login" replace />
+  if (access === 'coordinator') return <Navigate to="/portal/home" replace />
   return <Navigate to="/dashboard" replace />
 }
 

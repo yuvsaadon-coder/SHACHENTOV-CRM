@@ -1,11 +1,16 @@
-import { useState, useMemo, useEffect } from 'react'
-import { doc, updateDoc, addDoc, collection, serverTimestamp, query, where, getDocs } from 'firebase/firestore'
+import { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
+import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAllBranches } from '../hooks/useBranch'
+import { useRoles } from '../hooks/useRoles'
+import { saveRole, type OrgData } from '../lib/people'
+import { coordinatorsOfBranch } from '../lib/peopleLogic'
+import { RoleEditModal } from '../components/roles/RoleEditModal'
 import { useQuarterlyReports } from '../hooks/useQuarterlyReports'
 import { useAuth } from '../context/AuthContext'
 import { Spinner } from '../components/ui/Spinner'
-import type { Branch, AppUser, QuarterlyReport } from '../types'
+import type { Branch, QuarterlyReport, RoleHolder, RoleLevel } from '../types'
 import { DIST_FREQ_OPTIONS, QUARTER_LABELS } from '../types'
 
 const DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת', 'משתנה']
@@ -205,97 +210,77 @@ type FullEditForm = {
   acceptsGroups: boolean
 }
 
-function CoordinatorSearch({ currentUids, currentNames, onChange }: {
-  currentUids: string[]
-  currentNames: string[]
-  onChange: (uids: string[], names: string[]) => void
-}) {
-  const [search, setSearch] = useState('')
-  const [allCoordinators, setAllCoordinators] = useState<AppUser[]>([])
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(true)
+/**
+ * A branch's coordinators are the people holding the position linked to it.
+ * They are edited through that position, so the org tree, the portal and this
+ * page can never disagree.
+ */
+function BranchCoordinators({ branch, org }: { branch: Branch; org: OrgData }) {
+  const [editingRoleId, setEditingRoleId] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
+  const linkedRoles = org.roles.filter((r) => r.portalBranchId === branch.id)
 
-  // Load all coordinator users once on mount
-  useEffect(() => {
-    void (async () => {
-      try {
-        const snap = await getDocs(
-          query(collection(db, 'users'), where('role', '==', 'coordinator'))
-        )
-        setAllCoordinators(snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUser)))
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [])
-
-  const results = allCoordinators.filter((u) => {
-    if (!search.trim()) return true
-    const q = search.toLowerCase()
-    return u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
-  })
-
-  const add = (u: AppUser) => {
-    if (currentUids.includes(u.uid)) return
-    onChange([...currentUids, u.uid], [...currentNames, u.name])
-    setSearch('')
-    setOpen(false)
+  const createRole = async () => {
+    setCreating(true)
+    try {
+      const level = inferLevel(branch)
+      const id = await saveRole(null, {
+        roleName: 'רכז/ת סניף',
+        area: branch.name.replace(/^סלי מזון - /, ''),
+        level: (level === 'מועדוני נוער' ? 'בתי קפה נודדים' : level) as RoleLevel,
+        status: 'חסר',
+        priority: 'רגיל',
+        linkedTaskIds: [],
+        affectsTasks: false,
+        delegatedTo: null,
+        notes: '',
+        portalBranchId: branch.id,
+      }, org)
+      setEditingRoleId(id)
+    } finally {
+      setCreating(false)
+    }
   }
 
-  const remove = (uid: string) => {
-    const idx = currentUids.indexOf(uid)
-    const uids = currentUids.filter((_, i) => i !== idx)
-    const names = currentNames.filter((_, i) => i !== idx)
-    onChange(uids, names)
-  }
+  const editingRole = editingRoleId ? org.roles.find((r) => r.id === editingRoleId) : undefined
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap gap-1">
-        {currentUids.map((uid, i) => (
-          <span key={uid} className="text-xs bg-[#E6F4F4] text-[#147F84] rounded-full px-2 py-0.5 flex items-center gap-1">
-            👤 {currentNames[i] ?? uid}
-            <button onClick={() => remove(uid)} className="text-red-400 hover:text-red-600 leading-none ml-0.5">×</button>
-          </span>
-        ))}
-        {currentUids.length === 0 && <span className="text-xs text-gray-400">אין רכזים מקושרים</span>}
-      </div>
-      <div className="relative">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
-          placeholder={loading ? 'טוען רכזים...' : 'חפש רכז לפי שם...'}
-          disabled={loading}
-          className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#189A9F] disabled:opacity-60"
-        />
-        {open && results.length > 0 && (
-          <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-            {results.map((u) => (
-              <button
-                key={u.uid}
-                onMouseDown={() => add(u)}
-                className="w-full text-right px-3 py-2 text-xs hover:bg-gray-50 flex justify-between items-center disabled:opacity-50"
-                disabled={currentUids.includes(u.uid)}
-              >
-                <span className={`font-medium ${currentUids.includes(u.uid) ? 'text-gray-400' : 'text-gray-700'}`}>{u.name}</span>
-                <span className="text-gray-400">{u.email}</span>
-              </button>
-            ))}
+      {linkedRoles.map((r) => (
+        <div key={r.id} className="flex items-center gap-2 border border-gray-100 rounded-lg px-3 py-2 bg-gray-50/60">
+          <div className="flex-1 min-w-0">
+            <div className="text-xs text-gray-400">{r.roleName}{r.area ? ` · ${r.area}` : ''}</div>
+            <div className="text-sm" style={{ color: '#141348' }}>
+              {r.holderName || <span className="text-gray-400">לא מאויש</span>}
+            </div>
           </div>
-        )}
-        {open && !loading && results.length === 0 && (
-          <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 px-3 py-2 text-xs text-gray-400">
-            לא נמצאו רכזים
-          </div>
-        )}
-      </div>
+          <button type="button" onClick={() => setEditingRoleId(r.id)}
+            className="text-xs border border-gray-200 bg-white rounded-lg px-3 py-1.5 hover:bg-gray-50 shrink-0">
+            עדכון רכזים
+          </button>
+        </div>
+      ))}
+      {linkedRoles.length === 0 && (
+        <div className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 flex items-center justify-between gap-2">
+          <span>אין תפקיד בעץ הארגוני שמקושר לסניף הזה, ולכן אין לו רכזים.</span>
+          <button type="button" onClick={() => void createRole()} disabled={creating}
+            className="border border-amber-300 bg-white rounded-lg px-3 py-1.5 shrink-0 disabled:opacity-50">
+            {creating ? 'יוצר…' : 'צור תפקיד רכז/ת'}
+          </button>
+        </div>
+      )}
+      <p className="text-xs text-gray-400">
+        הרכזים הם ממלאי התפקיד המקושר לסניף. אפשר לעדכן אותם גם ב<Link to="/roles" className="text-[#189A9F] hover:underline">איוש תפקידים</Link> או
+        ב<Link to="/admin/users" className="text-[#189A9F] hover:underline">אנשים ומשתמשים</Link>.
+      </p>
+      {editingRole && (
+        <RoleEditModal role={editingRole} allRoles={org.roles} people={org.people} onClose={() => setEditingRoleId(null)} />
+      )}
     </div>
   )
 }
 
-function BranchEditPanel({ branch, onClose }: { branch: Branch; onClose: () => void }) {
+function BranchEditPanel({ branch, org, onClose }: { branch: Branch; org: OrgData; onClose: () => void }) {
   const [form, setForm] = useState<FullEditForm>({
     name:                  branch.name,
     city:                  branch.city,
@@ -309,8 +294,6 @@ function BranchEditPanel({ branch, onClose }: { branch: Branch; onClose: () => v
     address:               branch.address ?? '',
     acceptsGroups:         branch.acceptsGroups ?? false,
   })
-  const [coordinatorUids, setCoordinatorUids] = useState<string[]>(branch.coordinatorUids ?? [])
-  const [coordinatorNames, setCoordinatorNames] = useState<string[]>(branch.coordinatorNames ?? [])
   const [saving, setSaving] = useState(false)
 
   const save = async () => {
@@ -328,8 +311,6 @@ function BranchEditPanel({ branch, onClose }: { branch: Branch; onClose: () => v
         distributionTime:      form.distributionTime || null,
         address:               form.address || null,
         acceptsGroups:         form.acceptsGroups,
-        coordinatorUids,
-        coordinatorNames,
       })
       onClose()
     } finally {
@@ -374,11 +355,7 @@ function BranchEditPanel({ branch, onClose }: { branch: Branch; onClose: () => v
           {/* Coordinators */}
           <div>
             <label className="block text-xs text-gray-500 mb-2">רכזים</label>
-            <CoordinatorSearch
-              currentUids={coordinatorUids}
-              currentNames={coordinatorNames}
-              onChange={(uids, names) => { setCoordinatorUids(uids); setCoordinatorNames(names) }}
-            />
+            <BranchCoordinators branch={branch} org={org} />
           </div>
 
           {/* Operational */}
@@ -487,8 +464,6 @@ function AddBranchModal({ onClose }: { onClose: () => void }) {
         name: name.trim(),
         city: city.trim(),
         type,
-        coordinatorUids: [],
-        coordinatorNames: [],
         createdAt: serverTimestamp(),
       })
       onClose()
@@ -547,7 +522,7 @@ function AddBranchModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-function BranchCard({ branch }: { branch: Branch }) {
+function BranchCard({ branch, coordinators, org }: { branch: Branch; coordinators: RoleHolder[]; org: OrgData }) {
   const [editing, setEditing] = useState(false)
   const [viewingReports, setViewingReports] = useState(false)
   const color = TYPE_COLOR[branch.type]
@@ -582,13 +557,13 @@ function BranchCard({ branch }: { branch: Branch }) {
         </div>
 
         {/* Coordinators */}
-        {(branch.coordinatorNames ?? []).length > 0 && (
+        {coordinators.length > 0 && (
           <div className="px-4 py-2 border-t border-gray-50 bg-gray-50/50">
             <div className="text-xs text-gray-400 mb-1">רכזים</div>
             <div className="flex flex-wrap gap-1">
-              {(branch.coordinatorNames ?? []).map((name) => (
-                <span key={name} className="text-xs bg-white border border-gray-200 rounded-full px-2 py-0.5" style={{ color: '#141348' }}>
-                  👤 {name}
+              {coordinators.map((c) => (
+                <span key={c.uid} className="text-xs bg-white border border-gray-200 rounded-full px-2 py-0.5" style={{ color: '#141348' }}>
+                  👤 {c.name}
                 </span>
               ))}
             </div>
@@ -674,7 +649,7 @@ function BranchCard({ branch }: { branch: Branch }) {
         </div>
       </div>
 
-      {editing && <BranchEditPanel branch={branch} onClose={() => setEditing(false)} />}
+      {editing && <BranchEditPanel branch={branch} org={org} onClose={() => setEditing(false)} />}
       {viewingReports && <BranchReportsModal branch={branch} onClose={() => setViewingReports(false)} />}
     </>
   )
@@ -682,12 +657,17 @@ function BranchCard({ branch }: { branch: Branch }) {
 
 export function BranchesPage() {
   const { branches, loading } = useAllBranches()
+  const { roles, people } = useRoles()
+  const coordinatorsByBranch = useMemo(() => {
+    const map: Record<string, RoleHolder[]> = {}
+    for (const b of branches) map[b.id] = coordinatorsOfBranch(b.id, roles)
+    return map
+  }, [branches, roles])
   const [typeFilter, setTypeFilter] = useState<Branch['type'] | ''>('')
   const [levelFilter, setLevelFilter] = useState<BranchLevel | ''>('')
   const [cityFilter, setCityFilter] = useState('')
   const [search, setSearch] = useState('')
   const [addingBranch, setAddingBranch] = useState(false)
-  const [linkingCoordinators, setLinkingCoordinators] = useState(false)
 
   const cities = useMemo(
     () => [...new Set(branches.map((b) => b.city))].sort(),
@@ -704,12 +684,12 @@ export function BranchesPage() {
         return (
           b.name.toLowerCase().includes(q) ||
           b.city.toLowerCase().includes(q) ||
-          (b.coordinatorNames ?? []).some((n) => n.toLowerCase().includes(q))
+          (coordinatorsByBranch[b.id] ?? []).some((c) => c.name.toLowerCase().includes(q))
         )
       }
       return true
     })
-  }, [branches, typeFilter, levelFilter, cityFilter, search])
+  }, [branches, coordinatorsByBranch, typeFilter, levelFilter, cityFilter, search])
 
   const byCity = useMemo(() => {
     const groups: { city: string; branches: Branch[] }[] = []
@@ -738,12 +718,6 @@ export function BranchesPage() {
           )}
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => setLinkingCoordinators(true)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-600"
-          >
-            👤 קישור רכזים
-          </button>
           <button
             onClick={() => setAddingBranch(true)}
             className="px-4 py-2 text-sm font-medium rounded-lg text-white hover:opacity-90 transition-opacity"
@@ -814,7 +788,9 @@ export function BranchesPage() {
             <span className="text-gray-400 font-normal">({cityBranches.length})</span>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-6">
-            {cityBranches.map((b) => <BranchCard key={b.id} branch={b} />)}
+            {cityBranches.map((b) => (
+              <BranchCard key={b.id} branch={b} coordinators={coordinatorsByBranch[b.id] ?? []} org={{ roles, people }} />
+            ))}
           </div>
         </div>
       ))}
@@ -824,173 +800,6 @@ export function BranchesPage() {
       )}
 
       {addingBranch && <AddBranchModal onClose={() => setAddingBranch(false)} />}
-      {linkingCoordinators && (
-        <LinkCoordinatorsModal branches={branches} onClose={() => setLinkingCoordinators(false)} />
-      )}
-    </div>
-  )
-}
-
-// ── Admin: Link coordinators to branches ──────────────────────────────────────
-
-function LinkCoordinatorsModal({ branches, onClose }: { branches: Branch[]; onClose: () => void }) {
-  const [coordinators, setCoordinators] = useState<AppUser[]>([])
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState<string | null>(null)
-
-  useEffect(() => {
-    void (async () => {
-      const snap = await getDocs(
-        query(collection(db, 'users'), where('role', '==', 'coordinator'))
-      )
-      setCoordinators(snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUser)))
-      setLoading(false)
-    })()
-  }, [])
-
-  // Build a map: coordinatorUid → branchId[]
-  const coordinatorBranchMap = useMemo(() => {
-    const map: Record<string, string[]> = {}
-    for (const b of branches) {
-      for (const uid of (b.coordinatorUids ?? [])) {
-        if (!map[uid]) map[uid] = []
-        map[uid].push(b.id)
-      }
-    }
-    return map
-  }, [branches])
-
-  const unlinked = coordinators.filter((u) => !(coordinatorBranchMap[u.uid]?.length))
-  const linked = coordinators.filter((u) => (coordinatorBranchMap[u.uid]?.length ?? 0) > 0)
-
-  const linkToBranch = async (coordinator: AppUser, branchId: string) => {
-    const branch = branches.find((b) => b.id === branchId)
-    if (!branch) return
-    setSaving(coordinator.uid)
-    const newUids = [...(branch.coordinatorUids ?? []), coordinator.uid]
-    const newNames = [...(branch.coordinatorNames ?? []), coordinator.name]
-    await updateDoc(doc(db, 'branches', branchId), {
-      coordinatorUids: newUids,
-      coordinatorNames: newNames,
-      updatedAt: serverTimestamp(),
-    })
-    setSaving(null)
-  }
-
-  const unlinkFromBranch = async (coordinator: AppUser, branchId: string) => {
-    const branch = branches.find((b) => b.id === branchId)
-    if (!branch) return
-    setSaving(coordinator.uid)
-    const idx = (branch.coordinatorUids ?? []).indexOf(coordinator.uid)
-    const newUids = (branch.coordinatorUids ?? []).filter((_, i) => i !== idx)
-    const newNames = (branch.coordinatorNames ?? []).filter((_, i) => i !== idx)
-    await updateDoc(doc(db, 'branches', branchId), {
-      coordinatorUids: newUids,
-      coordinatorNames: newNames,
-      updatedAt: serverTimestamp(),
-    })
-    setSaving(null)
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div
-        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto"
-        dir="rtl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
-          <h2 className="text-lg font-bold" style={{ color: '#141348' }}>קישור רכזים לסניפים</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
-        </div>
-
-        {loading ? (
-          <div className="p-8 text-center text-gray-400">טוען רכזים...</div>
-        ) : (
-          <div className="p-5 space-y-6">
-            {unlinked.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-red-600 mb-3">
-                  🔴 רכזים ללא סניף מקושר ({unlinked.length})
-                </h3>
-                <div className="space-y-2">
-                  {unlinked.map((u) => (
-                    <div key={u.uid} className="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-800">{u.name}</div>
-                        <div className="text-xs text-gray-500">{u.email}</div>
-                      </div>
-                      <select
-                        disabled={saving === u.uid}
-                        onChange={(e) => { if (e.target.value) void linkToBranch(u, e.target.value) }}
-                        defaultValue=""
-                        className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#189A9F] bg-white min-w-[140px]"
-                      >
-                        <option value="">— שייך לסניף —</option>
-                        {branches.map((b) => (
-                          <option key={b.id} value={b.id}>{b.name} ({b.city})</option>
-                        ))}
-                      </select>
-                      {saving === u.uid && <span className="text-xs text-gray-400">שומר...</span>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {linked.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-green-700 mb-3">
-                  🟢 רכזים מקושרים ({linked.length})
-                </h3>
-                <div className="space-y-2">
-                  {linked.map((u) => {
-                    const branchIds = coordinatorBranchMap[u.uid] ?? []
-                    return (
-                      <div key={u.uid} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-gray-800">{u.name}</div>
-                          <div className="text-xs text-gray-500">{u.email}</div>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {branchIds.map((bid) => {
-                              const b = branches.find((x) => x.id === bid)
-                              return b ? (
-                                <span key={bid} className="text-xs bg-white text-gray-700 border border-green-200 rounded-full px-2 py-0.5 flex items-center gap-1">
-                                  {b.name}
-                                  <button
-                                    onClick={() => void unlinkFromBranch(u, bid)}
-                                    disabled={saving === u.uid}
-                                    className="text-red-400 hover:text-red-600 leading-none"
-                                  >×</button>
-                                </span>
-                              ) : null
-                            })}
-                          </div>
-                        </div>
-                        <select
-                          disabled={saving === u.uid}
-                          onChange={(e) => { if (e.target.value) void linkToBranch(u, e.target.value) }}
-                          defaultValue=""
-                          className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#189A9F] bg-white min-w-[140px] shrink-0"
-                        >
-                          <option value="">+ הוסף סניף</option>
-                          {branches.filter((b) => !branchIds.includes(b.id)).map((b) => (
-                            <option key={b.id} value={b.id}>{b.name} ({b.city})</option>
-                          ))}
-                        </select>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            {coordinators.length === 0 && (
-              <div className="text-center py-8 text-gray-400 text-sm">לא נמצאו משתמשים עם תפקיד רכז במערכת</div>
-            )}
-          </div>
-        )}
-      </div>
     </div>
   )
 }

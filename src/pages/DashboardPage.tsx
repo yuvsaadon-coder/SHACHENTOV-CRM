@@ -127,14 +127,12 @@ function CollapsibleSection({
 export function DashboardPage() {
   const { tasks, loading } = useTasks()
   const { roles } = useRoles()
-  const { appUser, orgRole } = useAuth()
+  const { appUser, orgRole, domain } = useAuth()
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('month')
   const [domainFreqFilter, setDomainFreqFilter] = useState<TaskFrequency | ''>('')
 
-  const isFullAccess = !appUser || appUser.role === 'admin' || appUser.role === 'CEO'
-  const myDomain: Domain | null = (!isFullAccess && DOMAINS.includes(appUser?.role as Domain))
-    ? (appUser?.role as Domain)
-    : null
+  const isFullAccess = !appUser || appUser.role === 'admin' || domain === 'CEO'
+  const myDomain: Domain | null = isFullAccess ? null : domain
 
   const periodTasks = useMemo(
     () => (periodFilter === 'all' ? tasks : tasks.filter((t) => taskMatchesPeriod(t, periodFilter))),
@@ -193,7 +191,7 @@ export function DashboardPage() {
 
   if (loading) return <Spinner size="lg" />
 
-  const personName = orgRole?.holderName || appUser?.name || ''
+  const personName = appUser?.name || ''
   const roleName = orgRole?.roleName || ''
 
   return (

@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react'
+import { useMemo, useEffect, useRef } from 'react'
 import { Link, useSearchParams, useLocation } from 'react-router-dom'
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
@@ -60,7 +60,7 @@ function addMonths(d: Date, n: number): Date {
 
 export function TasksPage() {
   const { tasks, loading } = useTasks()
-  const { appUser } = useAuth()
+  const { appUser, domain, rolesReady } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
 
@@ -113,16 +113,18 @@ export function TasksPage() {
   }, [tasks, monthFilter, selectedMonth, domainFilter, statusFilter, freqFilter, search])
 
   // On first entry (no URL params), set domain default for domain users and restore saved view
+  const defaultsApplied = useRef(false)
   useEffect(() => {
-    if (!appUser || searchParams.size > 0) return
+    if (!appUser || !rolesReady || defaultsApplied.current) return
+    defaultsApplied.current = true
+    if (searchParams.size > 0) return
     const p = new URLSearchParams()
-    const isDomainRole = (DOMAINS as readonly string[]).includes(appUser.role)
-    if (isDomainRole) p.set('domain', appUser.role)
+    if (domain) p.set('domain', domain)
     const savedView = localStorage.getItem(VIEW_PREF_KEY(appUser.uid))
     if (savedView) p.set('view', savedView)
     if (p.size > 0) setSearchParams(p, { replace: true })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appUser?.uid])
+  }, [appUser?.uid, rolesReady])
 
   const setFilter = (key: string, val: string | null) => {
     const p = new URLSearchParams(searchParams)

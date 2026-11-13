@@ -47,8 +47,8 @@ export function exportRoles(roles: OrgRole[]) {
     r.area,
     r.status,
     r.priority,
-    r.phone,
-    r.email,
+    r.holders.map((h) => h.phone).filter(Boolean).join(' | '),
+    r.holders.map((h) => h.email).filter(Boolean).join(' | '),
     r.delegatedTo ?? '',
     r.notes,
   ])

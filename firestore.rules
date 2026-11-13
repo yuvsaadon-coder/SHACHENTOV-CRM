@@ -6,32 +6,47 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function me() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
     // A signed-in user with no /users doc (or no role field) gets '' rather than
     // an evaluation error, so a half-provisioned account is denied instead of
     // failing the whole request with "Missing or insufficient permissions".
+    // A deactivated person gets '' too: removing someone removes their access.
     function role() {
       return isAuthed()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '')
+        && me().get('active', true) != false
+        ? me().get('role', '')
         : '';
     }
 
     function isAdmin()       { return role() == 'admin'; }
     function isCoordinator() { return role() == 'coordinator'; }
 
+    // System managers: may grant HQ access and read the passwords they set.
+    // 'CEO' is a legacy value still stored on older accounts.
+    function isManager()     { return role() in ['admin', 'CEO']; }
+
     // The app routes on "coordinator or not": App.tsx sends coordinators to the
     // portal and every other signed-in user to the CRM. Staff roles are stored
-    // as domain codes (JLM, SUP, DON, FIN, PUB, DES, VOL), so an allow-list of
-    // ['admin','hq'] would lock out most of the HQ team. Match the app instead.
+    // as 'hq' or, on older accounts, as domain codes (JLM, SUP, DON, FIN, PUB,
+    // DES, VOL), so match the app instead of an allow-list. 'none' is a person
+    // who is in the directory but has no system access.
     function isHQ() {
-      return isAuthed() && role() != '' && role() != 'coordinator';
+      return isAuthed() && !(role() in ['', 'coordinator', 'none']);
     }
 
-    // True when the signed-in user is listed as a coordinator of that branch.
+    // True when the branch is one of the signed-in person's portal branches.
+    // branchIds is derived from the positions the person holds and is written
+    // only by HQ, together with those positions.
     function coordinatesBranch(branchId) {
-      return isAuthed()
-        && exists(/databases/$(database)/documents/branches/$(branchId))
-        && request.auth.uid in get(/databases/$(database)/documents/branches/$(branchId)).data.get('coordinatorUids', []);
+      return role() != '' && branchId in me().get('branchIds', []);
+    }
+
+    function hasNoStaffAccess(data) {
+      return data.get('role', 'none') in ['coordinator', 'none'];
     }
 
     // ── CRM (HQ staff & admins) ──────────────────────────────────────────────
@@ -77,10 +92,30 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // ── Users ────────────────────────────────────────────────────────────────
+    // ── People ───────────────────────────────────────────────────────────────
+    // `users` is the people directory: every person, the positions they hold
+    // (roleIds) and their access level (role). HQ staff keep it up to date —
+    // that is how a coordinator is replaced — but only a manager may give or
+    // change HQ / admin access, so nobody can promote themselves.
     match /users/{uid} {
-      allow read:  if isAuthed() && (request.auth.uid == uid || isHQ());
-      allow write: if isAdmin();
+      allow read: if isAuthed() && (request.auth.uid == uid || isHQ());
+
+      allow create: if isManager()
+                    || (isHQ() && hasNoStaffAccess(request.resource.data));
+
+      allow update: if isManager()
+                    || (isHQ() && hasNoStaffAccess(resource.data) && hasNoStaffAccess(request.resource.data))
+                    // HQ staff may move another staff member between positions, but
+                    // not touch what their login hangs on: access, e-mail, phone.
+                    || (isHQ()
+                        && request.resource.data.get('role', '') == resource.data.get('role', '')
+                        && request.resource.data.get('active', true) == resource.data.get('active', true)
+                        && request.resource.data.get('email', '') == resource.data.get('email', '')
+                        && request.resource.data.get('phone', '') == resource.data.get('phone', ''))
+                    || (request.auth.uid == uid && role() != ''
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'phone', 'updatedAt']));
+
+      allow delete: if isManager();
 
       // Chat history is private to its owner.
       match /chatSessions/{sessionId} {
@@ -91,6 +126,15 @@ service cloud.firestore {
       match /personalTasks/{taskId} {
         allow read, write: if isAuthed() && request.auth.uid == uid;
       }
+    }
+
+    // HQ login passwords set by management (the phone number by default).
+    // Written only by the server; the owner may delete theirs after choosing a
+    // password of their own, so a stale one is never shown.
+    match /userSecrets/{uid} {
+      allow read:   if isManager();
+      allow delete: if isManager() || (isAuthed() && request.auth.uid == uid);
+      allow create, update: if false;
     }
   }
 }

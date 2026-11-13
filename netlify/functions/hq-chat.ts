@@ -2,6 +2,7 @@
  * HQ chatbot — queries configurable knowledge sources.
  * Auth: any Firebase authenticated user with role != 'coordinator'.
  */
+import { corsHeaders, handleOptions } from './_cors'
 import type { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions'
 import { cert, initializeApp, getApps } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
@@ -30,32 +31,36 @@ interface RequestBody {
 }
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' }
-const fail = (statusCode: number, error: string) => ({
+const fail = (statusCode: number, error: string, cors?: Record<string, string>) => ({
   statusCode,
-  headers: JSON_HEADERS,
+  headers: { ...cors, ...JSON_HEADERS },
   body: JSON.stringify({ error }),
 })
 
 export const handler: Handler = async (event) => {
+  const origin = event.headers['origin']
+  if (event.httpMethod === 'OPTIONS') return handleOptions(origin)
   try {
     return await chat(event)
   } catch (e: unknown) {
     // Any uncaught throw would otherwise become a bodyless 500 that the UI
     // reports as a bare status code, which is what "the bot doesn't answer" looks like.
     const detail = e instanceof Error ? e.message : String(e)
-    return fail(500, `שגיאה בשרת הצ׳אטבוט: ${detail}`)
+    return fail(500, `שגיאה בשרת הצ׳אטבוט: ${detail}`, corsHeaders(origin))
   }
 }
 
 async function chat(event: HandlerEvent): Promise<HandlerResponse> {
-  if (event.httpMethod !== 'POST') return fail(405, 'Method Not Allowed')
+  const origin = event.headers['origin']
+  const cors = corsHeaders(origin)
+  if (event.httpMethod !== 'POST') return fail(405, 'Method Not Allowed', cors)
 
   const authHeader = event.headers['authorization'] ?? ''
   const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
-  if (!idToken) return fail(401, 'לא מחובר — התחבר מחדש ונסה שוב.')
+  if (!idToken) return fail(401, 'לא מחובר — התחבר מחדש ונסה שוב.', cors)
 
   try { initFirebase() } catch {
-    return fail(500, 'משתנה הסביבה FIREBASE_SERVICE_ACCOUNT חסר או שגוי ב-Netlify.')
+    return fail(500, 'משתנה הסביבה FIREBASE_SERVICE_ACCOUNT חסר או שגוי ב-Netlify.', cors)
   }
 
   let uid: string
@@ -63,13 +68,13 @@ async function chat(event: HandlerEvent): Promise<HandlerResponse> {
     const decoded = await getAuth().verifyIdToken(idToken)
     uid = decoded.uid
   } catch {
-    return fail(401, 'ההתחברות פגה — רענן את הדף והתחבר מחדש.')
+    return fail(401, 'ההתחברות פגה — רענן את הדף והתחבר מחדש.', cors)
   }
 
   const db = getFirestore()
   const userDoc = await db.collection('users').doc(uid).get()
   if (userDoc.exists && (userDoc.data() as { role?: string }).role === 'coordinator') {
-    return fail(403, 'רכזים משתמשים בצ׳אטבוט של הפורטל.')
+    return fail(403, 'רכזים משתמשים בצ׳אטבוט של הפורטל.', cors)
   }
 
   const body = JSON.parse(event.body ?? '{}') as Partial<RequestBody>
@@ -236,12 +241,12 @@ ${knowledgeBlock}
 • אם אין כלל מידע רלוונטי — אמור בכנות: "אין לי מידע על זה במקורות שנבחרו." אל תספק מידע כללי שאינו מבוסס על המסמכים לעיל.`
 
   const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return fail(500, 'משתנה הסביבה ANTHROPIC_API_KEY חסר ב-Netlify.')
+  if (!apiKey) return fail(500, 'משתנה הסביבה ANTHROPIC_API_KEY חסר ב-Netlify.', cors)
 
   const turns = messages
     .filter((m) => typeof m.content === 'string' && m.content.trim().length > 0)
     .map((m) => ({ role: m.role, content: m.content }))
-  if (turns.length === 0) return fail(400, 'לא נשלחה שאלה.')
+  if (turns.length === 0) return fail(400, 'לא נשלחה שאלה.', cors)
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -267,7 +272,7 @@ ${knowledgeBlock}
     try {
       detail = (JSON.parse(raw) as { error?: { message?: string } }).error?.message ?? raw
     } catch { /* keep raw text */ }
-    return fail(502, `שגיאת Anthropic API (${response.status}): ${detail}`)
+    return fail(502, `שגיאת Anthropic API (${response.status}): ${detail}`, cors)
   }
 
   const result = await response.json() as {
@@ -275,7 +280,7 @@ ${knowledgeBlock}
     content: { type: string; text?: string }[]
   }
   if (result.stop_reason === 'refusal') {
-    return fail(502, 'המודל סירב לענות על השאלה הזו. נסח אותה מחדש.')
+    return fail(502, 'המודל סירב לענות על השאלה הזו. נסח אותה מחדש.', cors)
   }
   const text = result.content.find((c) => c.type === 'text')?.text
   const reply = text?.trim()
@@ -284,7 +289,7 @@ ${knowledgeBlock}
 
   return {
     statusCode: 200,
-    headers: JSON_HEADERS,
+    headers: { ...cors, ...JSON_HEADERS },
     body: JSON.stringify({ reply }),
   }
 }

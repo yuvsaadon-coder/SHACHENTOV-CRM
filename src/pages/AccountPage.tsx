@@ -4,7 +4,7 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
 } from 'firebase/auth'
-import { doc, updateDoc, query, collection, where, getDocs, serverTimestamp } from 'firebase/firestore'
+import { deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
@@ -34,13 +34,6 @@ export function AccountPage() {
         name: name.trim(),
         updatedAt: serverTimestamp(),
       })
-      // update linked org role holderName
-      const snap = await getDocs(
-        query(collection(db, 'roles'), where('uid', '==', firebaseUser.uid))
-      )
-      for (const d of snap.docs) {
-        await updateDoc(doc(db, 'roles', d.id), { holderName: name.trim() })
-      }
       toast('השם עודכן בהצלחה', 'success')
     } catch {
       setNameError('שגיאה בשמירת השם')
@@ -61,6 +54,8 @@ export function AccountPage() {
       const cred = EmailAuthProvider.credential(firebaseUser.email, currentPassword)
       await reauthenticateWithCredential(firebaseUser, cred)
       await updatePassword(firebaseUser, newPassword)
+      // The password management had on file (the phone number) is no longer the real one.
+      await deleteDoc(doc(db, 'userSecrets', firebaseUser.uid)).catch(() => undefined)
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
@@ -103,7 +98,7 @@ export function AccountPage() {
         >
           {savingName ? 'שומר...' : 'עדכן שם'}
         </button>
-        <p className="text-xs text-gray-400">השינוי יתעדכן גם בעץ הארגוני</p>
+        <p className="text-xs text-gray-400">השם מתעדכן מיד בכל המערכת — בעץ הארגוני, בסניפים ובאנשי הקשר.</p>
       </div>
 
       {/* Password */}

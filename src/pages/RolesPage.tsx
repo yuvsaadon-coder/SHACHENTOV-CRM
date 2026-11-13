@@ -48,7 +48,7 @@ const LEVEL_BG_COLOR: Record<string, string> = {
 
 
 export function RolesPage() {
-  const { roles, loading, error } = useRoles()
+  const { roles, people, loading, error } = useRoles()
   const { tasks } = useTasks()
   const [levelFilter, setLevelFilter] = useState<RoleLevel | ''>('')
   const [statusFilter, setStatusFilter] = useState<RoleStatus | ''>('')
@@ -211,7 +211,9 @@ export function RolesPage() {
                       {role.area && <div className="text-xs text-gray-400">{role.area}</div>}
                     </td>
                     <td className="px-4 py-3 text-gray-700">
-                      {role.holderName || <span className="text-gray-300">—</span>}
+                      {role.holders.length > 0
+                        ? role.holders.map((h) => <div key={h.uid}>{h.name}</div>)
+                        : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       <select
@@ -264,8 +266,12 @@ export function RolesPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">
-                      {role.phone && <div dir="ltr">{role.phone}</div>}
-                      {role.email && <div className="text-gray-400 truncate max-w-[140px]">{role.email}</div>}
+                      {role.holders.map((h) => (
+                        <div key={h.uid} className="mb-1 last:mb-0">
+                          {h.phone && <div dir="ltr">{h.phone}</div>}
+                          {h.email && <div className="text-gray-400 truncate max-w-[140px]">{h.email}</div>}
+                        </div>
+                      ))}
                     </td>
                     <td className="px-3 py-3">
                       <button
@@ -293,6 +299,7 @@ export function RolesPage() {
         <RoleEditModal
           role={selectedRole}
           allRoles={roles}
+          people={people}
           onClose={closeModal}
         />
       )}

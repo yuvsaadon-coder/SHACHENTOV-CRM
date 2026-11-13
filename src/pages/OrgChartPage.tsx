@@ -8,7 +8,7 @@ import { Spinner } from '../components/ui/Spinner'
 import type { OrgRole } from '../types'
 
 export function OrgChartPage() {
-  const { roles, loading, error } = useRoles()
+  const { roles, people, loading, error } = useRoles()
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedRole, setSelectedRole] = useState<OrgRole | null>(null)
   const [detailsRole, setDetailsRole] = useState<OrgRole | null>(null)
@@ -84,6 +84,7 @@ export function OrgChartPage() {
         <RoleEditModal
           role={selectedRole}
           allRoles={roles}
+          people={people}
           onClose={closeModal}
         />
       )}

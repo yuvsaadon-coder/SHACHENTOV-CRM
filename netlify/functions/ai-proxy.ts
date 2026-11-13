@@ -11,16 +11,20 @@
  *   - generateFormat(type, ...) → produces format instance draft
  */
 
+import { corsHeaders, handleOptions } from './_cors'
 import type { Handler } from '@netlify/functions'
 
 export const handler: Handler = async (event) => {
+  const origin = event.headers['origin']
+  if (event.httpMethod === 'OPTIONS') return handleOptions(origin)
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' }
+    return { statusCode: 405, headers: corsHeaders(origin), body: 'Method Not Allowed' }
   }
 
   // TODO: implement Anthropic Messages API call here
   return {
     statusCode: 501,
+    headers: corsHeaders(origin),
     body: JSON.stringify({ error: 'AI proxy not yet implemented (Phase 2)' }),
   }
 }

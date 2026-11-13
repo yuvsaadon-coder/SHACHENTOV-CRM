@@ -2,6 +2,7 @@ import type { Handler } from '@netlify/functions'
 import { cert, initializeApp, getApps } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getFirestore } from 'firebase-admin/firestore'
+import { corsHeaders, handleOptions } from './_cors'
 
 function initFirebase() {
   if (getApps().length > 0) return
@@ -15,19 +16,22 @@ function digitsOnly(s: string): string {
 }
 
 export const handler: Handler = async (event) => {
+  const origin = event.headers['origin']
+  if (event.httpMethod === 'OPTIONS') return handleOptions(origin)
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' }
+    return { statusCode: 405, headers: corsHeaders(origin), body: 'Method Not Allowed' }
   }
+  const cors = corsHeaders(origin)
 
   try {
     initFirebase()
   } catch {
-    return { statusCode: 500, body: JSON.stringify({ error: 'Server configuration error' }) }
+    return { statusCode: 500, headers: cors, body: JSON.stringify({ error: 'Server configuration error' }) }
   }
 
   const { name, phone } = JSON.parse(event.body ?? '{}') as { name?: string; phone?: string }
   if (!name || !phone) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Missing name or phone' }) }
+    return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'Missing name or phone' }) }
   }
 
   const db = getFirestore()
@@ -39,23 +43,26 @@ export const handler: Handler = async (event) => {
     .get()
 
   if (snap.empty) {
-    return { statusCode: 401, body: JSON.stringify({ error: 'שם לא נמצא' }) }
+    return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'שם לא נמצא' }) }
   }
 
   const inputDigits = digitsOnly(phone)
   const match = snap.docs.find((d) => {
-    const stored = digitsOnly((d.data() as { phone?: string }).phone ?? '')
-    return stored === inputDigits
+    const person = d.data() as { phone?: string; active?: boolean }
+    // A coordinator who left is deactivated — the phone must stop working as a password.
+    if (person.active === false) return false
+    const stored = digitsOnly(person.phone ?? '')
+    return stored !== '' && stored === inputDigits
   })
 
   if (!match) {
-    return { statusCode: 401, body: JSON.stringify({ error: 'שם או טלפון שגויים' }) }
+    return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'שם או טלפון שגויים' }) }
   }
 
   const token = await getAuth().createCustomToken(match.id)
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...cors, 'Content-Type': 'application/json' },
     body: JSON.stringify({ token }),
   }
 }
