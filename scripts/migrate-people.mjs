@@ -184,12 +184,26 @@ async function migrate() {
     }
   }
 
+  // Names that represent two people listed together — split into separate entries.
+  const NAME_SPLITS = {
+    'רן ושירה שרון': ['רן שרון', 'שירה שרון'],
+  }
+
   // 1. Role holders → people
   for (const r of roles) {
     const label = `${r.roleName}${r.area ? ' — ' + r.area : ''}`
+    const rawEntries = []
+    if (r.holderName || r.uid) rawEntries.push({ name: r.holderName ?? '', uid: r.uid, phone: r.phone, email: r.email })
+    for (const c of r.coHolders ?? []) if (c?.name || c?.uid) rawEntries.push({ name: c.name ?? '', uid: c.uid })
     const entries = []
-    if (r.holderName || r.uid) entries.push({ name: r.holderName ?? '', uid: r.uid, phone: r.phone, email: r.email })
-    for (const c of r.coHolders ?? []) if (c?.name || c?.uid) entries.push({ name: c.name ?? '', uid: c.uid })
+    for (const e of rawEntries) {
+      const splits = NAME_SPLITS[e.name.trim()]
+      if (splits && !e.uid) {
+        for (const splitName of splits) entries.push({ ...e, name: splitName })
+      } else {
+        entries.push(e)
+      }
+    }
 
     for (const e of entries) {
       if (/[\/,]| ו[א-ת]+ [א-ת]+$/.test(e.name) && !e.uid) {
