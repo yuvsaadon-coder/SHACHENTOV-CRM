@@ -141,7 +141,8 @@ function TaxonomyEditor() {
     if (!isValidKey(key)) return setMsg({ kind: 'error', text: 'מפתח: אותיות לטיניות קטנות, ספרות ומקף בלבד (למשל housing)' })
     if (values.some((v) => v.key === key)) return setMsg({ kind: 'error', text: 'המפתח כבר קיים' })
     if (!newLabel.trim()) return setMsg({ kind: 'error', text: 'חסרה תווית' })
-    setDraft(section.set(draft, [...values, { key, label: newLabel.trim() }]))
+    const extra = sectionId === 'folders' ? { area: (key.startsWith('02') ? 'external' : 'team') as 'external' | 'team' } : {}
+    setDraft(section.set(draft, [...values, { key, label: newLabel.trim(), ...extra }]))
     setNewKey('')
     setNewLabel('')
     setMsg(null)

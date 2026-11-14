@@ -1,4 +1,4 @@
-import { MULTI_DIMS, SINGLE_DIMS, type MultiDim, type Taxonomy } from './taxonomy.ts'
+import { MULTI_DIMS, SINGLE_DIMS, isExternalFolder, type MultiDim, type Taxonomy } from './taxonomy.ts'
 
 export type Role = 'admin' | 'editor' | 'viewer'
 
@@ -179,6 +179,11 @@ export function validateInput(input: DocInput, tax: Taxonomy): string[] {
     const bad = vals.filter((v) => !def?.values.some((x) => x.key === v))
     if (bad.length) errors.push(`${def?.label ?? dim}: ערכים לא מוכרים - ${bad.join(', ')}`)
   }
+  if (input.folder && input.publisher) {
+    const ext = isExternalFolder(tax, input.folder)
+    if (input.publisher === 'program' && ext) errors.push('תוצר של הצוות לא מתויק בחומרים חיצוניים - בחרו תיקייה מ"תוצרי הצוות"')
+    if (input.publisher !== 'program' && !ext) errors.push('חומר חיצוני מתויק רק ב"חומרים חיצוניים" (02) - או שגוף המפרסם הוא התוכנית')
+  }
   if (input.meetingDate !== null && !DATE_RE.test(input.meetingDate)) errors.push('תאריך מפגש בפורמט YYYY-MM-DD')
   if (input.folder === '09' && !input.meetingDate) errors.push('מסמך בתיקיית מפגשים חייב תאריך מפגש')
   if (input.folder === '09' && input.forum.length === 0) errors.push('מסמך בתיקיית מפגשים חייב פורום')
@@ -227,10 +232,12 @@ export function parseCode(s: string): number | null {
   return m ? Number(m[1]) : null
 }
 
-/** שם קובץ אחיד בהורדה: "AK-007 כותרת.pdf" */
-export function downloadName(d: { seq: number; title: string; file: FileMeta | null }): string {
-  const ext = d.file?.name.includes('.') ? d.file.name.slice(d.file.name.lastIndexOf('.')) : ''
-  return safeFileName(`${docCode(d.seq)} ${d.title}`.slice(0, 140) + ext)
+/**
+ * שם הקובץ בהורדה = שם הקובץ המקורי, בדיוק כפי שהועלה.
+ * הארכיון לא משנה דבר בקובץ עצמו - לא תוכן, לא עיצוב ולא שם. הכותרת והמזהה הם מטא-דאטה בלבד.
+ */
+export function downloadName(d: { originalName?: string; file: FileMeta | null }): string {
+  return d.originalName || d.file?.name || 'file'
 }
 
 /** מחשב את ההבדלים בין שני מצבים של מסמך - נשמר ביומן ההיסטוריה */

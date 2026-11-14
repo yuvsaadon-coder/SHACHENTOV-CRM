@@ -124,6 +124,12 @@ describe('documents', () => {
     await assertSucceeds(createAs('ed@x.org', 'n9', { folder: '09', docType: 'summary', meetingDate: '2026-08-05' }))
   })
 
+  it('keeps team outputs and external materials in separate areas', async () => {
+    await assertFails(createAs('ed@x.org', 'x1', { folder: '02-1' }))
+    await assertFails(createAs('ed@x.org', 'x2', { publisher: 'oecd', status: 'reference' }))
+    await assertSucceeds(createAs('ed@x.org', 'x3', { folder: '02-2', publisher: 'oecd', status: 'reference' }))
+  })
+
   it('stable code must equal the counter, and the counter must advance by exactly 1', async () => {
     await assertFails(createAs('ed@x.org', 'c1', { seq: 7 }))
     await assertFails(createAs('ed@x.org', 'c2', {}, true, null))

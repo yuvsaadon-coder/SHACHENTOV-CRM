@@ -9,6 +9,8 @@ export interface TaxValue {
   /** הערת היקף (scope note): מה לא נכנס לכאן ולאן כן */
   exclude?: string
   note?: string
+  /** לתיקיות: אזור - תוצרי הצוות (team) או חומרים חיצוניים (external) */
+  area?: 'team' | 'external'
   active?: boolean
 }
 
@@ -30,6 +32,7 @@ export interface Taxonomy {
   dimensions: Record<string, TaxDimension>
   linkTypes: LinkType[]
   required: string[]
+  areas?: { key: 'team' | 'external'; label: string; hint?: string }[]
   /** רשימות מפתחות שטוחות - בשימוש כללי האבטחה של Firestore לאימות ערכים */
   keys?: Record<string, string[]>
 }
@@ -53,6 +56,8 @@ export function isActive(v: TaxValue): boolean {
 export function computeKeys(tax: Taxonomy): Record<string, string[]> {
   const keys: Record<string, string[]> = {
     folder: tax.folders.map((f) => f.key),
+    // תיקיות של חומרים חיצוניים - כללי האבטחה אוכפים: תוצר פנימי לא נכנס לכאן, וחומר חיצוני לא יוצא מכאן
+    externalFolder: tax.folders.filter((f) => f.area === 'external').map((f) => f.key),
     linkType: tax.linkTypes.map((l) => l.key),
   }
   for (const [dim, def] of Object.entries(tax.dimensions)) keys[dim] = def.values.map((v) => v.key)
@@ -61,6 +66,10 @@ export function computeKeys(tax: Taxonomy): Record<string, string[]> {
 
 export function withKeys(tax: Taxonomy): Taxonomy {
   return { ...tax, keys: computeKeys(tax) }
+}
+
+export function isExternalFolder(tax: Taxonomy, key: string): boolean {
+  return tax.folders.find((f) => f.key === key)?.area === 'external'
 }
 
 export function folderLabel(tax: Taxonomy, key: string): string {

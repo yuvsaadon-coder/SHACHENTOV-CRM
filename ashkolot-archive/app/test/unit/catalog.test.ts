@@ -40,6 +40,7 @@ describe('seed catalog', () => {
     for (const e of catalog.entries) expect(e.rationale, e.file).toMatch(/כלל \d/)
   })
   it('external sources are not filed as internal stages', () => {
-    for (const e of catalog.entries) if (e.publisher !== 'program') expect(['02-1', '02-2', '02-3', '02-4', '03'], e.file).toContain(e.folder)
+    const area = Object.fromEntries(tax.folders.map((f) => [f.key, f.area]))
+    for (const e of catalog.entries) expect(area[e.folder], e.file).toBe(e.publisher === 'program' ? 'team' : 'external')
   })
 })

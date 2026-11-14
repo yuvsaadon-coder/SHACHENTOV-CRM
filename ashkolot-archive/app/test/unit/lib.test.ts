@@ -224,8 +224,14 @@ describe('stable codes (ISO 15489 identifier)', () => {
     const docs = [{ id: 'x', seq: 12, title: 'משהו אחר לגמרי' }, { id: 'y', seq: 13, title: 'AK-012 בכותרת' }]
     expect(bestMatches('AK-012', docs)).toEqual([{ doc: docs[0], score: 1 }])
   })
-  it('names downloads consistently', () => {
-    expect(downloadName({ seq: 5, title: 'ניתוח SWOT: מתוקן', file: { path: '', name: 'x.docx', size: 1, contentType: '', sha256: '' } })).toBe('AK-005 ניתוח SWOT_ מתוקן.docx')
+  it('downloads keep the original file name, unchanged', () => {
+    expect(downloadName({ originalName: 'ניתוח SWOT: מתוקן (1).docx', file: { path: '', name: 'safe.docx', size: 1, contentType: '', sha256: '' } })).toBe('ניתוח SWOT: מתוקן (1).docx')
+  })
+  it('enforces the team / external split', () => {
+    expect(validateInput(validInput({ folder: '02-1' }), tax).join()).toMatch(/תוצר של הצוות/)
+    expect(validateInput(validInput({ publisher: 'oecd', status: 'reference' }), tax).join()).toMatch(/חומר חיצוני/)
+    expect(validateInput(validInput({ folder: '02-2', publisher: 'oecd', status: 'reference' }), tax)).toEqual([])
+    expect(validateInput(validInput({ folder: '02-5', publisher: 'moi', status: 'reference', docType: 'dataset' }), tax)).toEqual([])
   })
   it('searches by code and author', () => {
     const docs = [mkDoc({ id: 'a', seq: 42, author: 'שקד סינוואני' }), mkDoc({ id: 'b', seq: 43 })]

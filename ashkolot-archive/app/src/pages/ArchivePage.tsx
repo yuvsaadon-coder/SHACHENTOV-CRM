@@ -23,7 +23,7 @@ const VIEWS: { label: string; params: string }[] = [
   { label: 'צוות מבני', params: 'forum=structural' },
   { label: 'ועדת מדיניות', params: 'forum=policy-committee' },
   { label: 'כל המפגשים', params: 'f=09' },
-  { label: 'ספריית ידע', params: 'f=02' },
+  { label: 'כל החומרים החיצוניים', params: 'f=02' },
   { label: 'מתחים והכרעות', params: 'f=06' },
   { label: 'דורש אימות', params: 'q=לאימות' },
 ]
@@ -52,15 +52,11 @@ export default function ArchivePage() {
   const counts = useMemo(() => folderCounts(docs), [docs])
   const activeTagCount = Object.values(f.tags).reduce((n, v) => n + v.length, 0)
 
-  // עץ תיקיות: "02-1".."02-4" מקובצות תחת "02 ספריית ידע"
-  const tree: { key: string; label: string; sub: boolean }[] = []
-  for (const fo of tax.folders.filter((x) => x.active !== false)) {
-    if (fo.key.includes('-')) {
-      const parent = fo.key.split('-')[0]
-      if (!tree.some((t) => t.key === parent)) tree.push({ key: parent, label: fo.label.split(' / ')[0], sub: false })
-      tree.push({ key: fo.key, label: fo.label.split(' / ').slice(1).join(' / ') || fo.label, sub: true })
-    } else tree.push({ key: fo.key, label: fo.label, sub: false })
-  }
+  // עץ תיקיות בשני אזורים נפרדים: תוצרי הצוות / חומרים חיצוניים
+  const areas = tax.areas ?? [{ key: 'team' as const, label: 'תוצרי הצוות' }, { key: 'external' as const, label: 'חומרים חיצוניים' }]
+  const active = tax.folders.filter((x) => x.active !== false)
+  const areaFolders = (area: string) => active.filter((fo) => (fo.area ?? (fo.key.startsWith('02') ? 'external' : 'team')) === area)
+  const shortLabel = (label: string) => label.split(' / ').slice(-1)[0]
 
   return (
     <div className="layout">
@@ -73,12 +69,19 @@ export default function ArchivePage() {
               <span className="count">{docs.filter((d) => d.isCurrent && !d.archived).length}</span>
             </button>
           </li>
-          {tree.map((t) => (
-            <li key={t.key} className={t.sub ? 'sub' : ''}>
-              <button className={f.folder === t.key ? 'active' : ''} onClick={() => update({ ...f, folder: t.key })}>
-                <span>{t.sub ? '' : t.key + ' '}{t.label}</span>
-                <span className="count">{counts[t.key] ?? 0}</span>
-              </button>
+          {areas.map((a) => (
+            <li key={a.key}>
+              <div className="area-title" title={a.hint}>{a.label}</div>
+              <ul className="folders">
+                {areaFolders(a.key).map((fo) => (
+                  <li key={fo.key}>
+                    <button className={f.folder === fo.key ? 'active' : ''} onClick={() => update({ ...f, folder: fo.key })} title={fo.hint}>
+                      <span>{fo.key.replace('-', '.')} {shortLabel(fo.label)}</span>
+                      <span className="count">{counts[fo.key] ?? 0}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </li>
           ))}
         </ul>

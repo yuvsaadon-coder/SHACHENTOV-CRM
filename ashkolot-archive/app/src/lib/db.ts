@@ -125,12 +125,17 @@ export async function createDocument(p: CreateParams): Promise<string> {
   // 1. העלאת הקובץ (הכללים מתירים העלאה רק למסמך שעדיין לא קיים)
   const task = uploadBytesResumable(ref(storage, path), p.file, {
     contentType,
-    contentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(name)}`,
+    contentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(p.file.name)}`,
     customMetadata: { uploadedBy: p.byEmail },
   })
   await new Promise<void>((resolve, reject) => {
     task.on('state_changed', (s) => p.onProgress?.(Math.round((s.bytesTransferred / s.totalBytes) * 100)), reject, () => resolve())
   })
+  // הקובץ נשמר בדיוק כפי שהוא (בייטים גולמיים, בלי המרה). מוודאים שהגודל שנשמר זהה למקור.
+  if (task.snapshot.metadata.size !== p.file.size) {
+    await deleteObject(ref(storage, path)).catch(() => undefined)
+    throw new Error('הקובץ שנשמר אינו זהה למקור (גודל שונה) - ההעלאה בוטלה')
+  }
 
   // 2. טרנזקציה אחת: הקצאת מזהה קבוע (מונה) + רשומת המסמך + היסטוריה (+ סימון הגרסה הקודמת כלא-נוכחית).
   //    כללי האבטחה מוודאים שהמספר שהוקצה הוא בדיוק הערך הבא של המונה - אין כפילויות גם בהעלאות במקביל.

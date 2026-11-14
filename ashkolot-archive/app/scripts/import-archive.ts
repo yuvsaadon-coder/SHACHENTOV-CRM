@@ -152,10 +152,21 @@ for (const { e, path, hash, input } of plan) {
   const storagePath = `files/${id}/${name}`
   const contentType = contentTypeFor(path)!
   const data = readFileSync(path)
-  await bucket!.file(storagePath).save(data, {
+  // הקובץ מועלה כפי שהוא - בייטים גולמיים, בלי המרה, בלי דחיסה ובלי שינוי שם בהורדה
+  const obj = bucket!.file(storagePath)
+  await obj.save(data, {
     contentType,
-    metadata: { contentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(name)}`, metadata: { uploadedBy: asEmail } },
+    resumable: false,
+    gzip: false,
+    metadata: { contentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(basename(path))}`, metadata: { uploadedBy: asEmail } },
   })
+  // אימות שלמות: ה-MD5 של מה שנשמר חייב להיות זהה ל-MD5 של הקובץ המקורי
+  const [meta] = await obj.getMetadata()
+  const localMd5 = createHash('md5').update(data).digest('base64')
+  if (meta.md5Hash !== localMd5 || Number(meta.size) !== data.length) {
+    await obj.delete().catch(() => undefined)
+    throw new Error(`אימות שלמות נכשל עבור ${basename(path)} - הקובץ לא יובא`)
+  }
   const fields = { ...input, linkTargets: [...new Set(input.links.map((l) => l.to))] }
   const batch = db!.batch()
   batch.set(db!.doc(`documents/${id}`), {

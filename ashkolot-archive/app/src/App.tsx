@@ -5,7 +5,7 @@ import { loadMyUser, subscribeDocs, subscribeTaxonomy } from './lib/db.ts'
 import { canEdit, type AppUser, type ArchiveDoc } from './lib/model.ts'
 import type { Taxonomy } from './lib/taxonomy.ts'
 import { AppCtx, errMsg, useRoute } from './context.ts'
-import logo from './assets/ashkolot-logo.png'
+import { LOGOS } from './logos.ts'
 import ArchivePage from './pages/ArchivePage.tsx'
 import DocPage from './pages/DocPage.tsx'
 import UploadPage from './pages/UploadPage.tsx'
@@ -55,8 +55,8 @@ export default function App() {
     return (
       <div className="center">
         <div className="card login">
-          <img src={logo} alt="אשכולות העשור הבא" />
-          <h1>ארכיון הידע</h1>
+          {LOGOS.ashkolot && <img src={LOGOS.ashkolot} alt="אשכולות העשור הבא" />}
+          <h1>אשכולות העשור הבא | <span className="suffix">ארכיון הידע</span></h1>
           <p className="muted">מערכת פנימית לתיוק החומרים המקצועיים של התוכנית.</p>
           {error && <div className="alert error">{error}</div>}
           {phase.kind === 'no-access' ? (
@@ -108,10 +108,14 @@ function Ready({ user }: { user: AppUser }) {
 
   return (
     <AppCtx.Provider value={{ user, tax, docs }}>
+      <div className="logo-row">
+        <span className="slot-start">{LOGOS.interior && <img src={LOGOS.interior} alt="משרד הפנים" />}</span>
+        <span className="slot-center">{LOGOS.ashkolot && <img src={LOGOS.ashkolot} alt="אשכולות העשור הבא" />}</span>
+        <span className="slot-end">{LOGOS.joint && <img src={LOGOS.joint} alt="ג'וינט" />}</span>
+      </div>
       <header className="topbar">
         <a href="#/" className="brand" aria-label="ארכיון אשכולות העשור הבא - דף הבית">
-          <img src={logo} alt="אשכולות העשור הבא" />
-          <span>ארכיון הידע</span>
+          אשכולות העשור הבא | <span className="title-suffix">ארכיון הידע</span>
         </a>
         <nav>
           {nav('#/', 'ארכיון', !page || page === 'doc')}

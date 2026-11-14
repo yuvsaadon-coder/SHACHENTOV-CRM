@@ -126,8 +126,8 @@ export default function DocPage({ id }: { id: string }) {
             ))}
             {d.meetingDate && <><dt>תאריך מפגש</dt><dd>{d.meetingDate}</dd></>}
             {d.year && <><dt>שנה</dt><dd>{d.year}</dd></>}
-            <dt>קובץ</dt><dd>{d.file ? `${d.file.name} (${(d.file.size / 1024 / 1024).toFixed(1)}MB)` : '—'}</dd>
-            {d.originalName && d.originalName !== d.file?.name && <><dt>שם מקורי</dt><dd>{d.originalName}</dd></>}
+            <dt>קובץ מקורי</dt><dd>{d.originalName || d.file?.name || '—'}{d.file && ` (${(d.file.size / 1024 / 1024).toFixed(1)}MB)`}</dd>
+            {d.file && <><dt>שלמות הקובץ</dt><dd title={`SHA-256: ${d.file.sha256}`}>נשמר כפי שהועלה, ללא עריכה · <span className="code">{d.file.sha256.slice(0, 12)}…</span></dd></>}
             <dt>הועלה</dt><dd>{d.createdBy} · {fmtDate(d.createdAt)}</dd>
             <dt>עודכן</dt><dd>{d.updatedBy} · {fmtDate(d.updatedAt)}</dd>
           </dl>
