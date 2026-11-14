@@ -30,6 +30,8 @@ interface Entry extends Omit<DocInput, 'links' | 'versionLabel'> {
   versionLabel: string
   current: boolean
   needsReview: string | null
+  seq: number
+  rationale: string
   duplicates: string[]
   links: { type: string; targetFile: string }[]
 }
@@ -104,7 +106,7 @@ for (const e of catalog.entries) {
   }
   const input: DocInput = {
     ...emptyInput(),
-    ...Object.fromEntries(['title', 'folder', 'docType', 'status', 'publisher', 'meetingDate', 'year', 'restricted', 'versionLabel'].map((k) => [k, (e as never)[k]])),
+    ...Object.fromEntries(['title', 'folder', 'docType', 'status', 'publisher', 'meetingDate', 'year', 'restricted', 'versionLabel', 'author'].map((k) => [k, (e as never)[k]])),
     summary: [e.needsReview ? `⚠ לאימות: ${e.needsReview}` : '', e.summary].filter(Boolean).join('\n').slice(0, 3000),
     links: e.links.filter((l) => ids.has(l.targetFile)).map((l) => ({ type: l.type, to: ids.get(l.targetFile)! })),
   } as DocInput
@@ -157,6 +159,7 @@ for (const { e, path, hash, input } of plan) {
   const fields = { ...input, linkTargets: [...new Set(input.links.map((l) => l.to))] }
   const batch = db!.batch()
   batch.set(db!.doc(`documents/${id}`), {
+    seq: e.seq,
     ...fields,
     familyId: e.family ? familyHead.get(e.family)! : id,
     isCurrent: e.current !== false,
@@ -170,9 +173,16 @@ for (const { e, path, hash, input } of plan) {
     rev: 1,
   })
   batch.set(db!.doc(`documents/${id}/history/1`), {
-    rev: 1, by: asEmail, at: FieldValue.serverTimestamp(), action: 'create', changes: { ...diffInputs({}, fields), importedFrom: { from: null, to: basename(path) } },
+    rev: 1, by: asEmail, at: FieldValue.serverTimestamp(), action: 'create', changes: { ...diffInputs({}, fields), importedFrom: { from: null, to: basename(path) }, ...(e.rationale ? { rationale: { from: null, to: e.rationale } } : {}) },
   })
   await batch.commit()
   console.log(`✓ ${e.title}${e.versionLabel ? ` (${e.versionLabel})` : ''}`)
 }
-console.log(`\nהסתיים: ${plan.length} מסמכים יובאו.`)
+// המונה ממשיך מעבר לכל המזהים שהוקצו בקטלוג, כך שמסמכים חדשים מהאתר לא יתנגשו בהם
+const maxSeq = Math.max(0, ...catalog.entries.map((e) => e.seq))
+await db!.runTransaction(async (tx) => {
+  const ref = db!.doc('config/counter')
+  const cur = (await tx.get(ref)).data()?.next ?? 1
+  if (cur <= maxSeq) tx.set(ref, { next: maxSeq + 1 })
+})
+console.log(`\nהסתיים: ${plan.length} מסמכים יובאו. המונה ממשיך מ-AK-${String(maxSeq + 1).padStart(3, '0')}.`)

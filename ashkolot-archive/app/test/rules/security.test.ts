@@ -32,7 +32,7 @@ function docFields(email: string, id: string, over: Record<string, unknown> = {}
   return {
     title: 'ניתוח SWOT', folder: '04', docType: 'analysis', status: 'draft', publisher: 'program',
     forum: ['social'], dimension: [], responsibility: [], unit: [], leg: [], topic: [], stakeholderCircle: [], chapter: [],
-    meetingDate: null, year: 2026, summary: '', restricted: false, versionLabel: '', links: [], linkTargets: [],
+    meetingDate: null, year: 2026, summary: '', author: '', seq: 100, restricted: false, versionLabel: '', links: [], linkTargets: [],
     familyId: id, isCurrent: true, archived: false,
     file: { path: `files/${id}/a.pdf`, name: 'a.pdf', size: 10, contentType: 'application/pdf', sha256: SHA },
     originalName: 'a.pdf', createdBy: email, createdAt: serverTimestamp(), updatedBy: email, updatedAt: serverTimestamp(), rev: 1,
@@ -40,9 +40,10 @@ function docFields(email: string, id: string, over: Record<string, unknown> = {}
   }
 }
 
-async function createAs(email: string, id: string, over: Record<string, unknown> = {}, withHistory = true) {
+async function createAs(email: string, id: string, over: Record<string, unknown> = {}, withHistory = true, counterNext: number | null = 101) {
   const db = fs(email)
   const b = writeBatch(db)
+  if (counterNext !== null) b.set(doc(db, 'config', 'counter'), { next: counterNext })
   b.set(doc(db, 'documents', id), docFields(email, id, over))
   if (withHistory) b.set(doc(db, 'documents', id, 'history', '1'), { rev: 1, by: email, at: serverTimestamp(), action: 'create', changes: {} })
   return b.commit()
@@ -74,6 +75,7 @@ beforeEach(async () => {
   await env.withSecurityRulesDisabled(async (c) => {
     const db = c.firestore() as unknown as Firestore
     await setDoc(doc(db, 'config', 'taxonomy'), { ...tax, keys, updatedBy: 'seed', updatedAt: new Date() })
+    await setDoc(doc(db, 'config', 'counter'), { next: 100 })
     for (const [email, role, active] of [
       ['admin@x.org', 'admin', true], ['ed@x.org', 'editor', true], ['view@x.org', 'viewer', true], ['off@x.org', 'editor', false],
     ] as const) await setDoc(doc(db, 'users', email), { role, active, name: '', updatedBy: 'seed', updatedAt: new Date() })
@@ -122,6 +124,15 @@ describe('documents', () => {
     await assertSucceeds(createAs('ed@x.org', 'n9', { folder: '09', docType: 'summary', meetingDate: '2026-08-05' }))
   })
 
+  it('stable code must equal the counter, and the counter must advance by exactly 1', async () => {
+    await assertFails(createAs('ed@x.org', 'c1', { seq: 7 }))
+    await assertFails(createAs('ed@x.org', 'c2', {}, true, null))
+    await assertFails(createAs('ed@x.org', 'c3', {}, true, 102))
+    await assertFails(setDoc(doc(fs('ed@x.org'), 'config', 'counter'), { next: 50 }))
+    await assertFails(setDoc(doc(fs('view@x.org'), 'config', 'counter'), { next: 101 }))
+    await assertSucceeds(createAs('ed@x.org', 'c4'))
+  })
+
   it('new version must point at an existing family', async () => {
     await assertFails(createAs('ed@x.org', 'v2', { familyId: 'does-not-exist' }))
     await seedDoc('v1')
@@ -148,18 +159,21 @@ describe('documents', () => {
 
   it('protects immutable fields; only admin may change the file', async () => {
     await seedDoc('d1')
-    const tryUpdate = (email: string, fields: Record<string, unknown>) => {
+    const tryUpdate = (email: string, fields: Record<string, unknown>, id = 'd1') => {
       const db = fs(email)
       const b = writeBatch(db)
-      b.update(doc(db, 'documents', 'd1'), { ...fields, rev: 2, updatedBy: email, updatedAt: serverTimestamp() })
-      b.set(doc(db, 'documents', 'd1', 'history', '2'), { rev: 2, by: email, at: serverTimestamp(), action: 'update', changes: {} })
+      b.update(doc(db, 'documents', id), { ...fields, rev: 2, updatedBy: email, updatedAt: serverTimestamp() })
+      b.set(doc(db, 'documents', id, 'history', '2'), { rev: 2, by: email, at: serverTimestamp(), action: 'update', changes: {} })
       return b.commit()
     }
     await assertFails(tryUpdate('ed@x.org', { createdBy: 'ed2@x.org' }))
     await assertFails(tryUpdate('ed@x.org', { originalName: 'x.pdf' }))
+    await assertFails(tryUpdate('ed@x.org', { seq: 5 }))
     const otherFile = { path: 'files/d1/b.pdf', name: 'b.pdf', size: 20, contentType: 'application/pdf', sha256: SHA }
     await assertFails(tryUpdate('ed@x.org', { file: otherFile }))
     await assertSucceeds(tryUpdate('admin@x.org', { file: otherFile }))
+    await seedDoc('d3')
+    await assertSucceeds(tryUpdate('ed@x.org', { author: 'KGC' }, 'd3'))
   })
 
   it('history is append-only and cannot be forged', async () => {

@@ -9,7 +9,7 @@ type Entry = (typeof catalog.entries)[number]
 
 function toInput(e: Entry): DocInput {
   const input = { ...emptyInput(), title: e.title, folder: e.folder, docType: e.docType, status: e.status, publisher: e.publisher,
-    meetingDate: e.meetingDate, year: e.year, summary: e.summary, restricted: e.restricted, versionLabel: e.versionLabel } as DocInput
+    meetingDate: e.meetingDate, year: e.year, summary: e.summary, author: e.author, restricted: e.restricted, versionLabel: e.versionLabel } as DocInput
   for (const dim of MULTI_DIMS) input[dim] = (e as unknown as Record<string, string[]>)[dim] ?? []
   return input
 }
@@ -30,6 +30,14 @@ describe('seed catalog', () => {
       expect(list.length, f).toBeGreaterThan(1)
       expect(list.filter((e) => e.current).length, f).toBe(1)
     }
+  })
+  it('stable codes are unique, contiguous and below the counter start', () => {
+    const seqs = catalog.entries.map((e) => e.seq).sort((a, b) => a - b)
+    expect(seqs).toEqual(seqs.map((_, i) => i + 1))
+    expect(catalog.nextSeq).toBe(seqs.length + 1)
+  })
+  it('every decision has a transparent rationale', () => {
+    for (const e of catalog.entries) expect(e.rationale, e.file).toMatch(/כלל \d/)
   })
   it('external sources are not filed as internal stages', () => {
     for (const e of catalog.entries) if (e.publisher !== 'program') expect(['02-1', '02-2', '02-3', '02-4', '03'], e.file).toContain(e.folder)

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import skillMd from '../../../skill/ashkolot-filing/SKILL.md?raw'
+import mappingMd from '../../../skill/ashkolot-filing/references/mapping-rules.md?raw'
+import seedCatalog from '../../../seed/catalog.json'
 import { errMsg, fmtDateTime, useApp } from '../context.ts'
 import { listUsers, loadRecentActivity, removeUser, saveTaxonomy, upsertUser } from '../lib/db.ts'
 import type { AppUser, HistoryEntry, Role } from '../lib/model.ts'
@@ -201,7 +203,7 @@ function Tools() {
   const { tax, docs } = useApp()
   const visible = docs.filter((d) => d.isCurrent && !d.archived && !d.restricted)
   const skill = () => {
-    const zip = buildSkillZip(skillMd, tax, visible.map((d) => ({ title: d.title, folder: d.folder, docType: d.docType, year: d.year, versionLabel: d.versionLabel, forum: d.forum })))
+    const zip = buildSkillZip({ skillMd, mappingMd, precedents: seedCatalog.entries }, tax, visible.map((d) => ({ seq: d.seq, title: d.title, folder: d.folder, docType: d.docType, year: d.year, versionLabel: d.versionLabel, forum: d.forum })))
     downloadBlob(zip as BlobPart, 'ashkolot-filing.zip', 'application/zip')
   }
   return (

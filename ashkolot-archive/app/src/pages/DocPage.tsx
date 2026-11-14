@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { errMsg, fmtDate, fmtDateTime, go, useApp } from '../context.ts'
 import { deleteDocumentForever, downloadFile, loadHistory, makeCurrent, setArchived } from '../lib/db.ts'
-import { canEdit, type HistoryEntry } from '../lib/model.ts'
-import { backlinks, familyOf } from '../lib/search.ts'
+import { canEdit, docCode, type HistoryEntry } from '../lib/model.ts'
+import { backlinks, familyOf, similarDocs } from '../lib/search.ts'
 import { MULTI_DIMS, folderLabel, linkTypeLabel, valueLabel } from '../lib/taxonomy.ts'
 
 const ACTION_LABELS: Record<string, string> = {
@@ -29,6 +29,7 @@ export default function DocPage({ id }: { id: string }) {
   if (!d) return <div className="alert warn">המסמך לא נמצא, או שאין לך הרשאה לצפות בו.</div>
 
   const family = familyOf(docs, d.familyId)
+  const similar = similarDocs(docs, d)
   const incoming = backlinks(docs, d.id)
   const title = (tid: string) => docs.find((x) => x.id === tid)?.title ?? '(מסמך לא זמין)'
   const editor = canEdit(user.role)
@@ -68,13 +69,19 @@ export default function DocPage({ id }: { id: string }) {
 
       <div className="card">
         <div className="row">
+          <span className="code" title="מזהה קבוע - לא משתנה גם בתיוק מחדש. אפשר לצטט אותו בכל מסמך">{docCode(d.seq)}</span>
           <h1 style={{ margin: 0 }}>{d.title}</h1>
           {d.versionLabel && <span className="tag">{d.versionLabel}</span>}
           {!d.isCurrent && <span className="tag old">גרסה קודמת</span>}
           {d.archived && <span className="tag old">בארכיון</span>}
           {d.restricted && <span className="tag restricted">לא להפצה</span>}
         </div>
-        {d.summary && <p>{d.summary}</p>}
+        {d.summary.startsWith('⚠ לאימות') ? (
+          <>
+            <div className="callout">{d.summary.split('\n')[0]}</div>
+            {d.summary.split('\n').slice(1).join('\n') && <p>{d.summary.split('\n').slice(1).join('\n')}</p>}
+          </>
+        ) : d.summary && <p>{d.summary}</p>}
         <div className="row">
           {d.file && <button className="primary" onClick={download} disabled={busy}>הורדת הקובץ</button>}
           {editor && <button onClick={() => go(`#/edit/${d.id}`)}>עריכה / תיוק מחדש</button>}
@@ -106,7 +113,9 @@ export default function DocPage({ id }: { id: string }) {
         <div className="card">
           <h2>תיוק</h2>
           <dl className="meta">
+            <dt>מזהה</dt><dd><span className="code">{docCode(d.seq)}</span></dd>
             <dt>תיקייה</dt><dd>{folderLabel(tax, d.folder)}</dd>
+            {d.author && <><dt>מחבר/ת</dt><dd>{d.author}</dd></>}
             <dt>סוג</dt><dd>{valueLabel(tax, 'docType', d.docType)}</dd>
             <dt>סטטוס</dt><dd>{valueLabel(tax, 'status', d.status)}</dd>
             <dt>גוף מפרסם</dt><dd>{valueLabel(tax, 'publisher', d.publisher)}</dd>
@@ -138,6 +147,18 @@ export default function DocPage({ id }: { id: string }) {
             </ul>
           </div>
 
+          {similar.length > 0 && (
+            <div className="card">
+              <h2>מסמכים דומים</h2>
+              <p className="hint">לפי תגיות משותפות. אפשר להוסיף קישור מתוך "עריכה / תיוק מחדש".</p>
+              <ul>
+                {similar.map((m) => (
+                  <li key={m.doc.id}><span className="code">{docCode(m.doc.seq)}</span> <a href={`#/doc/${m.doc.id}`}>{m.doc.title}</a></li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {family.length > 1 && (
             <div className="card">
               <h2>גרסאות</h2>
@@ -161,9 +182,10 @@ export default function DocPage({ id }: { id: string }) {
               {history?.map((h) => (
                 <li key={h.rev}>
                   <b>{ACTION_LABELS[h.action] ?? h.action}</b> · {h.by} · <span className="muted">{fmtDateTime(h.at)}</span>
+                  {typeof h.changes.rationale?.to === 'string' && <div className="callout" style={{ margin: '.3em 0' }}><b>נימוק:</b> {h.changes.rationale.to}</div>}
                   {h.action !== 'create' && h.action !== 'new-version' && Object.keys(h.changes).length > 0 && (
                     <ul>
-                      {Object.entries(h.changes).map(([field, c]) => (
+                      {Object.entries(h.changes).filter(([field]) => field !== 'rationale').map(([field, c]) => (
                         <li key={field}>
                           <code>{tax.dimensions[field]?.label ?? FIELD_LABELS[field] ?? field}</code>: {fmtVal(field, c.from)} ← {fmtVal(field, c.to)}
                         </li>
@@ -182,7 +204,7 @@ export default function DocPage({ id }: { id: string }) {
 
 const FIELD_LABELS: Record<string, string> = {
   title: 'כותרת', folder: 'תיקייה', meetingDate: 'תאריך מפגש', year: 'שנה', summary: 'תקציר',
-  restricted: 'לא להפצה', versionLabel: 'תווית גרסה', links: 'קישורים', isCurrent: 'גרסה נוכחית',
+  restricted: 'לא להפצה', versionLabel: 'תווית גרסה', author: 'מחבר/ת', links: 'קישורים', isCurrent: 'גרסה נוכחית',
   archived: 'בארכיון', supersededBy: 'הוחלף ע"י',
 }
 

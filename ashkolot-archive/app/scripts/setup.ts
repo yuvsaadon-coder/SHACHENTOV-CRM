@@ -29,6 +29,12 @@ if (existing.exists && !flag('force-taxonomy')) {
   console.log(`✓ מבנה התיוק נזרע (גרסה ${version}).`)
 }
 
+const counterRef = db.doc('config/counter')
+if (!(await counterRef.get()).exists) {
+  await counterRef.set({ next: 1 })
+  console.log('✓ מונה המזהים הקבועים (AK-###) אותחל.')
+}
+
 await db.doc(`users/${admin}`).set(
   { role: 'admin', active: true, name: '', updatedBy: 'setup-script', updatedAt: FieldValue.serverTimestamp() },
   { merge: true },

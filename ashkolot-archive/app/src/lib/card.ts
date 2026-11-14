@@ -1,7 +1,7 @@
 // כרטיס תיוק: הפלט של סקיל התיוק. המשתמש מדביק אותו במסך ההעלאה (או בעריכה) והטופס מתמלא.
 // הכרטיס הוא קלט לא מהימן - כל ערך נבדק מול הטקסונומיה, וערך לא מוכר נזרק עם אזהרה.
 
-import { emptyInput, type DocInput } from './model.ts'
+import { emptyInput, parseCode, docCode, type DocInput } from './model.ts'
 import { MULTI_DIMS, SINGLE_DIMS, type Taxonomy } from './taxonomy.ts'
 
 export const CARD_MARKER = 'ashkolot_card'
@@ -17,6 +17,8 @@ export interface ParsedCard {
   pendingLinks: PendingLink[]
   versionOf: string | null
   originalName: string | null
+  /** הנימוק שהסקיל הציג למשתמש - נשמר ביומן ההיסטוריה של המסמך */
+  rationale: string
   warnings: string[]
 }
 
@@ -49,6 +51,7 @@ export function parseCard(text: string, tax: Taxonomy): ParsedCard {
   const input = emptyInput()
   input.title = str(c.title, 300)
   input.summary = str(c.summary, 3000)
+  input.author = str(c.author, 200)
   input.versionLabel = str(c.versionLabel, 40)
   input.restricted = c.restricted === true
 
@@ -96,7 +99,8 @@ export function parseCard(text: string, tax: Taxonomy): ParsedCard {
 
   const versionOf = str(c.versionOf, 300) || null
   const originalName = str(c.originalName, 300) || null
-  return { input, pendingLinks, versionOf, originalName, warnings }
+  const rationale = str(c.rationale, 1000)
+  return { input, pendingLinks, versionOf, originalName, rationale, warnings }
 }
 
 // ---------- התאמת כותרות (לקישורים ולגרסאות שהסקיל מציין לפי שם) ----------
@@ -133,14 +137,20 @@ export function titleScore(a: string, b: string): number {
   return Math.min(0.99, jaccard + contains)
 }
 
-export function bestMatches<T extends { id: string; title: string; originalName?: string }>(
+export function bestMatches<T extends { id: string; title: string; originalName?: string; seq?: number }>(
   query: string,
   docs: T[],
   limit = 5,
   minScore = 0.2,
 ): { doc: T; score: number }[] {
+  // מזהה קבוע (AK-012) - התאמה מדויקת, עדיפה על כל התאמת כותרת
+  const code = parseCode(query.split(/\s/)[0] ?? '')
+  if (code) {
+    const exact = docs.find((d) => d.seq === code)
+    if (exact) return [{ doc: exact, score: 1 }]
+  }
   return docs
-    .map((doc) => ({ doc, score: Math.max(titleScore(query, doc.title), doc.originalName ? titleScore(query, doc.originalName) : 0) }))
+    .map((doc) => ({ doc, score: Math.max(titleScore(query, doc.title), doc.originalName ? titleScore(query, doc.originalName) : 0, doc.seq && normalizeTitle(query).includes(docCode(doc.seq).toLowerCase()) ? 1 : 0) }))
     .filter((m) => m.score >= minScore)
     .sort((x, y) => y.score - x.score)
     .slice(0, limit)

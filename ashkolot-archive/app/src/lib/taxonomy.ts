@@ -6,6 +6,8 @@ export interface TaxValue {
   key: string
   label: string
   hint?: string
+  /** הערת היקף (scope note): מה לא נכנס לכאן ולאן כן */
+  exclude?: string
   note?: string
   active?: boolean
 }

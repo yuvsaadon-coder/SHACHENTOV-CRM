@@ -37,12 +37,12 @@ export default function UploadPage({ versionOfId }: { versionOfId: string | null
     setDup(findDuplicate(docs, h) ?? null)
   }
 
-  async function submit(input: DocInput, vOf: ArchiveDoc | null) {
+  async function submit(input: DocInput, vOf: ArchiveDoc | null, rationale: string) {
     if (!file || !hash) return setError('יש לבחור קובץ')
     setBusy(true)
     setError('')
     try {
-      const id = await createDocument({ input, file, sha256: hash, versionOf: vOf, byEmail: user.email, onProgress: setProgress })
+      const id = await createDocument({ input, file, sha256: hash, versionOf: vOf, byEmail: user.email, rationale, onProgress: setProgress })
       go(`#/doc/${id}`)
     } catch (e) {
       setError(errMsg(e))

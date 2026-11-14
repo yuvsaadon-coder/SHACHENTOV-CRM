@@ -3,9 +3,9 @@ import { readFileSync } from 'node:fs'
 import { unzipSync, strFromU8 } from 'fflate'
 import taxJson from '../../../taxonomy/taxonomy.json'
 import { computeKeys, validateTaxonomyChange, withKeys, type Taxonomy } from '../../src/lib/taxonomy.ts'
-import { diffInputs, emptyInput, normalizeInput, safeFileName, contentTypeFor, validateInput, type ArchiveDoc, type DocInput } from '../../src/lib/model.ts'
+import { diffInputs, docCode, downloadName, emptyInput, normalizeInput, parseCode, safeFileName, contentTypeFor, validateInput, type ArchiveDoc, type DocInput } from '../../src/lib/model.ts'
 import { bestMatches, extractCardJson, normalizeTitle, parseCard, titleScore } from '../../src/lib/card.ts'
-import { backlinks, emptyFilters, filterDocs, folderCounts, toCsv } from '../../src/lib/search.ts'
+import { backlinks, emptyFilters, filterDocs, filtersFromParams, filtersToParams, folderCounts, similarDocs, toCsv } from '../../src/lib/search.ts'
 import { buildSkillZip, catalogMarkdown, taxonomyMarkdown } from '../../src/lib/skillgen.ts'
 
 const tax = withKeys(taxJson as unknown as Taxonomy)
@@ -16,7 +16,7 @@ function validInput(over: Partial<DocInput> = {}): DocInput {
 
 function mkDoc(over: Partial<ArchiveDoc> = {}): ArchiveDoc {
   return {
-    ...validInput(), id: 'd1', familyId: 'd1', isCurrent: true, archived: false, linkTargets: [], file: null, originalName: '',
+    ...validInput(), id: 'd1', seq: 1, familyId: 'd1', isCurrent: true, archived: false, linkTargets: [], file: null, originalName: '',
     createdBy: 'a@x.org', createdAt: new Date('2026-01-01'), updatedBy: 'a@x.org', updatedAt: new Date('2026-01-02'), rev: 1, ...over,
   }
 }
@@ -168,6 +168,17 @@ describe('search', () => {
 describe('skill generation', () => {
   const skillMd = readFileSync(new URL('../../../skill/ashkolot-filing/SKILL.md', import.meta.url), 'utf8')
 
+  it('mapping rules only reference folder keys that exist', () => {
+    const rules = readFileSync(new URL('../../../skill/ashkolot-filing/references/mapping-rules.md', import.meta.url), 'utf8')
+    const keys = new Set(tax.folders.map((f) => f.key))
+    const referenced = [...rules.matchAll(/`(0\d(?:-\d)?)`/g)].map((m) => m[1])
+    expect(referenced.length).toBeGreaterThan(8)
+    for (const k of referenced) expect(keys.has(k), k).toBe(true)
+  })
+  it('card rationale is parsed', () => {
+    const p = parseCard(JSON.stringify({ ashkolot_card: 1, title: 't', folder: '04', docType: 'analysis', status: 'draft', publisher: 'program', rationale: 'בעמוד השער: X' }), tax)
+    expect(p.rationale).toBe('בעמוד השער: X')
+  })
   it('SKILL.md only references folder keys that exist', () => {
     const referenced = [...skillMd.matchAll(/`(0\d(?:-\d)?)`/g)].map((m) => m[1])
     const keys = new Set(tax.folders.map((f) => f.key))
@@ -175,7 +186,7 @@ describe('skill generation', () => {
     for (const k of referenced) expect(keys.has(k), k).toBe(true)
   })
   it('SKILL.md card template contains every field the parser reads', () => {
-    for (const f of ['ashkolot_card', 'title', 'folder', 'docType', 'status', 'publisher', 'forum', 'dimension', 'responsibility', 'unit', 'leg', 'topic', 'stakeholderCircle', 'chapter', 'meetingDate', 'year', 'summary', 'restricted', 'versionOf', 'versionLabel', 'links'])
+    for (const f of ['ashkolot_card', 'author', 'rationale', 'title', 'folder', 'docType', 'status', 'publisher', 'forum', 'dimension', 'responsibility', 'unit', 'leg', 'topic', 'stakeholderCircle', 'chapter', 'meetingDate', 'year', 'summary', 'restricted', 'versionOf', 'versionLabel', 'links'])
       expect(skillMd, f).toContain(`"${f}"`)
   })
   it('the card template in SKILL.md parses with the app parser', () => {
@@ -191,11 +202,62 @@ describe('skill generation', () => {
     expect(md).toContain('`health`')
   })
   it('builds a zip with the expected structure', () => {
-    const zip = unzipSync(buildSkillZip(skillMd, tax, [{ title: 'מסמך א', folder: '04', docType: 'analysis', year: 2026, versionLabel: '', forum: ['social'] }]))
-    expect(Object.keys(zip).sort()).toEqual(['ashkolot-filing/SKILL.md', 'ashkolot-filing/references/catalog.md', 'ashkolot-filing/references/taxonomy.md'])
+    const zip = unzipSync(buildSkillZip({ skillMd, mappingMd: '# rules', precedents: [{ seq: 1, title: 'מסמך א', folder: '04', docType: 'analysis', year: 2026, versionLabel: '', forum: [], rationale: 'כלל 5' }] }, tax, [{ title: 'מסמך א', folder: '04', docType: 'analysis', year: 2026, versionLabel: '', forum: ['social'] }]))
+    expect(Object.keys(zip).sort()).toEqual(['ashkolot-filing/SKILL.md', 'ashkolot-filing/references/catalog.md', 'ashkolot-filing/references/mapping-rules.md', 'ashkolot-filing/references/precedents.md', 'ashkolot-filing/references/taxonomy.md'])
+    expect(strFromU8(zip['ashkolot-filing/references/precedents.md'])).toContain('נימוק: כלל 5')
     expect(strFromU8(zip['ashkolot-filing/references/catalog.md'])).toContain('מסמך א')
   })
   it('catalog markdown handles an empty archive', () => {
     expect(catalogMarkdown(tax, [], new Date('2026-11-14'))).toContain('הארכיון עדיין ריק')
+  })
+})
+
+describe('stable codes (ISO 15489 identifier)', () => {
+  it('formats and parses codes', () => {
+    expect(docCode(7)).toBe('AK-007')
+    expect(docCode(1234)).toBe('AK-1234')
+    expect(parseCode('ak-7')).toBe(7)
+    expect(parseCode('AK-012')).toBe(12)
+    expect(parseCode('דוח 12')).toBeNull()
+  })
+  it('matches a card link by code exactly', () => {
+    const docs = [{ id: 'x', seq: 12, title: 'משהו אחר לגמרי' }, { id: 'y', seq: 13, title: 'AK-012 בכותרת' }]
+    expect(bestMatches('AK-012', docs)).toEqual([{ doc: docs[0], score: 1 }])
+  })
+  it('names downloads consistently', () => {
+    expect(downloadName({ seq: 5, title: 'ניתוח SWOT: מתוקן', file: { path: '', name: 'x.docx', size: 1, contentType: '', sha256: '' } })).toBe('AK-005 ניתוח SWOT_ מתוקן.docx')
+  })
+  it('searches by code and author', () => {
+    const docs = [mkDoc({ id: 'a', seq: 42, author: 'שקד סינוואני' }), mkDoc({ id: 'b', seq: 43 })]
+    expect(filterDocs(docs, { ...emptyFilters(), text: 'AK-042' }, tax).map((d) => d.id)).toEqual(['a'])
+    expect(filterDocs(docs, { ...emptyFilters(), text: 'סינוואני' }, tax).map((d) => d.id)).toEqual(['a'])
+  })
+  it('card parses author', () => {
+    const p = parseCard(JSON.stringify({ ashkolot_card: 1, title: 't', folder: '04', docType: 'analysis', status: 'draft', publisher: 'program', author: 'KGC' }), tax)
+    expect(p.input.author).toBe('KGC')
+  })
+})
+
+describe('shareable views & similar documents', () => {
+  it('round-trips filters through the URL and drops unknown values', () => {
+    const f = { ...emptyFilters(), folder: '02', text: 'ביזור', tags: { forum: ['social', 'planning'], topic: ['bogus'] }, showOldVersions: true }
+    const back = filtersFromParams(filtersToParams(f), tax)
+    expect(back.folder).toBe('02')
+    expect(back.text).toBe('ביזור')
+    expect(back.tags.forum).toEqual(['social', 'planning'])
+    expect(back.tags.topic).toEqual([])
+    expect(back.showOldVersions).toBe(true)
+    expect(filtersFromParams(new URLSearchParams('f=<script>'), tax).folder).toBeNull()
+  })
+  it('suggests similar docs by shared facets, excluding linked docs and same family', () => {
+    const base = mkDoc({ id: 'a', familyId: 'a', topic: ['welfare', 'health'], forum: ['social'], links: [{ type: 'cites', to: 'linked' }] })
+    const docs = [
+      base,
+      mkDoc({ id: 'sim', familyId: 'sim', topic: ['welfare', 'health'], forum: ['social'] }),
+      mkDoc({ id: 'linked', familyId: 'linked', topic: ['welfare', 'health'], forum: ['social'] }),
+      mkDoc({ id: 'fam', familyId: 'a', topic: ['welfare', 'health'], forum: ['social'] }),
+      mkDoc({ id: 'far', familyId: 'far', folder: '02-2', forum: [], topic: ['transport'] }),
+    ]
+    expect(similarDocs(docs, base).map((m) => m.doc.id)).toEqual(['sim'])
   })
 })

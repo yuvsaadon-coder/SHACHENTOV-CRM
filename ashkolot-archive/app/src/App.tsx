@@ -5,6 +5,7 @@ import { loadMyUser, subscribeDocs, subscribeTaxonomy } from './lib/db.ts'
 import { canEdit, type AppUser, type ArchiveDoc } from './lib/model.ts'
 import type { Taxonomy } from './lib/taxonomy.ts'
 import { AppCtx, errMsg, useRoute } from './context.ts'
+import logo from './assets/ashkolot-logo.png'
 import ArchivePage from './pages/ArchivePage.tsx'
 import DocPage from './pages/DocPage.tsx'
 import UploadPage from './pages/UploadPage.tsx'
@@ -54,7 +55,8 @@ export default function App() {
     return (
       <div className="center">
         <div className="card login">
-          <h1>ארכיון אשכולות העשור הבא</h1>
+          <img src={logo} alt="אשכולות העשור הבא" />
+          <h1>ארכיון הידע</h1>
           <p className="muted">מערכת פנימית לתיוק החומרים המקצועיים של התוכנית.</p>
           {error && <div className="alert error">{error}</div>}
           {phase.kind === 'no-access' ? (
@@ -107,7 +109,10 @@ function Ready({ user }: { user: AppUser }) {
   return (
     <AppCtx.Provider value={{ user, tax, docs }}>
       <header className="topbar">
-        <span className="brand">ארכיון אשכולות העשור הבא</span>
+        <a href="#/" className="brand" aria-label="ארכיון אשכולות העשור הבא - דף הבית">
+          <img src={logo} alt="אשכולות העשור הבא" />
+          <span>ארכיון הידע</span>
+        </a>
         <nav>
           {nav('#/', 'ארכיון', !page || page === 'doc')}
           {canEdit(user.role) && nav('#/upload', 'העלאה', page === 'upload')}

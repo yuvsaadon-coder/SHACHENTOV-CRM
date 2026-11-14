@@ -62,6 +62,18 @@ service cloud.firestore {
         && b.publisher.hasAll(a.publisher);
     }
 
+    // ---------- מונה המזהים הקבועים (AK-###) ----------
+    // כל מסמך חדש מקבל את הערך הבא של המונה, באותה טרנזקציה שמקדמת אותו ב-1 בדיוק.
+    match /config/counter {
+      allow read: if isActiveUser();
+      allow create: if isAdmin() && request.resource.data.keys().hasOnly(['next']) && request.resource.data.next is int;
+      allow update: if isEditor()
+        && request.resource.data.keys().hasOnly(['next'])
+        && request.resource.data.next == resource.data.next + 1;
+      allow delete: if false;
+    }
+    function counterPath() { return /databases/$(database)/documents/config/counter; }
+
     // ---------- משתמשים ----------
     match /users/{userEmail} {
       allow read: if isAdmin() || (signedIn() && myEmail() == userEmail);
@@ -99,13 +111,13 @@ service cloud.firestore {
       return d.keys().hasOnly([
           'title', 'folder', 'docType', 'status', 'publisher',
           'forum', 'dimension', 'responsibility', 'unit', 'leg', 'topic', 'stakeholderCircle', 'chapter',
-          'meetingDate', 'year', 'summary', 'restricted', 'versionLabel', 'links', 'linkTargets',
+          'meetingDate', 'year', 'summary', 'author', 'restricted', 'versionLabel', 'links', 'linkTargets', 'seq',
           'familyId', 'isCurrent', 'archived', 'file', 'originalName',
           'createdBy', 'createdAt', 'updatedBy', 'updatedAt', 'rev'])
         && d.keys().hasAll([
           'title', 'folder', 'docType', 'status', 'publisher',
           'forum', 'dimension', 'responsibility', 'unit', 'leg', 'topic', 'stakeholderCircle', 'chapter',
-          'meetingDate', 'year', 'summary', 'restricted', 'versionLabel', 'links', 'linkTargets',
+          'meetingDate', 'year', 'summary', 'author', 'restricted', 'versionLabel', 'links', 'linkTargets', 'seq',
           'familyId', 'isCurrent', 'archived', 'file', 'originalName',
           'createdBy', 'createdAt', 'updatedBy', 'updatedAt', 'rev'])
         && d.title is string && d.title.size() > 0 && d.title.size() <= 300
@@ -125,6 +137,8 @@ service cloud.firestore {
         && (d.folder != '09' || (d.meetingDate != null && d.forum.size() > 0))
         && (d.year == null || (d.year is int && d.year >= 1990 && d.year <= 2100))
         && d.summary is string && d.summary.size() <= 3000
+        && d.author is string && d.author.size() <= 200
+        && d.seq is int && d.seq > 0
         && d.restricted is bool && d.archived is bool && d.isCurrent is bool
         && d.versionLabel is string && d.versionLabel.size() <= 40
         && d.links is list && d.links.size() <= 50
@@ -154,6 +168,8 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time
         && request.resource.data.rev == 1
         && request.resource.data.archived == false
+        && request.resource.data.seq == get(counterPath()).data.next
+        && getAfter(counterPath()).data.next == request.resource.data.seq + 1
         && (request.resource.data.familyId == docId
             || exists(/databases/$(database)/documents/documents/$(request.resource.data.familyId)))
         && historyWritten(docId, 1);
@@ -163,6 +179,7 @@ service cloud.firestore {
         && request.resource.data.createdBy == resource.data.createdBy
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.originalName == resource.data.originalName
+        && request.resource.data.seq == resource.data.seq
         && (request.resource.data.file == resource.data.file || isAdmin())
         && request.resource.data.updatedBy == myEmail()
         && request.resource.data.updatedAt == request.time

@@ -3,12 +3,12 @@
 
 import {
   collection, collectionGroup, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query,
-  serverTimestamp, setDoc, deleteDoc, where, writeBatch, type DocumentData, type Timestamp,
+  runTransaction, serverTimestamp, setDoc, deleteDoc, where, writeBatch, type DocumentData, type Timestamp,
 } from 'firebase/firestore'
 import { deleteObject, getBlob, ref, uploadBytesResumable } from 'firebase/storage'
 import { db, storage } from './firebase.ts'
 import {
-  canSeeRestricted, contentTypeFor, diffInputs, normalizeInput, pickInput, safeFileName,
+  canSeeRestricted, contentTypeFor, diffInputs, downloadName, normalizeInput, pickInput, safeFileName,
   type AppUser, type ArchiveDoc, type DocInput, type HistoryEntry, type Role,
 } from './model.ts'
 import { computeKeys, validateTaxonomyChange, type Taxonomy } from './taxonomy.ts'
@@ -18,6 +18,8 @@ const toDate = (v: unknown): Date | null => (v && typeof (v as Timestamp).toDate
 function fromFirestore(id: string, d: DocumentData): ArchiveDoc {
   return {
     id,
+    seq: d.seq ?? 0,
+    author: d.author ?? '',
     title: d.title ?? '',
     folder: d.folder ?? '',
     docType: d.docType ?? '',
@@ -108,6 +110,7 @@ export interface CreateParams {
   sha256: string
   versionOf: ArchiveDoc | null
   byEmail: string
+  rationale?: string
   onProgress?: (pct: number) => void
 }
 
@@ -129,39 +132,46 @@ export async function createDocument(p: CreateParams): Promise<string> {
     task.on('state_changed', (s) => p.onProgress?.(Math.round((s.bytesTransferred / s.totalBytes) * 100)), reject, () => resolve())
   })
 
-  // 2. רשומת המסמך + היסטוריה (+ סימון הגרסה הקודמת כלא-נוכחית) בפעולה אטומית אחת
+  // 2. טרנזקציה אחת: הקצאת מזהה קבוע (מונה) + רשומת המסמך + היסטוריה (+ סימון הגרסה הקודמת כלא-נוכחית).
+  //    כללי האבטחה מוודאים שהמספר שהוקצה הוא בדיוק הערך הבא של המונה - אין כפילויות גם בהעלאות במקביל.
   const fields = storedFields(p.input)
-  const batch = writeBatch(db)
-  batch.set(newRef, {
-    ...fields,
-    familyId: p.versionOf ? p.versionOf.familyId : id,
-    isCurrent: true,
-    archived: false,
-    file: { path, name, size: p.file.size, contentType, sha256: p.sha256 },
-    originalName: p.file.name.slice(0, 300),
-    createdBy: p.byEmail,
-    createdAt: serverTimestamp(),
-    updatedBy: p.byEmail,
-    updatedAt: serverTimestamp(),
-    rev: 1,
-  })
-  batch.set(doc(db, 'documents', id, 'history', '1'), {
-    rev: 1,
-    by: p.byEmail,
-    at: serverTimestamp(),
-    action: p.versionOf ? 'new-version' : 'create',
-    changes: diffInputs({}, fields),
-  })
-  if (p.versionOf) {
-    const old = p.versionOf
-    const rev = old.rev + 1
-    batch.update(doc(db, 'documents', old.id), { isCurrent: false, rev, updatedBy: p.byEmail, updatedAt: serverTimestamp() })
-    batch.set(doc(db, 'documents', old.id, 'history', String(rev)), {
-      rev, by: p.byEmail, at: serverTimestamp(), action: 'superseded', changes: { isCurrent: { from: true, to: false }, supersededBy: { from: null, to: id } },
+  const counterRef = doc(db, 'config', 'counter')
+  const commit = () => runTransaction(db, async (tx) => {
+    const counter = await tx.get(counterRef)
+    const seq = (counter.data()?.next as number | undefined) ?? 1
+    tx.set(counterRef, { next: seq + 1 })
+    tx.set(newRef, {
+      seq,
+      ...fields,
+      familyId: p.versionOf ? p.versionOf.familyId : id,
+      isCurrent: true,
+      archived: false,
+      file: { path, name, size: p.file.size, contentType, sha256: p.sha256 },
+      originalName: p.file.name.slice(0, 300),
+      createdBy: p.byEmail,
+      createdAt: serverTimestamp(),
+      updatedBy: p.byEmail,
+      updatedAt: serverTimestamp(),
+      rev: 1,
     })
-  }
+    tx.set(doc(db, 'documents', id, 'history', '1'), {
+      rev: 1,
+      by: p.byEmail,
+      at: serverTimestamp(),
+      action: p.versionOf ? 'new-version' : 'create',
+      changes: { ...diffInputs({}, fields), ...(p.rationale ? { rationale: { from: null, to: p.rationale } } : {}) },
+    })
+    if (p.versionOf) {
+      const old = p.versionOf
+      const rev = old.rev + 1
+      tx.update(doc(db, 'documents', old.id), { isCurrent: false, rev, updatedBy: p.byEmail, updatedAt: serverTimestamp() })
+      tx.set(doc(db, 'documents', old.id, 'history', String(rev)), {
+        rev, by: p.byEmail, at: serverTimestamp(), action: 'superseded', changes: { isCurrent: { from: true, to: false }, supersededBy: { from: null, to: id } },
+      })
+    }
+  })
   try {
-    await batch.commit()
+    await commit()
   } catch (e) {
     // הקובץ עלה אבל הרשומה נדחתה - מנסים לנקות (יצליח רק למנהל; אחרת יוצג בדוח קבצים יתומים)
     await deleteObject(ref(storage, path)).catch(() => undefined)
@@ -172,11 +182,12 @@ export async function createDocument(p: CreateParams): Promise<string> {
 
 type UpdateAction = 'update' | 'archive' | 'restore'
 
-export async function updateDocument(old: ArchiveDoc, input: DocInput, byEmail: string, action: UpdateAction = 'update', extra: Partial<Pick<ArchiveDoc, 'archived'>> = {}) {
+export async function updateDocument(old: ArchiveDoc, input: DocInput, byEmail: string, action: UpdateAction = 'update', extra: Partial<Pick<ArchiveDoc, 'archived'>> = {}, rationale = '') {
   const fields = storedFields(input)
   const changes = diffInputs(pickInput(old), fields)
   if (extra.archived !== undefined && extra.archived !== old.archived) changes.archived = { from: old.archived, to: extra.archived }
   if (!Object.keys(changes).length) return
+  if (rationale) changes.rationale = { from: null, to: rationale.slice(0, 1000) }
   const rev = old.rev + 1
   const batch = writeBatch(db)
   batch.update(doc(db, 'documents', old.id), { ...fields, ...extra, rev, updatedBy: byEmail, updatedAt: serverTimestamp() })
@@ -219,7 +230,7 @@ export async function downloadFile(d: ArchiveDoc): Promise<void> {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = d.file.name
+  a.download = downloadName(d)
   a.click()
   setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }

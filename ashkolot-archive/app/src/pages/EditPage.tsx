@@ -11,12 +11,12 @@ export default function EditPage({ id }: { id: string }) {
   const [error, setError] = useState('')
   if (!d) return <div className="alert warn">המסמך לא נמצא.</div>
 
-  async function submit(input: DocInput) {
+  async function submit(input: DocInput, _v: unknown, rationale: string) {
     if (!d) return
     setBusy(true)
     setError('')
     try {
-      await updateDocument(d, input, user.email)
+      await updateDocument(d, input, user.email, 'update', {}, rationale)
       go(`#/doc/${d.id}`)
     } catch (e) {
       setError(errMsg(e))

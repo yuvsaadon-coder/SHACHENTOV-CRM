@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useApp } from '../context.ts'
 import { bestMatches, parseCard, type PendingLink } from '../lib/card.ts'
-import { validateInput, type ArchiveDoc, type DocInput, type DocLink } from '../lib/model.ts'
+import { docCode, validateInput, type ArchiveDoc, type DocInput, type DocLink } from '../lib/model.ts'
 import { MULTI_DIMS, SINGLE_DIMS, folderLabel, linkTypeLabel } from '../lib/taxonomy.ts'
 import TagPicker from './TagPicker.tsx'
 
@@ -13,7 +13,7 @@ interface Props {
   initialVersionOf?: ArchiveDoc | null
   submitLabel: string
   busy?: boolean
-  onSubmit: (input: DocInput, versionOf: ArchiveDoc | null) => void
+  onSubmit: (input: DocInput, versionOf: ArchiveDoc | null, rationale: string) => void
   /** נקרא כשמודבק כרטיס שמכיל שם קובץ מקורי (לבדיקת התאמה לקובץ שנבחר) */
   onCardOriginalName?: (name: string | null) => void
 }
@@ -32,6 +32,7 @@ export default function DocForm(p: Props) {
   const [unresolved, setUnresolved] = useState<Unresolved[]>([])
   const [versionQuery, setVersionQuery] = useState('')
   const [errors, setErrors] = useState<string[]>([])
+  const [rationale, setRationale] = useState('')
 
   const candidates = useMemo(() => docs.filter((d) => d.id !== p.excludeId && !d.archived), [docs, p.excludeId])
   const set = <K extends keyof DocInput>(k: K, v: DocInput[K]) => setInput((s) => ({ ...s, [k]: v }))
@@ -40,6 +41,7 @@ export default function DocForm(p: Props) {
     try {
       const parsed = parseCard(cardText, tax)
       setInput((s) => ({ ...parsed.input, links: s.links }))
+      setRationale(parsed.rationale)
       p.onCardOriginalName?.(parsed.originalName)
       // התאמת קישורים לפי כותרת
       const auto: DocLink[] = []
@@ -78,10 +80,13 @@ export default function DocForm(p: Props) {
     const errs = validateInput(input, tax)
     if (unresolved.length) errs.push('יש קישורים מהכרטיס שעדיין לא אושרו או נדחו')
     setErrors(errs)
-    if (!errs.length) p.onSubmit(input, versionOf)
+    if (!errs.length) p.onSubmit(input, versionOf, rationale.trim())
   }
 
-  const docTitle = (id: string) => docs.find((d) => d.id === id)?.title ?? '(מסמך לא זמין)'
+  const docTitle = (id: string) => {
+    const d = docs.find((x) => x.id === id)
+    return d ? `${docCode(d.seq)} ${d.title}` : '(מסמך לא זמין)'
+  }
   const versionOptions = versionQuery ? bestMatches(versionQuery, candidates.filter((d) => d.isCurrent), 8, 0.1) : []
 
   return (
@@ -100,7 +105,7 @@ export default function DocForm(p: Props) {
             <div className="row" style={{ marginTop: '.4em' }}>
               <select value={u.chosen} onChange={(e) => setUnresolved(unresolved.map((x, j) => (j === i ? { ...x, chosen: e.target.value } : x)))} style={{ maxWidth: 480 }}>
                 <option value="">— אין התאמה —</option>
-                {u.options.map((o) => <option key={o.doc.id} value={o.doc.id}>{o.doc.title} ({Math.round(o.score * 100)}%)</option>)}
+                {u.options.map((o) => <option key={o.doc.id} value={o.doc.id}>{docCode(o.doc.seq)} {o.doc.title} ({Math.round(o.score * 100)}%)</option>)}
               </select>
               <button type="button" onClick={() => confirmUnresolved(i)} disabled={!u.chosen}>אישור</button>
               <button type="button" onClick={() => setUnresolved(unresolved.filter((_, j) => j !== i))}>דילוג</button>
@@ -124,7 +129,15 @@ export default function DocForm(p: Props) {
                 <option key={f.key} value={f.key}>{f.key.replace('-', '.')} {f.label}</option>
               ))}
             </select>
-            {input.folder && <div className="hint">{tax.folders.find((f) => f.key === input.folder)?.hint}</div>}
+            {input.folder && (() => {
+              const fo = tax.folders.find((f) => f.key === input.folder)
+              return (
+                <div className="hint">
+                  <b>כולל:</b> {fo?.hint}
+                  {fo?.exclude && <><br /><b>לא כולל:</b> {fo.exclude}</>}
+                </div>
+              )
+            })()}
           </div>
           {SINGLE_DIMS.map((dim) => {
             const def = tax.dimensions[dim]
@@ -160,6 +173,10 @@ export default function DocForm(p: Props) {
           <textarea id="summary" value={input.summary} onChange={(e) => set('summary', e.target.value)} maxLength={3000} />
         </div>
         <div className="grid2">
+          <div className="field">
+            <label htmlFor="author">מחבר/ת <span className="hint">(מי כתב את המסמך, לא מי מעלה אותו)</span></label>
+            <input id="author" value={input.author} onChange={(e) => set('author', e.target.value)} maxLength={200} />
+          </div>
           <div className="field">
             <label htmlFor="versionLabel">תווית גרסה <span className="hint">(למשל V2, טיוטה ב', מתוקן)</span></label>
             <input id="versionLabel" value={input.versionLabel} onChange={(e) => set('versionLabel', e.target.value)} maxLength={40} />
@@ -202,6 +219,12 @@ export default function DocForm(p: Props) {
       )}
 
       <LinksEditor links={input.links} onChange={(l) => set('links', l)} candidates={candidates} docTitle={docTitle} />
+
+      <div className="card">
+        <h2>נימוק התיוק</h2>
+        <p className="hint">למה המסמך מתויק כך. נשמר ביומן ההיסטוריה של המסמך, כדי שכל אחד יוכל לראות בהמשך על סמך מה הוחלט. כשמדביקים כרטיס, הנימוק של הסקיל מופיע כאן וניתן לתקן אותו.</p>
+        <textarea value={rationale} onChange={(e) => setRationale(e.target.value)} maxLength={1000} rows={3} placeholder="למשל: מסמך של משרד הפנים (כתוב בעמוד השער) ← ספריית ידע / ממשלה ורגולציה" />
+      </div>
 
       {errors.length > 0 && <div className="alert error">{'יש לתקן:\n• ' + errors.join('\n• ')}</div>}
       <div className="row">
