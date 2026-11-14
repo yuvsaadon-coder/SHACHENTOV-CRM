@@ -1,0 +1,137 @@
+import { useEffect, useState } from 'react'
+import { onAuthStateChanged, type User } from 'firebase/auth'
+import { auth, devSignIn, isConfigured, logout, microsoftEnabled, signInGoogle, signInMicrosoft, useEmulators } from './lib/firebase.ts'
+import { loadMyUser, subscribeDocs, subscribeTaxonomy } from './lib/db.ts'
+import { canEdit, type AppUser, type ArchiveDoc } from './lib/model.ts'
+import type { Taxonomy } from './lib/taxonomy.ts'
+import { AppCtx, errMsg, useRoute } from './context.ts'
+import ArchivePage from './pages/ArchivePage.tsx'
+import DocPage from './pages/DocPage.tsx'
+import UploadPage from './pages/UploadPage.tsx'
+import EditPage from './pages/EditPage.tsx'
+import AdminPage from './pages/AdminPage.tsx'
+
+type Phase =
+  | { kind: 'loading' }
+  | { kind: 'signed-out' }
+  | { kind: 'no-access'; email: string }
+  | { kind: 'ready'; user: AppUser }
+
+export default function App() {
+  const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!isConfigured) return
+    return onAuthStateChanged(auth, async (u: User | null) => {
+      setError('')
+      if (!u?.email) return setPhase({ kind: 'signed-out' })
+      try {
+        const me = await loadMyUser(u.email)
+        if (!me || !me.active) return setPhase({ kind: 'no-access', email: u.email })
+        setPhase({ kind: 'ready', user: me })
+      } catch (e) {
+        // אם אין מסמך משתמש, הכללים לא מתירים אפילו לקרוא אותו בחלק מהמקרים
+        setPhase({ kind: 'no-access', email: u.email })
+        console.warn(e)
+      }
+    })
+  }, [])
+
+  if (!isConfigured)
+    return (
+      <div className="center">
+        <div className="card login">
+          <h1>ארכיון אשכולות</h1>
+          <p>האפליקציה עדיין לא מחוברת לפרויקט Firebase. יש להגדיר את קובץ <code>.env.local</code> לפי ההוראות ב-README.</p>
+        </div>
+      </div>
+    )
+
+  if (phase.kind === 'loading') return <div className="center muted">טוען…</div>
+
+  if (phase.kind === 'signed-out' || phase.kind === 'no-access')
+    return (
+      <div className="center">
+        <div className="card login">
+          <h1>ארכיון אשכולות העשור הבא</h1>
+          <p className="muted">מערכת פנימית לתיוק החומרים המקצועיים של התוכנית.</p>
+          {error && <div className="alert error">{error}</div>}
+          {phase.kind === 'no-access' ? (
+            <>
+              <div className="alert warn">
+                החשבון {phase.email} אינו מורשה לגשת לארכיון. בקשו ממנהל/ת הארכיון להוסיף אתכם, או התחברו עם חשבון אחר.
+              </div>
+              <button onClick={() => logout()}>התנתקות</button>
+            </>
+          ) : (
+            <>
+              <button className="primary" onClick={() => signInGoogle().catch((e) => setError(errMsg(e)))}>כניסה עם Google</button>
+              {microsoftEnabled && <button onClick={() => signInMicrosoft().catch((e) => setError(errMsg(e)))}>כניסה עם Microsoft</button>}
+              {useEmulators && <DevLogin onError={setError} />}
+            </>
+          )}
+        </div>
+      </div>
+    )
+
+  return <Ready user={phase.user} />
+}
+
+function Ready({ user }: { user: AppUser }) {
+  const [tax, setTax] = useState<Taxonomy | null | undefined>(undefined)
+  const [docs, setDocs] = useState<ArchiveDoc[] | null>(null)
+  const [error, setError] = useState('')
+  const route = useRoute()
+
+  useEffect(() => subscribeTaxonomy(setTax, (e) => setError(errMsg(e))), [])
+  useEffect(() => subscribeDocs(user.role, setDocs, (e) => setError(errMsg(e))), [user.role])
+
+  if (error) return <div className="center"><div className="alert error">{error}</div></div>
+  if (tax === undefined || docs === null) return <div className="center muted">טוען את הארכיון…</div>
+  if (tax === null)
+    return <div className="center"><div className="alert warn">מבנה התיוק עדיין לא נזרע. יש להריץ את סקריפט ההתקנה (README).</div></div>
+
+  const [page, arg] = route.path
+  let content
+  if (page === 'doc' && arg) content = <DocPage id={arg} />
+  else if (page === 'upload' && canEdit(user.role)) content = <UploadPage versionOfId={route.params.get('versionOf')} />
+  else if (page === 'edit' && arg && canEdit(user.role)) content = <EditPage id={arg} />
+  else if (page === 'admin' && user.role === 'admin') content = <AdminPage />
+  else content = <ArchivePage />
+
+  const nav = (hash: string, label: string, active: boolean) => (
+    <a href={hash} className={active ? 'active' : ''}>{label}</a>
+  )
+
+  return (
+    <AppCtx.Provider value={{ user, tax, docs }}>
+      <header className="topbar">
+        <span className="brand">ארכיון אשכולות העשור הבא</span>
+        <nav>
+          {nav('#/', 'ארכיון', !page || page === 'doc')}
+          {canEdit(user.role) && nav('#/upload', 'העלאה', page === 'upload')}
+          {user.role === 'admin' && nav('#/admin', 'ניהול', page === 'admin')}
+        </nav>
+        <span className="who">
+          {user.email} · {user.role === 'admin' ? 'מנהל/ת' : user.role === 'editor' ? 'עורך/ת' : 'צפייה'}
+          <button onClick={() => logout()}>יציאה</button>
+        </span>
+      </header>
+      <main>{content}</main>
+    </AppCtx.Provider>
+  )
+}
+
+function DevLogin({ onError }: { onError: (m: string) => void }) {
+  const [email, setEmail] = useState('admin@x.org')
+  return (
+    <div className="alert warn" style={{ marginTop: '1em' }}>
+      מצב פיתוח (אמולטור)
+      <div className="row" style={{ marginTop: '.4em' }}>
+        <input dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="dev email" />
+        <button onClick={() => devSignIn(email).catch((e) => onError(errMsg(e)))}>כניסת פיתוח</button>
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,12 @@
+node_modules/
+app/dist/
+dist/
+.env.local
+.env.*.local
+.firebaserc
+*-debug.log
+*.log
+# מפתחות חשבון שירות - לעולם לא בריפו
+*service-account*.json
+*-sa.json
+serviceAccountKey.json

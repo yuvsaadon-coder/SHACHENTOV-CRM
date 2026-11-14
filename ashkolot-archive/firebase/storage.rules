@@ -1,0 +1,62 @@
+rules_version = '2';
+
+// ארכיון אשכולות העשור הבא - כללי אבטחה של Storage
+// - קבצים נשמרים בנתיב files/{docId}/{fileName}.
+// - העלאה: רק editor/admin, רק סוגי קבצים מותרים, עד 100MB, ורק למסמך שעדיין לא נוצר (הקובץ עולה לפני רשומת המסמך).
+// - אין דריסה של קובץ קיים. גרסה חדשה = מסמך חדש.
+// - קריאה: משתמש פעיל; קובץ של מסמך "לא להפצה" רק ל-editor/admin.
+// - מחיקה: רק admin.
+// דורש הרשאה לגישה מ-Storage ל-Firestore (Firebase מבקש אותה בפריסה הראשונה של הכללים).
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null
+        && request.auth.token.email is string
+        && request.auth.token.firebase.sign_in_provider in ['google.com', 'microsoft.com']
+        && (request.auth.token.email_verified == true
+            || request.auth.token.firebase.sign_in_provider == 'microsoft.com');
+    }
+    function myEmail() { return request.auth.token.email.lower(); }
+    function userPath() { return /databases/(default)/documents/users/$(myEmail()); }
+    function isActiveUser() {
+      return signedIn() && firestore.exists(userPath()) && firestore.get(userPath()).data.active == true;
+    }
+    function isEditor() { return isActiveUser() && firestore.get(userPath()).data.role in ['editor', 'admin']; }
+    function isAdmin() { return isActiveUser() && firestore.get(userPath()).data.role == 'admin'; }
+    function docPath(docId) { return /databases/(default)/documents/documents/$(docId); }
+
+    match /files/{docId}/{fileName} {
+      allow read: if isActiveUser()
+        && (isEditor() || (firestore.exists(docPath(docId)) && firestore.get(docPath(docId)).data.restricted == false));
+
+      allow create: if isEditor()
+        && request.resource.size > 0
+        && request.resource.size <= 100 * 1024 * 1024
+        && request.resource.contentType in [
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.ms-powerpoint',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'text/csv',
+          'text/plain',
+          'image/png',
+          'image/jpeg'
+        ]
+        && request.resource.metadata.uploadedBy == myEmail()
+        && !firestore.exists(docPath(docId));
+
+      // דריסת קובץ קיים היא update ונחסמת. בנוסף, אחרי שרשומת המסמך נוצרה אי אפשר להעלות לנתיב שלו בכלל.
+      // (אמולטור Storage מתייחס לדריסה כ-create - לכן בבדיקות נבדקת רק החסימה אחרי יצירת המסמך)
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
