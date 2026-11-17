@@ -114,13 +114,13 @@ export function CoordinatorPortal() {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex-1 flex flex-col items-center gap-0.5 py-2 text-xs transition-colors ${
+              `flex-1 flex flex-col items-center gap-0.5 py-1.5 transition-colors ${
                 isActive ? 'text-[#189A9F]' : 'text-gray-500'
               }`
             }
           >
-            <span className="text-xl leading-none">{item.icon}</span>
-            <span>{item.label}</span>
+            <span className="text-lg leading-none">{item.icon}</span>
+            <span className="text-[10px]">{item.label}</span>
           </NavLink>
         ))}
       </nav>

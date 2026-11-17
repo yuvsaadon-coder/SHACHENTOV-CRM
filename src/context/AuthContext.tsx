@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, type User } from 'firebase/auth'
+import { onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signInWithCustomToken, GoogleAuthProvider, signOut, type User } from 'firebase/auth'
 import { doc, getDoc, onSnapshot } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase'
 import type { AccessLevel, AppUser, Domain, StoredOrgRole } from '../types'
@@ -116,13 +116,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async () => {
     setAuthError('')
     const provider = new GoogleAuthProvider()
+
+    // 1. Google popup → Firebase issues an ID token for the Google UID
     const result = await signInWithPopup(auth, provider)
-    // Only people already in the directory may come in with Google.
-    const snap = await getDoc(doc(db, 'users', result.user.uid))
-    if (!snap.exists()) {
+    let idToken: string
+    try {
+      idToken = await result.user.getIdToken()
+    } finally {
+      // Sign out the wrong-UID session immediately — we'll re-sign in below
       await signOut(auth)
-      throw new Error('המשתמש אינו מורשה למערכת. פנה למנהל המערכת.')
     }
+
+    // 2. Exchange for a custom token that maps to the EXISTING users/{uid} record
+    const res = await fetch('/.netlify/functions/google-signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    })
+    const data = (await res.json()) as { token?: string; error?: string }
+    if (!res.ok || !data.token) {
+      throw new Error(data.error ?? 'שגיאה בכניסה עם Google')
+    }
+
+    // 3. Sign in with the correct UID
+    await signInWithCustomToken(auth, data.token)
   }
 
   const logOut = async () => {
