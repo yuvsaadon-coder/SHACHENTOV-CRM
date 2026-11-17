@@ -128,3 +128,16 @@ export async function ensureLogin(personId: string, password?: string): Promise<
   if (!res.ok || !data.password) throw new Error(data.error ?? 'שגיאה בהגדרת הכניסה למערכת')
   return data.password
 }
+
+/** Permanently delete a person: removes from Firestore, Auth, and cleans up role holders. */
+export async function deletePerson(personId: string): Promise<void> {
+  const token = await auth.currentUser?.getIdToken()
+  if (!token) throw new Error('לא מחובר — התחבר מחדש ונסה שוב')
+  const res = await fetch('/.netlify/functions/admin-users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ action: 'delete', personId }),
+  })
+  const data = await res.json().catch(() => ({})) as { deleted?: boolean; error?: string }
+  if (!res.ok) throw new Error(data.error ?? 'שגיאה במחיקת המשתמש')
+}

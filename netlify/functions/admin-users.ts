@@ -58,9 +58,38 @@ export const handler: Handler = async (event) => {
     return fail(cors, 403, 'רק מנהל/ת מערכת רשאי/ת לנהל כניסות וסיסמאות.')
   }
 
-  const { personId, password } = JSON.parse(event.body ?? '{}') as { personId?: string; password?: string }
+  const { action, personId, password } = JSON.parse(event.body ?? '{}') as { action?: string; personId?: string; password?: string }
   if (!personId) return fail(cors, 400, 'חסר מזהה אדם.')
 
+  // --- DELETE action ---
+  if (action === 'delete') {
+    if (personId === callerUid) return fail(cors, 400, 'לא ניתן למחוק את עצמך.')
+
+    const personSnap = await db.collection('users').doc(personId).get()
+    if (!personSnap.exists) return fail(cors, 404, 'האדם לא נמצא.')
+
+    // Remove as holder from any roles
+    const rolesSnap = await db.collection('roles').where('holderUid', '==', personId).get()
+    const batch = db.batch()
+    for (const roleDoc of rolesSnap.docs) {
+      batch.update(roleDoc.ref, {
+        holderUid: FieldValue.delete(),
+        holderName: FieldValue.delete(),
+        status: 'vacant',
+        updatedAt: FieldValue.serverTimestamp(),
+      })
+    }
+    batch.delete(db.collection('users').doc(personId))
+    batch.delete(db.collection('userSecrets').doc(personId))
+    await batch.commit()
+
+    // Delete from Firebase Auth (best-effort — no Auth account for 'none'/'coordinator' users)
+    try { await auth.deleteUser(personId) } catch { /* ignore auth/user-not-found */ }
+
+    return { statusCode: 200, headers: jsonHeaders(cors), body: JSON.stringify({ deleted: true }) }
+  }
+
+  // --- ENSURE LOGIN action (default) ---
   const personSnap = await db.collection('users').doc(personId).get()
   if (!personSnap.exists) return fail(cors, 404, 'האדם לא נמצא.')
   const person = personSnap.data() as PersonDoc

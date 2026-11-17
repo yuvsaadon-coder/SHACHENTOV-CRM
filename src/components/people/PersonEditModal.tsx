@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useAllBranches } from '../../hooks/useBranch'
 import { useUserSecrets } from '../../hooks/useUserSecrets'
-import { ensureLogin, savePerson, type OrgData } from '../../lib/people'
+import { deletePerson, ensureLogin, savePerson, type OrgData } from '../../lib/people'
 import {
   accessOf, branchIdsFor, digitsOnly, inputFromPerson, isActive, roleLabel, validatePerson,
   type PersonInput,
@@ -56,6 +56,8 @@ export function PersonEditModal({ person, org, presetRoleId, onClose }: Props) {
   const [accessTouched, setAccessTouched] = useState(!!person)
   const [saving, setSaving] = useState(false)
   const [resetting, setResetting] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
@@ -135,6 +137,21 @@ export function PersonEditModal({ person, org, presetRoleId, onClose }: Props) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
       setResetting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!person) return
+    setDeleting(true)
+    setError('')
+    try {
+      await deletePerson(person.uid)
+      toast(`${person.name} נמחק/ה מהמערכת`, 'success')
+      onClose()
+    } catch (e) {
+      setError('שגיאה במחיקה — ' + (e instanceof Error ? e.message : String(e)))
+      setDeleting(false)
+      setConfirmDelete(false)
     }
   }
 
@@ -292,13 +309,35 @@ export function PersonEditModal({ person, org, presetRoleId, onClose }: Props) {
           {error && <div className="text-xs text-red-600 bg-red-50 rounded px-3 py-2" role="alert">{error}</div>}
         </div>
 
-        <div className="px-5 py-4 border-t border-gray-100 flex gap-3">
-          <button onClick={() => void handleSave()} disabled={saving}
+        <div className="px-5 py-4 border-t border-gray-100 flex gap-3 flex-wrap">
+          <button onClick={() => void handleSave()} disabled={saving || deleting}
             className="flex-1 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-40"
             style={{ backgroundColor: '#141348' }}>
             {saving ? 'שומר…' : 'שמור'}
           </button>
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm border border-gray-200 hover:bg-gray-50">ביטול</button>
+          <button onClick={onClose} disabled={saving || deleting} className="px-4 py-2 rounded-lg text-sm border border-gray-200 hover:bg-gray-50 disabled:opacity-40">ביטול</button>
+          {isManager && person && !isSelf && (
+            confirmDelete ? (
+              <div className="w-full flex gap-2 items-center bg-red-50 rounded-lg px-3 py-2">
+                <span className="text-sm text-red-700 flex-1">למחוק את {person.name} לצמיתות?</span>
+                <button
+                  onClick={() => void handleDelete()}
+                  disabled={deleting}
+                  className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-40"
+                >
+                  {deleting ? 'מוחק…' : 'אשר מחיקה'}
+                </button>
+                <button onClick={() => setConfirmDelete(false)} disabled={deleting} className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm hover:bg-gray-50 disabled:opacity-40">ביטול</button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="px-3 py-2 rounded-lg text-sm text-red-600 border border-red-200 hover:bg-red-50"
+              >
+                מחק
+              </button>
+            )
+          )}
         </div>
       </div>
     </div>
