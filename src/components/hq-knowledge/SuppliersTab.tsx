@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useHQSuppliers, useAddHQSupplier, useUpdateHQSupplier } from '../../hooks/useHQSuppliers'
-import type { HQSupplier } from '../../types'
+import type { HQSupplier, Contact } from '../../types'
 import { useAuth } from '../../context/AuthContext'
+import { useContacts } from '../../hooks/useContacts'
 
 interface FormState {
   name: string
@@ -10,19 +11,21 @@ interface FormState {
   contactName: string
   phone: string
   email: string
+  contactIds: string[]
   notes: string
 }
 
 function emptyForm(): FormState {
-  return { name: '', categories: '', status: 'active', contactName: '', phone: '', email: '', notes: '' }
+  return { name: '', categories: '', status: 'active', contactName: '', phone: '', email: '', contactIds: [], notes: '' }
 }
 
-function SupplierForm({ initial, onSave, onClose }: { initial?: HQSupplier; onSave: (form: FormState) => Promise<void>; onClose: () => void }) {
+function SupplierForm({ initial, onSave, onClose, allContacts }: { initial?: HQSupplier; onSave: (form: FormState) => Promise<void>; onClose: () => void; allContacts: Contact[] }) {
   const [form, setForm] = useState<FormState>(
     initial
-      ? { name: initial.name, categories: initial.categories.join(', '), status: initial.status, contactName: initial.contactName ?? '', phone: initial.phone ?? '', email: initial.email ?? '', notes: initial.notes ?? '' }
+      ? { name: initial.name, categories: initial.categories.join(', '), status: initial.status, contactName: initial.contactName ?? '', phone: initial.phone ?? '', email: initial.email ?? '', contactIds: initial.contactIds ?? [], notes: initial.notes ?? '' }
       : emptyForm()
   )
+  const [contactSearch, setContactSearch] = useState('')
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
 
@@ -79,6 +82,53 @@ function SupplierForm({ initial, onSave, onClose }: { initial?: HQSupplier; onSa
           <input className="border border-gray-200 rounded-lg px-3 py-2 text-sm" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} dir="ltr" />
         </div>
 
+        {/* Linked contacts */}
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-gray-700">אנשי קשר מקושרים</label>
+          {form.contactIds.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-1">
+              {form.contactIds.map((cid) => {
+                const c = allContacts.find((x) => x.id === cid)
+                if (!c) return null
+                return (
+                  <span key={cid} className="inline-flex items-center gap-1.5 text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full border border-indigo-100">
+                    👤 {c.name}{c.organization ? ` (${c.organization})` : ''}
+                    <button type="button" onClick={() => setForm((f) => ({ ...f, contactIds: f.contactIds.filter((x) => x !== cid) }))} className="text-indigo-400 hover:text-red-500 font-bold leading-none">×</button>
+                  </span>
+                )
+              })}
+            </div>
+          )}
+          <input
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
+            placeholder="חיפוש איש קשר..."
+            value={contactSearch}
+            onChange={(e) => setContactSearch(e.target.value)}
+          />
+          {contactSearch.trim() && (
+            <div className="border border-gray-200 rounded-lg overflow-hidden max-h-36 overflow-y-auto">
+              {allContacts
+                .filter((c) => !form.contactIds.includes(c.id) && (c.name.includes(contactSearch) || (c.organization ?? '').includes(contactSearch) || (c.email ?? '').includes(contactSearch)))
+                .slice(0, 8)
+                .map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => { setForm((f) => ({ ...f, contactIds: [...f.contactIds, c.id] })); setContactSearch('') }}
+                    className="w-full text-right px-3 py-2 text-sm hover:bg-indigo-50 flex items-center gap-2 border-b border-gray-50 last:border-0"
+                  >
+                    <span className="font-medium" style={{ color: '#141348' }}>{c.name}</span>
+                    {c.organization && <span className="text-gray-400 text-xs">— {c.organization}</span>}
+                    {c.email && <span className="text-gray-400 text-xs mr-auto">{c.email}</span>}
+                  </button>
+                ))}
+              {allContacts.filter((c) => !form.contactIds.includes(c.id) && (c.name.includes(contactSearch) || (c.organization ?? '').includes(contactSearch))).length === 0 && (
+                <p className="text-sm text-gray-400 px-3 py-2">לא נמצאו תוצאות</p>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-gray-700">הערות</label>
           <textarea className="border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" rows={3} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
@@ -97,7 +147,7 @@ function SupplierForm({ initial, onSave, onClose }: { initial?: HQSupplier; onSa
   )
 }
 
-function SupplierCard({ supplier: s, isAdmin, onEdit }: { supplier: HQSupplier; isAdmin: boolean; onEdit: (s: HQSupplier) => void }) {
+function SupplierCard({ supplier: s, isAdmin, onEdit, linkedContacts }: { supplier: HQSupplier; isAdmin: boolean; onEdit: (s: HQSupplier) => void; linkedContacts: Contact[] }) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -119,6 +169,9 @@ function SupplierCard({ supplier: s, isAdmin, onEdit }: { supplier: HQSupplier; 
             </div>
           )}
         </div>
+        {linkedContacts.length > 0 && (
+          <span className="text-xs text-indigo-500 shrink-0">👤 {linkedContacts.length}</span>
+        )}
         <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${s.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
           {s.status === 'active' ? 'פעיל' : 'לא פעיל'}
         </span>
@@ -127,11 +180,25 @@ function SupplierCard({ supplier: s, isAdmin, onEdit }: { supplier: HQSupplier; 
 
       {open && (
         <div className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50/50 flex flex-col gap-2">
+          {/* Legacy inline contact fields */}
           {(s.contactName || s.phone || s.email) && (
             <div className="text-sm text-gray-600 flex flex-wrap gap-3">
               {s.contactName && <span>👤 {s.contactName}</span>}
               {s.phone && <span>📞 {s.phone}</span>}
               {s.email && <span>✉️ {s.email}</span>}
+            </div>
+          )}
+          {/* Linked contacts from contacts collection */}
+          {linkedContacts.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">אנשי קשר</span>
+              {linkedContacts.map((c) => (
+                <div key={c.id} className="flex items-center gap-2 text-sm bg-indigo-50 rounded-lg px-3 py-2">
+                  <span className="font-medium" style={{ color: '#141348' }}>{c.name}</span>
+                  {c.email && <a href={`mailto:${c.email}`} className="text-indigo-600 hover:underline text-xs">{c.email}</a>}
+                  {c.phone && <span className="text-gray-500 text-xs">{c.phone}</span>}
+                </div>
+              ))}
             </div>
           )}
           {s.notes && <p className="text-sm text-gray-600 whitespace-pre-wrap">{s.notes}</p>}
@@ -148,6 +215,7 @@ export function SuppliersTab() {
   const { suppliers, loading } = useHQSuppliers()
   const addSupplier = useAddHQSupplier()
   const updateSupplier = useUpdateHQSupplier()
+  const { contacts } = useContacts()
   const { access } = useAuth()
   const isAdmin = access === 'admin' || access === 'hq'
 
@@ -165,6 +233,7 @@ export function SuppliersTab() {
       contactName: form.contactName || undefined,
       phone: form.phone || undefined,
       email: form.email || undefined,
+      contactIds: form.contactIds.length > 0 ? form.contactIds : undefined,
       notes: form.notes || undefined,
       active: true,
       branchIds: [],
@@ -210,9 +279,10 @@ export function SuppliersTab() {
         <div className="text-sm text-gray-400 py-8 text-center">אין ספקים</div>
       ) : (
         <div className="flex flex-col gap-2">
-          {filtered.map((s) => (
-            <SupplierCard key={s.id} supplier={s} isAdmin={isAdmin} onEdit={(s) => { setEditing(s); setShowForm(true) }} />
-          ))}
+          {filtered.map((s) => {
+            const linked = (s.contactIds ?? []).map((id) => contacts.find((c) => c.id === id)).filter(Boolean) as import('../../types').Contact[]
+            return <SupplierCard key={s.id} supplier={s} isAdmin={isAdmin} onEdit={(s) => { setEditing(s); setShowForm(true) }} linkedContacts={linked} />
+          })}
         </div>
       )}
 
@@ -221,6 +291,7 @@ export function SuppliersTab() {
           initial={editing ?? undefined}
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditing(null) }}
+          allContacts={contacts}
         />
       )}
     </div>
