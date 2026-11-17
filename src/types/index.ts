@@ -536,6 +536,7 @@ export interface HQSupplier {
   contactName?: string
   phone?: string
   email?: string
+  contactIds?: string[]
   notes?: string
   active: boolean
   createdBy: string
