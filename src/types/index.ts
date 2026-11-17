@@ -355,3 +355,191 @@ export interface HQKnowledgeItem {
   createdAt: Timestamp
   updatedAt: Timestamp
 }
+
+// ─── Finance Documents ───────────────────────────────────────────────────────
+
+export type FinanceDocType = 'audited' | 'narrative' | 'annual_budget' | 'execution_report' | 'grant_report' | 'other'
+export type FinanceDocStatus = 'draft' | 'final' | 'submitted'
+
+export const FINANCE_DOC_TYPE_LABELS: Record<FinanceDocType, string> = {
+  audited: 'דו"ח מבוקר',
+  narrative: 'דוח מילולי',
+  annual_budget: 'תקציב שנתי',
+  execution_report: 'תקציב מול ביצוע',
+  grant_report: 'דיווח לקרן',
+  other: 'אחר',
+}
+export const FINANCE_DOC_STATUS_LABELS: Record<FinanceDocStatus, string> = {
+  draft: 'טיוטה',
+  final: 'סופי',
+  submitted: 'הוגש',
+}
+
+export interface HQFinanceDoc {
+  id: string
+  title: string
+  docType: FinanceDocType
+  period: string
+  relatedContactId?: string
+  status: FinanceDocStatus
+  fileUrl?: string
+  fileName?: string
+  notes?: string
+  active: boolean
+  createdBy: string
+  updatedBy?: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+// ─── Official Documents ──────────────────────────────────────────────────────
+
+export type OfficialDocSubtype = 'registration' | 'section46' | 'approval'
+
+export const OFFICIAL_DOC_LABELS: Record<OfficialDocSubtype, string> = {
+  registration: 'תעודת רישום עמותה',
+  section46: 'אישור סעיף 46',
+  approval: 'אישור ניהול תקין',
+}
+
+export interface HQOfficialDoc {
+  id: string
+  subtype: OfficialDocSubtype
+  year?: number
+  validUntil?: Timestamp
+  registrationNumber?: string
+  fileUrl?: string
+  fileName?: string
+  notes?: string
+  active: boolean
+  createdBy: string
+  updatedBy?: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+// ─── Drive Links ─────────────────────────────────────────────────────────────
+
+export type DriveItemType = 'document' | 'sheet' | 'folder'
+export type DriveLinkCategory = 'budget' | 'finance' | 'other'
+
+export const DRIVE_TYPE_LABELS: Record<DriveItemType, string> = {
+  document: 'מסמך',
+  sheet: 'גיליון',
+  folder: 'תיקייה',
+}
+export const DRIVE_CAT_LABELS: Record<DriveLinkCategory, string> = {
+  budget: 'תקציב',
+  finance: 'כספים',
+  other: 'אחר',
+}
+
+export interface HQDriveLink {
+  id: string
+  name: string
+  url: string
+  driveType: DriveItemType
+  category: DriveLinkCategory
+  year?: number
+  notes?: string
+  active: boolean
+  createdBy: string
+  updatedBy?: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+// ─── Partners ────────────────────────────────────────────────────────────────
+
+export type PartnerType = 'payment' | 'volunteering' | 'partner'
+export type PartnerStatus = 'active' | 'pilot' | 'potential' | 'inactive'
+export type PartnerCategory = 'technology' | 'finance' | 'volunteering' | 'operations' | 'food_baskets'
+export type PaymentMethod = 'credit' | 'standing_order' | 'transfer' | 'cash' | 'check' | 'bit' | 'foreign'
+export type ReceiptGeneration = 'automatic' | 'manual' | 'via_linked'
+export type PartnerUsedFor = 'donations' | 'services' | 'products'
+
+export const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
+  payment: 'מערכת סליקה וקבלות',
+  volunteering: 'פלטפורמת התנדבות',
+  partner: 'שותף',
+}
+export const PARTNER_STATUS_LABELS: Record<PartnerStatus, string> = {
+  active: 'פעיל',
+  pilot: 'בפיילוט',
+  potential: 'פוטנציאלי',
+  inactive: 'לא פעיל',
+}
+export const PARTNER_CAT_LABELS: Record<PartnerCategory, string> = {
+  technology: 'טכנולוגיה',
+  finance: 'כספים',
+  volunteering: 'התנדבות',
+  operations: 'תפעול',
+  food_baskets: 'סלי מזון',
+}
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  credit: 'אשראי',
+  standing_order: 'הוראת קבע',
+  transfer: 'העברה',
+  cash: 'מזומן',
+  check: "צ'ק",
+  bit: 'ביט',
+  foreign: 'מט"ח',
+}
+export const RECEIPT_GEN_LABELS: Record<ReceiptGeneration, string> = {
+  automatic: 'אוטומטית',
+  manual: 'ידנית במערכת',
+  via_linked: 'דרך מערכת מקושרת',
+}
+export const PARTNER_USED_FOR_LABELS: Record<PartnerUsedFor, string> = {
+  donations: 'תרומות',
+  services: 'מכירת שירותים',
+  products: 'מכירת מוצרים',
+}
+
+export interface PartnerStatusChange {
+  status: PartnerStatus
+  changedBy: string
+  changedAt: Timestamp
+  previous?: PartnerStatus
+}
+
+export interface HQPartner {
+  id: string
+  name: string
+  partnerType: PartnerType
+  categories: PartnerCategory[]
+  status: PartnerStatus
+  websiteUrl?: string
+  adminUrl?: string
+  internalContactId?: string
+  externalContactId?: string
+  notes?: string
+  paymentMethods?: PaymentMethod[]
+  receiptGeneration?: ReceiptGeneration
+  usedFor?: PartnerUsedFor[]
+  statusHistory?: PartnerStatusChange[]
+  active: boolean
+  createdBy: string
+  updatedBy?: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+// ─── Suppliers ───────────────────────────────────────────────────────────────
+
+export interface HQSupplier {
+  id: string
+  name: string
+  categories: string[]
+  branchIds: string[]
+  status: 'active' | 'inactive'
+  contactName?: string
+  phone?: string
+  email?: string
+  notes?: string
+  active: boolean
+  createdBy: string
+  updatedBy?: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}

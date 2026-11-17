@@ -74,6 +74,13 @@ service cloud.firestore {
       allow write: if isCoordinator() || isHQ();
     }
 
+    // ── HQ Knowledge Base (new collections) ─────────────────────────────────
+    match /hq_finance/{id}       { allow read: if isHQ(); allow write: if isHQ(); }
+    match /hq_official_docs/{id} { allow read: if isHQ(); allow write: if isHQ(); }
+    match /hq_drive_links/{id}   { allow read: if isHQ(); allow write: if isHQ(); }
+    match /hq_partners/{id}      { allow read: if isHQ(); allow write: if isHQ(); }
+    match /hq_suppliers/{id}     { allow read: if isHQ(); allow write: if isHQ(); }
+
     // ── Quarterly reports ────────────────────────────────────────────────────
     // HQ sees everything (the /reports page). A coordinator reads the reports of
     // branches they are attached to — without this, "הדיווחים שלי" in the portal

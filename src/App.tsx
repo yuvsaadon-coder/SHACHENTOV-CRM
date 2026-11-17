@@ -24,7 +24,7 @@ import { AccountPage } from './pages/AccountPage'
 import { BranchesPage } from './pages/BranchesPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { KnowledgeLibraryPage } from './pages/KnowledgeLibraryPage'
-import { HQKnowledgePage } from './pages/HQKnowledgePage'
+import { HQKnowledgeShell } from './pages/HQKnowledgeShell'
 import { HQChatPage } from './pages/HQChatPage'
 import { Spinner } from './components/ui/Spinner'
 import { ToastProvider } from './context/ToastContext'
@@ -101,7 +101,7 @@ export default function App() {
             <Route path="branches" element={<BranchesPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="knowledge" element={<KnowledgeLibraryPage />} />
-            <Route path="hq-knowledge" element={<HQKnowledgePage />} />
+            <Route path="hq-knowledge" element={<HQKnowledgeShell />} />
             <Route path="hq-chat" element={<HQChatPage />} />
             <Route path="admin/hierarchy" element={<HierarchySetupPage />} />
             <Route path="admin/branches" element={<BranchesAdminPage />} />
