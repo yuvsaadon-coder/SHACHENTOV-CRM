@@ -39,7 +39,7 @@ export function VolunteerPage() {
         if (json.error) { setErrorMsg(json.error); setView('error'); return }
         setData(json as PageData)
         // Pre-select already-committed shifts
-        const mine = new Set(json.shifts.filter((s: ShiftData) => s.isMine).map((s: ShiftData) => s.id))
+        const mine = new Set<string>(json.shifts.filter((s: ShiftData) => s.isMine).map((s: ShiftData) => s.id))
         setSelected(mine)
         setView('ready')
       })

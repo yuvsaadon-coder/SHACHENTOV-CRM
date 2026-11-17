@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   collection, query, where, orderBy, onSnapshot,
-  addDoc, updateDoc, doc, serverTimestamp, writeBatch,
+  updateDoc, doc, serverTimestamp, writeBatch,
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import type { VolunteerMember } from '../types'

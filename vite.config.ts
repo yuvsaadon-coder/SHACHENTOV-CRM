@@ -33,6 +33,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,woff}'],
         // Skip large static files that aren't needed offline
         globIgnores: ['**/articles/**', '**/templates/**'],
+        navigateFallbackDenylist: [/^\/\.netlify\//, /^\/__\//],
         runtimeCaching: [
           {
             // Google Fonts — cache aggressively

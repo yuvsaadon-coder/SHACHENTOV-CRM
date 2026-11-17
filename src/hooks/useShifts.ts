@@ -66,8 +66,6 @@ export function useDuplicateMonth(branchId: string) {
     const batch = writeBatch(db)
     for (const s of sourceShifts) {
       const srcDate = new Date(s.date)
-      // Move to same weekday in target month
-      const tgtDate = new Date(ty, tm - 1, srcDate.getDate() + (ty * 12 + tm - (sy * 12 + sm)) * 0)
       // Simple: keep same day-of-month, adjust month/year
       const dateStr = `${ty}-${String(tm).padStart(2,'0')}-${String(srcDate.getDate()).padStart(2,'0')}`
       const ref = doc(collection(db, 'shifts'))
