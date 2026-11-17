@@ -70,8 +70,28 @@ export const handler: Handler = async (event) => {
   // the positions they hold, kept on their person record.
   const db = getFirestore()
   const callerDoc = await db.collection('users').doc(uid).get()
-  const caller = (callerDoc.data() ?? {}) as { active?: boolean; branchIds?: string[] }
-  if (!callerDoc.exists || caller.active === false || !(caller.branchIds ?? []).includes(branchId)) {
+  const caller = (callerDoc.data() ?? {}) as { active?: boolean; role?: string; branchIds?: string[] }
+  if (!callerDoc.exists || caller.active === false) {
+    return { statusCode: 403, headers: cors, body: JSON.stringify({ error: 'Not authorized' }) }
+  }
+
+  // Check branch access: first try branchIds on the user doc (fast path),
+  // then fall back to looking up the user's roles (branchIds may not be set on older accounts).
+  let authorized = (caller.branchIds ?? []).includes(branchId)
+  if (!authorized && caller.role === 'coordinator') {
+    const rolesSnap = await db.collection('roles')
+      .where('holders', 'array-contains', uid)
+      .get()
+    const derivedBranchIds = rolesSnap.docs
+      .map((d) => (d.data() as { portalBranchId?: string }).portalBranchId)
+      .filter(Boolean) as string[]
+    authorized = derivedBranchIds.includes(branchId)
+    // Backfill branchIds on the user doc so future calls use the fast path
+    if (authorized && derivedBranchIds.length > 0) {
+      await callerDoc.ref.update({ branchIds: derivedBranchIds }).catch(() => null)
+    }
+  }
+  if (!authorized) {
     return { statusCode: 403, headers: cors, body: JSON.stringify({ error: 'Not authorized for this branch' }) }
   }
 
@@ -146,7 +166,7 @@ ${localSection}${globalSection}${researchSection}
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-haiku-5-5',
       max_tokens: 1500,
       system: systemPrompt,
       messages: anthropicMessages,
