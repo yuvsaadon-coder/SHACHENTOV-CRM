@@ -5,6 +5,7 @@ import {
   type HQFinanceDoc, type FinanceDocType, type FinanceDocStatus,
 } from '../../types'
 import { useAuth } from '../../context/AuthContext'
+import { uploadFile, storagePath } from '../../lib/uploadFile'
 
 const DOC_TYPES = Object.entries(FINANCE_DOC_TYPE_LABELS) as [FinanceDocType, string][]
 const DOC_STATUSES = Object.entries(FINANCE_DOC_STATUS_LABELS) as [FinanceDocStatus, string][]
@@ -14,8 +15,6 @@ const STATUS_COLORS: Record<FinanceDocStatus, string> = {
   final: 'bg-green-100 text-green-700',
   submitted: 'bg-blue-100 text-blue-700',
 }
-
-const MAX_DATA_URI_SIZE = 700_000
 
 interface FormState {
   title: string
@@ -88,10 +87,12 @@ function DocForm({
   initial,
   onSave,
   onClose,
+  uid,
 }: {
   initial?: HQFinanceDoc
-  onSave: (form: FormState, file?: File) => Promise<void>
+  onSave: (form: FormState, fileData?: { fileUrl: string; fileName: string }) => Promise<void>
   onClose: () => void
+  uid: string
 }) {
   const [form, setForm] = useState<FormState>(
     initial
@@ -99,6 +100,7 @@ function DocForm({
       : emptyForm()
   )
   const [file, setFile] = useState<File | null>(null)
+  const [uploadPct, setUploadPct] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -106,10 +108,6 @@ function DocForm({
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     if (!f) return
-    if (f.size > MAX_DATA_URI_SIZE) {
-      setErr(`הקובץ גדול מדי (${(f.size / 1024 / 1024).toFixed(1)}MB). לקבצים מעל 700KB נדרש Firebase Storage — ראה הוראות בתיעוד.`)
-      return
-    }
     setErr('')
     setFile(f)
   }
@@ -119,12 +117,23 @@ function DocForm({
     if (!form.title.trim() || !form.period.trim()) { setErr('שדות חובה: כותרת ותקופה'); return }
     setSaving(true)
     try {
-      await onSave(form, file ?? undefined)
+      if (file) {
+        const path = storagePath('hq_finance', uid, file.name)
+        await new Promise<void>((resolve, reject) => {
+          uploadFile(path, file, (p) => {
+            if (!p.done) { setUploadPct(p.progress); return }
+            setUploadPct(null)
+            onSave(form, { fileUrl: p.url, fileName: p.fileName }).then(resolve).catch(reject)
+          })
+        })
+      } else {
+        await onSave(form)
+      }
       onClose()
     } catch {
       setErr('שגיאה בשמירה')
-    } finally {
       setSaving(false)
+      setUploadPct(null)
     }
   }
 
@@ -187,11 +196,19 @@ function DocForm({
           >
             <input ref={fileRef} type="file" accept=".pdf,.xlsx,.xls,.doc,.docx" className="hidden" onChange={handleFile} />
             {file ? (
-              <span className="text-sm text-green-700 font-medium">✓ {file.name}</span>
+              <span className="text-sm text-green-700 font-medium">✓ {file.name} ({(file.size / 1024 / 1024).toFixed(1)}MB)</span>
             ) : (
-              <span className="text-sm text-gray-400">לחץ לבחירת קובץ (עד 700KB)</span>
+              <span className="text-sm text-gray-400">לחץ לבחירת קובץ</span>
             )}
           </div>
+          {uploadPct !== null && (
+            <div className="mt-1">
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full bg-indigo-500 transition-all" style={{ width: `${uploadPct}%` }} />
+              </div>
+              <div className="text-xs text-gray-400 mt-0.5 text-center">{uploadPct}%</div>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-1">
@@ -213,7 +230,7 @@ function DocForm({
             className="px-4 py-2 text-sm rounded-lg text-white font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
             style={{ backgroundColor: '#141348' }}
           >
-            {saving ? 'שומר...' : 'שמור'}
+            {uploadPct !== null ? `מעלה... ${uploadPct}%` : saving ? 'שומר...' : 'שמור'}
           </button>
         </div>
       </form>
@@ -225,7 +242,7 @@ export function FinanceTab() {
   const { docs, loading } = useHQFinance()
   const addDoc = useAddHQFinanceDoc()
   const updateDoc = useUpdateHQFinanceDoc()
-  const { access } = useAuth()
+  const { access, firebaseUser } = useAuth()
   const isAdmin = access === 'admin' || access === 'hq'
 
   const [showForm, setShowForm] = useState(false)
@@ -233,20 +250,7 @@ export function FinanceTab() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
 
-  const readFileAsDataUri = (file: File): Promise<{ fileUrl: string; fileName: string }> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve({ fileUrl: reader.result as string, fileName: file.name })
-      reader.onerror = reject
-      reader.readAsDataURL(file)
-    })
-
-  const handleSave = async (form: FormState, file?: File) => {
-    let fileData: { fileUrl?: string; fileName?: string } = {}
-    if (file) {
-      const { fileUrl, fileName } = await readFileAsDataUri(file)
-      fileData = { fileUrl, fileName }
-    }
+  const handleSave = async (form: FormState, fileData?: { fileUrl: string; fileName: string }) => {
     if (editing) {
       await updateDoc(editing.id, { ...form, ...fileData })
     } else {
@@ -320,6 +324,7 @@ export function FinanceTab() {
           initial={editing ?? undefined}
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditing(null) }}
+          uid={firebaseUser?.uid ?? ''}
         />
       )}
     </div>

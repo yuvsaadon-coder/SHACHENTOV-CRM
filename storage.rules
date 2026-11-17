@@ -1,13 +1,25 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    match /hq_knowledge/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+
+    // Helper: signed-in user with an active /users doc and a non-coordinator role
+    function isHQ() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('active', true) != false
+        && !(firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('role', '') in ['', 'coordinator', 'none']);
     }
-    match /knowledge_articles/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+
+    // Finance documents: any HQ member may read/write
+    match /hq_finance/{uid}/{fileName} {
+      allow read:  if isHQ();
+      allow write: if isHQ() && request.auth.uid == uid;
+    }
+
+    // Official documents: any HQ member may read/write
+    match /hq_official_docs/{uid}/{fileName} {
+      allow read:  if isHQ();
+      allow write: if isHQ() && request.auth.uid == uid;
     }
   }
 }

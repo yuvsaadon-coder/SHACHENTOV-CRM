@@ -3,10 +3,10 @@ import { Timestamp } from 'firebase/firestore'
 import { useHQOfficialDocs, useAddHQOfficialDoc, useUpdateHQOfficialDoc } from '../../hooks/useHQOfficialDocs'
 import { OFFICIAL_DOC_LABELS, type HQOfficialDoc, type OfficialDocSubtype } from '../../types'
 import { useAuth } from '../../context/AuthContext'
+import { uploadFile, storagePath } from '../../lib/uploadFile'
 
 const SUBTYPES = Object.entries(OFFICIAL_DOC_LABELS) as [OfficialDocSubtype, string][]
 
-const MAX_DATA_URI_SIZE = 700_000
 
 const ALERT_DAYS = 90
 
@@ -83,7 +83,7 @@ interface FormState {
   notes: string
 }
 
-function DocForm({ initial, onSave, onClose }: { initial?: HQOfficialDoc; onSave: (form: FormState, file?: File) => Promise<void>; onClose: () => void }) {
+function DocForm({ initial, onSave, onClose, uid }: { initial?: HQOfficialDoc; onSave: (form: FormState, fileData?: { fileUrl: string; fileName: string }) => Promise<void>; onClose: () => void; uid: string }) {
   const [form, setForm] = useState<FormState>(
     initial
       ? {
@@ -96,6 +96,7 @@ function DocForm({ initial, onSave, onClose }: { initial?: HQOfficialDoc; onSave
       : { subtype: 'approval', year: '', validUntil: '', registrationNumber: '', notes: '' }
   )
   const [file, setFile] = useState<File | null>(null)
+  const [uploadPct, setUploadPct] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -103,16 +104,27 @@ function DocForm({ initial, onSave, onClose }: { initial?: HQOfficialDoc; onSave
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     if (!f) return
-    if (f.size > MAX_DATA_URI_SIZE) { setErr(`הקובץ גדול מדי (${(f.size / 1024 / 1024).toFixed(1)}MB). לקבצים גדולים נדרש Firebase Storage.`); return }
     setErr(''); setFile(f)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    try { await onSave(form, file ?? undefined); onClose() }
-    catch { setErr('שגיאה בשמירה') }
-    finally { setSaving(false) }
+    try {
+      if (file) {
+        const path = storagePath('hq_official_docs', uid, file.name)
+        await new Promise<void>((resolve, reject) => {
+          uploadFile(path, file, (p) => {
+            if (!p.done) { setUploadPct(p.progress); return }
+            setUploadPct(null)
+            onSave(form, { fileUrl: p.url, fileName: p.fileName }).then(resolve).catch(reject)
+          })
+        })
+      } else {
+        await onSave(form)
+      }
+      onClose()
+    } catch { setErr('שגיאה בשמירה'); setSaving(false); setUploadPct(null) }
   }
 
   return (
@@ -154,6 +166,14 @@ function DocForm({ initial, onSave, onClose }: { initial?: HQOfficialDoc; onSave
             <input ref={fileRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleFile} />
             {file ? <span className="text-sm text-green-700 font-medium">✓ {file.name}</span> : <span className="text-sm text-gray-400">לחץ לבחירת קובץ</span>}
           </div>
+          {uploadPct !== null && (
+            <div className="mt-1">
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full bg-indigo-500 transition-all" style={{ width: `${uploadPct}%` }} />
+              </div>
+              <div className="text-xs text-gray-400 mt-0.5 text-center">{uploadPct}%</div>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-1">
@@ -178,26 +198,13 @@ export function OfficialTab() {
   const { docs, loading } = useHQOfficialDocs()
   const addDoc = useAddHQOfficialDoc()
   const updateDoc = useUpdateHQOfficialDoc()
-  const { access } = useAuth()
+  const { access, firebaseUser } = useAuth()
   const isAdmin = access === 'admin' || access === 'hq'
 
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<HQOfficialDoc | null>(null)
 
-  const readFileAsDataUri = (file: File): Promise<{ fileUrl: string; fileName: string }> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve({ fileUrl: reader.result as string, fileName: file.name })
-      reader.onerror = reject
-      reader.readAsDataURL(file)
-    })
-
-  const handleSave = async (form: FormState, file?: File) => {
-    let fileData: { fileUrl?: string; fileName?: string } = {}
-    if (file) {
-      const { fileUrl, fileName } = await readFileAsDataUri(file)
-      fileData = { fileUrl, fileName }
-    }
+  const handleSave = async (form: FormState, fileData?: { fileUrl: string; fileName: string }) => {
     const validUntil = form.validUntil ? Timestamp.fromDate(new Date(form.validUntil)) : undefined
     const year = form.year ? parseInt(form.year) : undefined
     const data = { subtype: form.subtype, year, validUntil, registrationNumber: form.registrationNumber || undefined, notes: form.notes || undefined, ...fileData, active: true }
@@ -253,6 +260,7 @@ export function OfficialTab() {
           initial={editing ?? undefined}
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditing(null) }}
+          uid={firebaseUser?.uid ?? ''}
         />
       )}
     </div>
