@@ -70,7 +70,7 @@ export const handler: Handler = async (event) => {
   // the positions they hold, kept on their person record.
   const db = getFirestore()
   const callerDoc = await db.collection('users').doc(uid).get()
-  const caller = (callerDoc.data() ?? {}) as { active?: boolean; role?: string; branchIds?: string[] }
+  const caller = (callerDoc.data() ?? {}) as { active?: boolean; role?: string; branchIds?: string[]; roleIds?: string[] }
   if (!callerDoc.exists || caller.active === false) {
     return { statusCode: 403, headers: cors, body: JSON.stringify({ error: 'Not authorized' }) }
   }
@@ -78,16 +78,14 @@ export const handler: Handler = async (event) => {
   // Check branch access: first try branchIds on the user doc (fast path),
   // then fall back to looking up the user's roles (branchIds may not be set on older accounts).
   let authorized = (caller.branchIds ?? []).includes(branchId)
-  if (!authorized && caller.role === 'coordinator') {
-    const rolesSnap = await db.collection('roles')
-      .where('holders', 'array-contains', uid)
-      .get()
-    const derivedBranchIds = rolesSnap.docs
-      .map((d) => (d.data() as { portalBranchId?: string }).portalBranchId)
+  if (!authorized) {
+    const roleIds = caller.roleIds ?? []
+    const roleSnaps = await Promise.all(roleIds.map((id) => db.collection('roles').doc(id).get()))
+    const derivedBranchIds = roleSnaps
+      .map((d) => (d.data() as { portalBranchId?: string } | undefined)?.portalBranchId)
       .filter(Boolean) as string[]
     authorized = derivedBranchIds.includes(branchId)
-    // Backfill branchIds on the user doc so future calls use the fast path
-    if (authorized && derivedBranchIds.length > 0) {
+    if (authorized) {
       await callerDoc.ref.update({ branchIds: derivedBranchIds }).catch(() => null)
     }
   }
