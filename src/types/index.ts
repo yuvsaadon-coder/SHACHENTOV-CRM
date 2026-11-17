@@ -309,7 +309,7 @@ export interface ReportQuestion {
   order: number
 }
 
-export type KnowledgeItemType = 'document' | 'link' | 'tip' | 'research_article' | 'file' | 'checklist'
+export type KnowledgeItemType = 'document' | 'link' | 'tip' | 'research_article' | 'file' | 'checklist' | 'template'
 export const KNOWLEDGE_TAGS = ['לוגיסטיקה', 'מתנדבים', 'אוכלוסייה', 'תפעול', 'חפיפה', 'פורמטים', 'אחר'] as const
 export type KnowledgeTag = (typeof KNOWLEDGE_TAGS)[number]
 
