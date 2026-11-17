@@ -114,6 +114,15 @@ export function PortalHome() {
           <span className="text-3xl">📊</span>
           <span className="text-sm font-medium" style={{ color: '#141348' }}>הדיווחים שלי</span>
         </button>
+        <a
+          href="https://forms.gle/3aFj7M15jnbMPh347"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="col-span-2 bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col items-center gap-2 hover:shadow-md transition-shadow text-center"
+        >
+          <span className="text-3xl">💸</span>
+          <span className="text-sm font-medium" style={{ color: '#141348' }}>טופס בקשה להחזר הוצאות</span>
+        </a>
       </div>
 
       {/* My reports */}

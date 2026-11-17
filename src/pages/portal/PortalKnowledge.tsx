@@ -7,7 +7,7 @@ import type { PortalOutletContext } from './CoordinatorPortal'
 import { KNOWLEDGE_TAGS, type KnowledgeItem, type KnowledgeItemType, type KnowledgeTag } from '../../types'
 import { KNOWLEDGE_CATALOG, type CatalogArticle } from '../../data/knowledgeCatalog'
 
-type TabId = 'branch' | 'org' | 'research'
+type TabId = 'branch' | 'org' | 'research' | 'templates'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -229,9 +229,10 @@ const TYPE_OPTIONS: { id: KnowledgeItemType; label: string; icon: string; desc: 
   { id: 'link',      label: 'לינק',        icon: '🔗', desc: 'קישור חיצוני' },
 ]
 
-function KnowledgeModal({ branchId, initialItem, onClose }: {
+function KnowledgeModal({ branchId, initialItem, defaultScope, onClose }: {
   branchId: string
   initialItem?: KnowledgeItem
+  defaultScope?: 'branch' | 'global' | 'template'
   onClose: () => void
 }) {
   const { addItem } = useAddKnowledge()
@@ -245,7 +246,9 @@ function KnowledgeModal({ branchId, initialItem, onClose }: {
   const [content, setContent] = useState(initialItem?.content ?? '')
   const [url, setUrl] = useState(initialItem?.url ?? '')
   const [selectedTags, setSelectedTags] = useState<string[]>(initialItem?.tags ?? [])
-  const [scope, setScope] = useState<'branch' | 'global'>(initialItem?.branchId === 'global' ? 'global' : 'branch')
+  const [scope, setScope] = useState<'branch' | 'global' | 'template'>(
+    initialItem?.type === 'template' ? 'template' : initialItem?.branchId === 'global' ? 'global' : (defaultScope ?? 'branch')
+  )
 
   // File upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -301,7 +304,8 @@ function KnowledgeModal({ branchId, initialItem, onClose }: {
     setSaving(true)
     setError('')
     try {
-      const effectiveBranchId = scope === 'global' ? 'global' : branchId
+      const effectiveBranchId = scope === 'global' ? 'global' : scope === 'template' ? 'global' : branchId
+      const effectiveType: KnowledgeItemType = scope === 'template' ? 'template' : type
       let fileUrl: string | undefined
       let fileName: string | undefined
       let fileSize: number | undefined
@@ -334,7 +338,7 @@ function KnowledgeModal({ branchId, initialItem, onClose }: {
 
       if (isEditMode && initialItem) {
         await updateItem(initialItem.id, {
-          type,
+          type: effectiveType,
           title: title.trim(),
           content: content.trim(),
           url: type === 'link' ? url.trim() || undefined : undefined,
@@ -347,7 +351,7 @@ function KnowledgeModal({ branchId, initialItem, onClose }: {
       } else {
         await addItem({
           branchId: effectiveBranchId,
-          type,
+          type: effectiveType,
           title: title.trim(),
           content: content.trim(),
           url: type === 'link' ? url.trim() || undefined : undefined,
@@ -556,10 +560,10 @@ function KnowledgeModal({ branchId, initialItem, onClose }: {
           {/* Scope */}
           <div>
             <label className="block text-xs text-gray-500 mb-1">שמור כ:</label>
-            <div className="flex gap-2">
-              {([['branch', '📁 ידע סניפי'], ['global', '🌐 כלל-ארגוני']] as const).map(([s, l]) => (
+            <div className="flex gap-2 flex-wrap">
+              {([['branch', '📁 ידע סניפי'], ['global', '🌐 כלל-ארגוני'], ['template', '📐 טמפלייט']] as const).map(([s, l]) => (
                 <button key={s} onClick={() => setScope(s)}
-                  className="flex-1 py-2 rounded-lg text-sm border transition-all"
+                  className="flex-1 py-2 rounded-lg text-sm border transition-all min-w-[90px]"
                   style={{
                     backgroundColor: scope === s ? '#189A9F' : 'white',
                     color: scope === s ? 'white' : '#141348',
@@ -613,11 +617,16 @@ export function PortalKnowledge() {
   )
 
   const orgItems = useMemo(
-    () => items.filter((item) => item.branchId === 'global' && item.type !== 'research_article'),
+    () => items.filter((item) => item.branchId === 'global' && item.type !== 'research_article' && item.type !== 'template'),
     [items]
   )
 
-  const activeItems = tab === 'branch' ? branchItems : orgItems
+  const templateItems = useMemo(
+    () => items.filter((item) => item.type === 'template'),
+    [items]
+  )
+
+  const activeItems = tab === 'branch' ? branchItems : tab === 'templates' ? templateItems : orgItems
 
   const filtered = useMemo(() => {
     if (tab === 'research') {
@@ -628,7 +637,7 @@ export function PortalKnowledge() {
       )
     }
     return activeItems
-      .filter((item) => !activeTag || item.tags.includes(activeTag))
+      .filter((item) => tab !== 'templates' ? (!activeTag || item.tags.includes(activeTag)) : true)
       .filter((item) => {
         if (!search) return true
         const q = search.toLowerCase()
@@ -639,9 +648,10 @@ export function PortalKnowledge() {
   if (!appUser) return null
 
   const TAB_DEFS: { id: TabId; label: string; icon: string; count: number }[] = [
-    { id: 'branch',   label: 'חומרים סניפיים', icon: '📁', count: branchItems.length },
-    { id: 'org',      label: 'כלל-ארגוני',      icon: '🌐', count: orgItems.length },
-    { id: 'research', label: 'חומר מקצועי',      icon: '📚', count: KNOWLEDGE_CATALOG.length },
+    { id: 'branch',    label: 'חומרים סניפיים', icon: '📁', count: branchItems.length },
+    { id: 'org',       label: 'כלל-ארגוני',      icon: '🌐', count: orgItems.length },
+    { id: 'templates', label: 'טמפלייטים',        icon: '📐', count: templateItems.length },
+    { id: 'research',  label: 'חומר מקצועי',      icon: '📚', count: KNOWLEDGE_CATALOG.length },
   ]
 
   // Group branch items by type for display
@@ -655,22 +665,22 @@ export function PortalKnowledge() {
         {tab !== 'research' && (
           <button onClick={() => setShowAdd(true)}
             className="px-3 py-1.5 rounded-lg text-white text-sm font-medium"
-            style={{ backgroundColor: '#189A9F' }}>
-            + הוסף
+            style={{ backgroundColor: tab === 'templates' ? '#141348' : '#189A9F' }}>
+            {tab === 'templates' ? '+ טמפלייט' : '+ הוסף'}
           </button>
         )}
       </div>
 
       {/* Tabs */}
-      <div className="grid grid-cols-3 rounded-xl border border-gray-200 overflow-hidden text-xs bg-white">
-        {TAB_DEFS.map((t) => (
+      <div className="grid grid-cols-4 rounded-xl border border-gray-200 overflow-hidden text-xs bg-white">
+        {TAB_DEFS.map((t, i) => (
           <button key={t.id}
             onClick={() => { setTab(t.id); setSearch(''); setActiveTag('') }}
             className="flex flex-col items-center gap-0.5 py-2.5 transition-colors"
             style={{
               backgroundColor: tab === t.id ? '#141348' : 'transparent',
               color: tab === t.id ? 'white' : '#6B7280',
-              borderRight: t.id !== 'branch' ? '1px solid #E5E7EB' : 'none',
+              borderRight: i < TAB_DEFS.length - 1 ? '1px solid #E5E7EB' : 'none',
             }}>
             <span className="text-base">{t.icon}</span>
             <span className="font-medium">{t.label}</span>
@@ -724,7 +734,7 @@ export function PortalKnowledge() {
       />
 
       {/* Tag filter */}
-      {tab !== 'research' && (
+      {tab !== 'research' && tab !== 'templates' && (
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setActiveTag('')}
             className="px-3 py-1 rounded-full text-xs border transition-all"
@@ -751,6 +761,12 @@ export function PortalKnowledge() {
       {tab === 'research' && (
         <div className="bg-blue-50 rounded-xl px-4 py-3 text-xs text-blue-700 leading-relaxed">
           ספרייה מקצועית — מחקרים, דוחות וחומרי עיון על ניהול מתנדבים, קהילה ועמותות.
+        </div>
+      )}
+
+      {tab === 'templates' && (
+        <div className="bg-indigo-50 rounded-xl px-4 py-3 text-xs text-indigo-700 leading-relaxed">
+          טמפלייטים ופורמטים לשימוש הרכזים — מכתבי הוקרה, טפסים ומסמכי עבודה.
         </div>
       )}
 
@@ -782,8 +798,20 @@ export function PortalKnowledge() {
         </div>
       )}
 
-      {showAdd && <KnowledgeModal branchId={branch.id} onClose={() => setShowAdd(false)} />}
-      {editingItem && <KnowledgeModal branchId={branch.id} initialItem={editingItem} onClose={() => setEditingItem(null)} />}
+      {showAdd && (
+        <KnowledgeModal
+          branchId={branch.id}
+          defaultScope={tab === 'templates' ? 'template' : tab === 'org' ? 'global' : 'branch'}
+          onClose={() => setShowAdd(false)}
+        />
+      )}
+      {editingItem && (
+        <KnowledgeModal
+          branchId={branch.id}
+          initialItem={editingItem}
+          onClose={() => setEditingItem(null)}
+        />
+      )}
     </div>
   )
 }
