@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useHQPartners, useAddHQPartner, useUpdateHQPartner } from '../../hooks/useHQPartners'
+import { useHQPartners, useAddHQPartner, useUpdateHQPartner, useDeleteHQPartner } from '../../hooks/useHQPartners'
+import { useAddHQSupplier } from '../../hooks/useHQSuppliers'
 import {
   PARTNER_TYPE_LABELS, PARTNER_STATUS_LABELS, PARTNER_CAT_LABELS,
   PAYMENT_METHOD_LABELS, RECEIPT_GEN_LABELS, PARTNER_USED_FOR_LABELS,
@@ -163,72 +164,62 @@ function PartnerForm({ initial, onSave, onClose }: { initial?: HQPartner; onSave
   )
 }
 
-function PartnerCard({ partner: p, isAdmin, onEdit }: { partner: HQPartner; isAdmin: boolean; onEdit: (p: HQPartner) => void }) {
-  const [open, setOpen] = useState(false)
-
+function PartnerCard({ partner: p, isAdmin, onEdit, onTransfer }: { partner: HQPartner; isAdmin: boolean; onEdit: (p: HQPartner) => void; onTransfer: (p: HQPartner) => void }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="w-full text-right px-4 py-3.5 hover:bg-gray-50 transition-colors flex items-center gap-3"
-      >
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden hover:shadow-md transition-shadow">
+      <div className="p-4 flex items-start gap-3">
         <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold text-white text-sm" style={{ backgroundColor: '#141348' }}>
           {p.name.slice(0, 2)}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-sm mb-1" style={{ color: '#141348' }}>{p.name}</div>
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="font-semibold text-sm leading-snug" style={{ color: '#141348' }}>{p.name}</div>
+          <div className="flex flex-wrap items-center gap-1.5 mt-1">
             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[p.status]}`}>{PARTNER_STATUS_LABELS[p.status]}</span>
             <span className="text-xs text-gray-400">{PARTNER_TYPE_LABELS[p.partnerType]}</span>
           </div>
         </div>
-        <span className="text-gray-400 text-xs shrink-0">{open ? '▲' : '▼'}</span>
-      </button>
+      </div>
 
-      {open && (
-        <div className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50/50 flex flex-col gap-3">
-          {p.categories.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {p.categories.map((c) => (
-                <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">{PARTNER_CAT_LABELS[c]}</span>
-              ))}
-            </div>
-          )}
-
-          {p.paymentMethods && p.paymentMethods.length > 0 && (
-            <div>
-              <div className="text-xs font-semibold text-gray-400 mb-1">אמצעי תשלום</div>
-              <div className="flex flex-wrap gap-1">
-                {p.paymentMethods.map((m) => (
-                  <span key={m} className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">{PAYMENT_METHOD_LABELS[m]}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {p.receiptGeneration && (
-            <div className="text-sm text-gray-600">הנפקת קבלות: <span className="font-medium">{RECEIPT_GEN_LABELS[p.receiptGeneration]}</span></div>
-          )}
-
-          {p.usedFor && p.usedFor.length > 0 && (
-            <div className="text-sm text-gray-600">שימוש עבור: {p.usedFor.map((u) => PARTNER_USED_FOR_LABELS[u]).join(', ')}</div>
-          )}
-
-          {p.notes && <p className="text-sm text-gray-600 whitespace-pre-wrap">{p.notes}</p>}
-
-          <div className="flex gap-2 flex-wrap">
-            {p.websiteUrl && (
-              <a href={p.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100">🌐 אתר</a>
-            )}
-            {p.adminUrl && (
-              <a href={p.adminUrl} target="_blank" rel="noopener noreferrer" className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100">⚙️ ניהול</a>
-            )}
-            {isAdmin && (
-              <button onClick={() => onEdit(p)} className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">✏️ עריכה</button>
-            )}
-          </div>
+      {p.categories.length > 0 && (
+        <div className="px-4 pb-2 flex flex-wrap gap-1">
+          {p.categories.map((c) => (
+            <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">{PARTNER_CAT_LABELS[c]}</span>
+          ))}
         </div>
       )}
+
+      {p.paymentMethods && p.paymentMethods.length > 0 && (
+        <div className="px-4 pb-2 flex flex-wrap gap-1">
+          {p.paymentMethods.map((m) => (
+            <span key={m} className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">{PAYMENT_METHOD_LABELS[m]}</span>
+          ))}
+        </div>
+      )}
+
+      {p.notes && (
+        <p className="px-4 pb-3 text-xs text-gray-500 line-clamp-2">{p.notes}</p>
+      )}
+
+      <div className="mt-auto border-t border-gray-50 px-3 py-2 flex items-center gap-1.5">
+        {p.websiteUrl && (
+          <a href={p.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">🌐 אתר</a>
+        )}
+        {p.adminUrl && (
+          <a href={p.adminUrl} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">⚙️ ניהול</a>
+        )}
+        {isAdmin && (
+          <div className="mr-auto flex gap-1.5">
+            <button onClick={() => onEdit(p)} className="text-xs px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">✏️</button>
+            <button
+              onClick={() => onTransfer(p)}
+              className="text-xs px-2 py-1 rounded-lg border border-orange-100 text-orange-600 hover:bg-orange-50"
+              title="העבר לספקים"
+            >
+              → ספקים
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -237,6 +228,8 @@ export function PartnersTab() {
   const { partners, loading } = useHQPartners()
   const addPartner = useAddHQPartner()
   const updatePartner = useUpdateHQPartner()
+  const deletePartner = useDeleteHQPartner()
+  const addSupplier = useAddHQSupplier()
   const { access } = useAuth()
   const isAdmin = access === 'admin' || access === 'hq'
 
@@ -245,6 +238,8 @@ export function PartnersTab() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [transferConfirm, setTransferConfirm] = useState<HQPartner | null>(null)
+  const [transferring, setTransferring] = useState(false)
 
   const handleSave = async (form: FormState, prevStatus?: PartnerStatus) => {
     const data = {
@@ -262,6 +257,27 @@ export function PartnersTab() {
     }
     if (editing) await updatePartner(editing.id, data, prevStatus)
     else await addPartner(data)
+  }
+
+  const handleTransfer = async () => {
+    if (!transferConfirm) return
+    setTransferring(true)
+    try {
+      const p = transferConfirm
+      const catLabels = p.categories.map((c) => PARTNER_CAT_LABELS[c]).join(', ')
+      await addSupplier({
+        name: p.name,
+        categories: catLabels ? [catLabels] : [],
+        status: p.status === 'active' ? 'active' : 'inactive',
+        notes: p.notes,
+        active: true,
+        branchIds: [],
+      })
+      await deletePartner(p.id)
+      setTransferConfirm(null)
+    } finally {
+      setTransferring(false)
+    }
   }
 
   const filtered = partners.filter((p) => {
@@ -313,13 +329,42 @@ export function PartnersTab() {
         Object.entries(grouped).map(([type, items]) => (
           <div key={type}>
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">{type}</h3>
-            <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {items.map((p) => (
-                <PartnerCard key={p.id} partner={p} isAdmin={isAdmin} onEdit={(p) => { setEditing(p); setShowForm(true) }} />
+                <PartnerCard
+                  key={p.id}
+                  partner={p}
+                  isAdmin={isAdmin}
+                  onEdit={(p) => { setEditing(p); setShowForm(true) }}
+                  onTransfer={setTransferConfirm}
+                />
               ))}
             </div>
           </div>
         ))
+      )}
+
+      {transferConfirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full flex flex-col gap-4" dir="rtl">
+            <h2 className="text-lg font-bold" style={{ color: '#141348' }}>העברה לספקים</h2>
+            <p className="text-sm text-gray-600">
+              להעביר את <span className="font-semibold">"{transferConfirm.name}"</span> מלשונית שותפים ללשונית ספקים?
+              <br /><span className="text-xs text-gray-400 mt-1 block">הפריט יימחק מהשותפים ויתווסף לספקים.</span>
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setTransferConfirm(null)} className="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50">ביטול</button>
+              <button
+                onClick={handleTransfer}
+                disabled={transferring}
+                className="px-4 py-2 text-sm rounded-lg text-white font-medium hover:opacity-90 disabled:opacity-50"
+                style={{ backgroundColor: '#141348' }}
+              >
+                {transferring ? 'מעביר...' : 'העבר'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showForm && (

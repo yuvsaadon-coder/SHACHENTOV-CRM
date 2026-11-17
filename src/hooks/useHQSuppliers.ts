@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import type { HQSupplier } from '../types'
@@ -30,6 +30,12 @@ export function useAddHQSupplier() {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
+  }
+}
+
+export function useDeleteHQSupplier() {
+  return async (id: string) => {
+    await deleteDoc(doc(db, 'hq_suppliers', id))
   }
 }
 

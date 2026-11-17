@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useHQSuppliers, useAddHQSupplier, useUpdateHQSupplier } from '../../hooks/useHQSuppliers'
+import { useHQSuppliers, useAddHQSupplier, useUpdateHQSupplier, useDeleteHQSupplier } from '../../hooks/useHQSuppliers'
+import { useAddHQPartner } from '../../hooks/useHQPartners'
 import type { HQSupplier, Contact } from '../../types'
 import { useAuth } from '../../context/AuthContext'
 import { useContacts } from '../../hooks/useContacts'
@@ -82,7 +83,6 @@ function SupplierForm({ initial, onSave, onClose, allContacts }: { initial?: HQS
           <input className="border border-gray-200 rounded-lg px-3 py-2 text-sm" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} dir="ltr" />
         </div>
 
-        {/* Linked contacts */}
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium text-gray-700">אנשי קשר מקושרים</label>
           {form.contactIds.length > 0 && (
@@ -147,66 +147,72 @@ function SupplierForm({ initial, onSave, onClose, allContacts }: { initial?: HQS
   )
 }
 
-function SupplierCard({ supplier: s, isAdmin, onEdit, linkedContacts }: { supplier: HQSupplier; isAdmin: boolean; onEdit: (s: HQSupplier) => void; linkedContacts: Contact[] }) {
-  const [open, setOpen] = useState(false)
-
+function SupplierCard({ supplier: s, isAdmin, onEdit, onTransfer, linkedContacts }: { supplier: HQSupplier; isAdmin: boolean; onEdit: (s: HQSupplier) => void; onTransfer: (s: HQSupplier) => void; linkedContacts: Contact[] }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="w-full text-right px-4 py-3.5 hover:bg-gray-50 transition-colors flex items-center gap-3"
-      >
-        <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-bold text-white text-sm bg-indigo-700">
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden hover:shadow-md transition-shadow">
+      <div className="p-4 flex items-start gap-3">
+        <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold text-white text-sm bg-indigo-700">
           {s.name.slice(0, 2)}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-sm" style={{ color: '#141348' }}>{s.name}</div>
-          {s.categories.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-0.5">
-              {s.categories.slice(0, 3).map((c) => (
-                <span key={c} className="text-xs px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-500">{c}</span>
-              ))}
-            </div>
-          )}
+          <div className="font-semibold text-sm leading-snug" style={{ color: '#141348' }}>{s.name}</div>
+          <div className="flex items-center gap-1.5 mt-1">
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${s.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+              {s.status === 'active' ? 'פעיל' : 'לא פעיל'}
+            </span>
+            {linkedContacts.length > 0 && (
+              <span className="text-xs text-indigo-500">👤 {linkedContacts.length}</span>
+            )}
+          </div>
         </div>
-        {linkedContacts.length > 0 && (
-          <span className="text-xs text-indigo-500 shrink-0">👤 {linkedContacts.length}</span>
-        )}
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${s.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-          {s.status === 'active' ? 'פעיל' : 'לא פעיל'}
-        </span>
-        <span className="text-gray-400 text-xs shrink-0">{open ? '▲' : '▼'}</span>
-      </button>
+      </div>
 
-      {open && (
-        <div className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50/50 flex flex-col gap-2">
-          {/* Legacy inline contact fields */}
-          {(s.contactName || s.phone || s.email) && (
-            <div className="text-sm text-gray-600 flex flex-wrap gap-3">
-              {s.contactName && <span>👤 {s.contactName}</span>}
-              {s.phone && <span>📞 {s.phone}</span>}
-              {s.email && <span>✉️ {s.email}</span>}
-            </div>
-          )}
-          {/* Linked contacts from contacts collection */}
-          {linkedContacts.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">אנשי קשר</span>
-              {linkedContacts.map((c) => (
-                <div key={c.id} className="flex items-center gap-2 text-sm bg-indigo-50 rounded-lg px-3 py-2">
-                  <span className="font-medium" style={{ color: '#141348' }}>{c.name}</span>
-                  {c.email && <a href={`mailto:${c.email}`} className="text-indigo-600 hover:underline text-xs">{c.email}</a>}
-                  {c.phone && <span className="text-gray-500 text-xs">{c.phone}</span>}
-                </div>
-              ))}
-            </div>
-          )}
-          {s.notes && <p className="text-sm text-gray-600 whitespace-pre-wrap">{s.notes}</p>}
-          {isAdmin && (
-            <button onClick={() => onEdit(s)} className="self-start text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">✏️ עריכה</button>
-          )}
+      {s.categories.length > 0 && (
+        <div className="px-4 pb-2 flex flex-wrap gap-1">
+          {s.categories.map((c) => (
+            <span key={c} className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">{c}</span>
+          ))}
         </div>
       )}
+
+      {(s.contactName || s.phone || s.email) && (
+        <div className="px-4 pb-2 text-xs text-gray-500 flex flex-wrap gap-2">
+          {s.contactName && <span>👤 {s.contactName}</span>}
+          {s.phone && <span>📞 {s.phone}</span>}
+          {s.email && <span>✉️ {s.email}</span>}
+        </div>
+      )}
+
+      {linkedContacts.length > 0 && (
+        <div className="px-4 pb-2 flex flex-col gap-1">
+          {linkedContacts.slice(0, 2).map((c) => (
+            <div key={c.id} className="flex items-center gap-1.5 text-xs bg-indigo-50 rounded-lg px-2.5 py-1.5">
+              <span className="font-medium" style={{ color: '#141348' }}>{c.name}</span>
+              {c.phone && <span className="text-gray-400">{c.phone}</span>}
+            </div>
+          ))}
+          {linkedContacts.length > 2 && <span className="text-xs text-gray-400 px-1">+{linkedContacts.length - 2} נוספים</span>}
+        </div>
+      )}
+
+      {s.notes && (
+        <p className="px-4 pb-3 text-xs text-gray-500 line-clamp-2">{s.notes}</p>
+      )}
+
+      <div className="mt-auto border-t border-gray-50 px-3 py-2 flex items-center gap-1.5">
+        {isAdmin && (
+          <div className="mr-auto flex gap-1.5">
+            <button onClick={() => onEdit(s)} className="text-xs px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">✏️</button>
+            <button
+              onClick={() => onTransfer(s)}
+              className="text-xs px-2 py-1 rounded-lg border border-orange-100 text-orange-600 hover:bg-orange-50"
+              title="העבר לשותפים"
+            >
+              → שותפים
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -215,6 +221,8 @@ export function SuppliersTab() {
   const { suppliers, loading } = useHQSuppliers()
   const addSupplier = useAddHQSupplier()
   const updateSupplier = useUpdateHQSupplier()
+  const deleteSupplier = useDeleteHQSupplier()
+  const addPartner = useAddHQPartner()
   const { contacts } = useContacts()
   const { access } = useAuth()
   const isAdmin = access === 'admin' || access === 'hq'
@@ -223,6 +231,8 @@ export function SuppliersTab() {
   const [editing, setEditing] = useState<HQSupplier | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [transferConfirm, setTransferConfirm] = useState<HQSupplier | null>(null)
+  const [transferring, setTransferring] = useState(false)
 
   const handleSave = async (form: FormState) => {
     const categories = form.categories.split(',').map((c) => c.trim()).filter(Boolean)
@@ -240,6 +250,26 @@ export function SuppliersTab() {
     }
     if (editing) await updateSupplier(editing.id, data)
     else await addSupplier(data)
+  }
+
+  const handleTransfer = async () => {
+    if (!transferConfirm) return
+    setTransferring(true)
+    try {
+      const s = transferConfirm
+      await addPartner({
+        name: s.name,
+        partnerType: 'partner',
+        categories: [],
+        status: s.status === 'active' ? 'active' : 'inactive',
+        notes: s.notes,
+        active: true,
+      })
+      await deleteSupplier(s.id)
+      setTransferConfirm(null)
+    } finally {
+      setTransferring(false)
+    }
   }
 
   const filtered = suppliers.filter((s) => {
@@ -278,11 +308,43 @@ export function SuppliersTab() {
       ) : filtered.length === 0 ? (
         <div className="text-sm text-gray-400 py-8 text-center">אין ספקים</div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {filtered.map((s) => {
-            const linked = (s.contactIds ?? []).map((id) => contacts.find((c) => c.id === id)).filter(Boolean) as import('../../types').Contact[]
-            return <SupplierCard key={s.id} supplier={s} isAdmin={isAdmin} onEdit={(s) => { setEditing(s); setShowForm(true) }} linkedContacts={linked} />
+            const linked = (s.contactIds ?? []).map((id) => contacts.find((c) => c.id === id)).filter(Boolean) as Contact[]
+            return (
+              <SupplierCard
+                key={s.id}
+                supplier={s}
+                isAdmin={isAdmin}
+                onEdit={(s) => { setEditing(s); setShowForm(true) }}
+                onTransfer={setTransferConfirm}
+                linkedContacts={linked}
+              />
+            )
           })}
+        </div>
+      )}
+
+      {transferConfirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full flex flex-col gap-4" dir="rtl">
+            <h2 className="text-lg font-bold" style={{ color: '#141348' }}>העברה לשותפים</h2>
+            <p className="text-sm text-gray-600">
+              להעביר את <span className="font-semibold">"{transferConfirm.name}"</span> מלשונית ספקים ללשונית שותפים?
+              <br /><span className="text-xs text-gray-400 mt-1 block">הפריט יימחק מהספקים ויתווסף לשותפים.</span>
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setTransferConfirm(null)} className="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50">ביטול</button>
+              <button
+                onClick={handleTransfer}
+                disabled={transferring}
+                className="px-4 py-2 text-sm rounded-lg text-white font-medium hover:opacity-90 disabled:opacity-50"
+                style={{ backgroundColor: '#141348' }}
+              >
+                {transferring ? 'מעביר...' : 'העבר'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

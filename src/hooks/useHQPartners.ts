@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import type { HQPartner, PartnerStatus } from '../types'
@@ -31,6 +31,12 @@ export function useAddHQPartner() {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
+  }
+}
+
+export function useDeleteHQPartner() {
+  return async (id: string) => {
+    await deleteDoc(doc(db, 'hq_partners', id))
   }
 }
 

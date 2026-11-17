@@ -161,29 +161,34 @@ export function DriveLinksTab() {
         Object.entries(grouped).map(([cat, items]) => (
           <div key={cat}>
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">{cat}</h3>
-            <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {items.map((l) => (
-                <div key={l.id} className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3">
-                  <span className="text-xl shrink-0">{DRIVE_ICONS[l.driveType]}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm" style={{ color: '#141348' }}>{l.name}</div>
-                    <div className="text-xs text-gray-400">{DRIVE_TYPE_LABELS[l.driveType]}{l.year ? ` · ${l.year}` : ''}</div>
+                <div key={l.id} className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden hover:shadow-md transition-shadow">
+                  <div className="p-4 flex items-start gap-3">
+                    <span className="text-2xl shrink-0 mt-0.5">{DRIVE_ICONS[l.driveType]}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm leading-snug" style={{ color: '#141348' }}>{l.name}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{DRIVE_TYPE_LABELS[l.driveType]}{l.year ? ` · ${l.year}` : ''}</div>
+                    </div>
                   </div>
-                  <div className="flex gap-2 items-center shrink-0">
+                  {l.notes && (
+                    <p className="px-4 pb-3 text-xs text-gray-500 line-clamp-2 -mt-1">{l.notes}</p>
+                  )}
+                  <div className="mt-auto border-t border-gray-50 px-3 py-2 flex items-center gap-1.5">
                     <a
                       href={l.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm px-3 py-1.5 rounded-lg text-white font-medium hover:opacity-90 transition-opacity"
+                      className="text-xs px-3 py-1.5 rounded-lg text-white font-medium hover:opacity-90 transition-opacity"
                       style={{ backgroundColor: '#141348' }}
                     >
                       פתח
                     </a>
                     {isAdmin && (
-                      <>
-                        <button onClick={() => { setEditing(l); setShowForm(true) }} className="text-sm px-2 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100">✏️</button>
-                        <button onClick={() => setConfirmDelete(l.id)} className="text-sm px-2 py-1.5 rounded-lg border border-red-100 text-red-500 hover:bg-red-50">🗑</button>
-                      </>
+                      <div className="mr-auto flex gap-1.5">
+                        <button onClick={() => { setEditing(l); setShowForm(true) }} className="text-xs px-2 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100">✏️</button>
+                        <button onClick={() => setConfirmDelete(l.id)} className="text-xs px-2 py-1.5 rounded-lg border border-red-100 text-red-500 hover:bg-red-50">🗑</button>
+                      </div>
                     )}
                   </div>
                 </div>
