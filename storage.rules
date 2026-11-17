@@ -21,5 +21,10 @@ service firebase.storage {
       allow read:  if isHQ();
       allow write: if isHQ() && request.auth.uid == uid;
     }
+
+    // Research articles uploaded from the knowledge admin screen: HQ only
+    match /knowledge_articles/{docId}/{fileName} {
+      allow read, write: if isHQ();
+    }
   }
 }

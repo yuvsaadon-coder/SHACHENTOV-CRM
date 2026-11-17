@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { useHQPartners, useAddHQPartner, useUpdateHQPartner, useDeleteHQPartner } from '../../hooks/useHQPartners'
-import { useAddHQSupplier } from '../../hooks/useHQSuppliers'
+import { useHQPartners, useAddHQPartner, useUpdateHQPartner } from '../../hooks/useHQPartners'
+import { transferPartnerToSupplier } from '../../lib/hqTransfer'
+import { useToast } from '../../context/ToastContext'
 import {
   PARTNER_TYPE_LABELS, PARTNER_STATUS_LABELS, PARTNER_CAT_LABELS,
   PAYMENT_METHOD_LABELS, RECEIPT_GEN_LABELS, PARTNER_USED_FOR_LABELS,
@@ -228,9 +229,8 @@ export function PartnersTab() {
   const { partners, loading } = useHQPartners()
   const addPartner = useAddHQPartner()
   const updatePartner = useUpdateHQPartner()
-  const deletePartner = useDeleteHQPartner()
-  const addSupplier = useAddHQSupplier()
-  const { access } = useAuth()
+  const { access, firebaseUser } = useAuth()
+  const { toast } = useToast()
   const isAdmin = access === 'admin' || access === 'hq'
 
   const [showForm, setShowForm] = useState(false)
@@ -260,21 +260,14 @@ export function PartnersTab() {
   }
 
   const handleTransfer = async () => {
-    if (!transferConfirm) return
+    if (!transferConfirm || !firebaseUser) return
     setTransferring(true)
     try {
-      const p = transferConfirm
-      const catLabels = p.categories.map((c) => PARTNER_CAT_LABELS[c]).join(', ')
-      await addSupplier({
-        name: p.name,
-        categories: catLabels ? [catLabels] : [],
-        status: p.status === 'active' ? 'active' : 'inactive',
-        notes: p.notes,
-        active: true,
-        branchIds: [],
-      })
-      await deletePartner(p.id)
+      await transferPartnerToSupplier(transferConfirm, firebaseUser.uid)
+      toast(`"${transferConfirm.name}" הועבר לספקים`, 'success')
       setTransferConfirm(null)
+    } catch {
+      toast('ההעברה נכשלה — לא בוצע שינוי. נסה שוב.', 'error')
     } finally {
       setTransferring(false)
     }

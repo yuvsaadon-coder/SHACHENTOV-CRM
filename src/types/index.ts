@@ -518,6 +518,13 @@ export interface HQPartner {
   receiptGeneration?: ReceiptGeneration
   usedFor?: PartnerUsedFor[]
   statusHistory?: PartnerStatusChange[]
+  /** Carried over from a supplier so a round-trip transfer loses nothing. */
+  contactIds?: string[]
+  contactName?: string
+  phone?: string
+  email?: string
+  branchIds?: string[]
+  supplierCategories?: string[]
   active: boolean
   createdBy: string
   updatedBy?: string
@@ -538,6 +545,16 @@ export interface HQSupplier {
   email?: string
   contactIds?: string[]
   notes?: string
+  websiteUrl?: string
+  adminUrl?: string
+  paymentMethods?: PaymentMethod[]
+  receiptGeneration?: ReceiptGeneration
+  usedFor?: PartnerUsedFor[]
+  /** Carried over from a partner so a round-trip transfer loses nothing. */
+  partnerType?: PartnerType
+  partnerCategories?: PartnerCategory[]
+  partnerStatus?: PartnerStatus
+  statusHistory?: PartnerStatusChange[]
   active: boolean
   createdBy: string
   updatedBy?: string

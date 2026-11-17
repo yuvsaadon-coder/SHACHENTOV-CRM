@@ -67,6 +67,7 @@ export function CoordinatorPortal() {
       <div className="min-h-screen flex items-center justify-center" dir="rtl">
         <div className="text-center">
           <p className="text-gray-500">אין סניפים מוגדרים למשתמש זה.</p>
+          <p className="text-xs text-gray-400 mt-1">פנה/י למטה העמותה כדי לשייך אותך לתפקיד סניף.</p>
           <button onClick={handleLogout} className="mt-4 text-sm text-[#189A9F] underline">יציאה</button>
         </div>
       </div>

@@ -6,7 +6,8 @@ export type UploadProgress = { progress: number; done: false } | { done: true; u
 export function uploadFile(
   path: string,
   file: File,
-  onProgress: (p: UploadProgress) => void
+  onProgress: (p: UploadProgress) => void,
+  onError?: (err: unknown) => void
 ): () => void {
   const storageRef = ref(storage, path)
   const task = uploadBytesResumable(storageRef, file)
@@ -19,6 +20,7 @@ export function uploadFile(
     },
     (err) => {
       console.error('upload error', err)
+      onError?.(err)
     },
     async () => {
       const url = await getDownloadURL(task.snapshot.ref)

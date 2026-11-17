@@ -100,6 +100,7 @@ function DocForm({
       : emptyForm()
   )
   const [file, setFile] = useState<File | null>(null)
+  const [linkUrl, setLinkUrl] = useState('')
   const [uploadPct, setUploadPct] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
@@ -124,8 +125,11 @@ function DocForm({
             if (!p.done) { setUploadPct(p.progress); return }
             setUploadPct(null)
             onSave(form, { fileUrl: p.url, fileName: p.fileName }).then(resolve).catch(reject)
-          })
+          }, reject)
         })
+      } else if (linkUrl.trim()) {
+        if (!/^https?:\/\//i.test(linkUrl.trim())) { setErr('הקישור חייב להתחיל ב-https://'); setSaving(false); return }
+        await onSave(form, { fileUrl: linkUrl.trim(), fileName: 'קישור' })
       } else {
         await onSave(form)
       }
@@ -201,6 +205,14 @@ function DocForm({
               <span className="text-sm text-gray-400">לחץ לבחירת קובץ</span>
             )}
           </div>
+          <input
+            type="url"
+            dir="ltr"
+            value={linkUrl}
+            onChange={(e) => setLinkUrl(e.target.value)}
+            placeholder="או הדבק קישור (Drive / אתר) https://..."
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 mt-1"
+          />
           {uploadPct !== null && (
             <div className="mt-1">
               <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">

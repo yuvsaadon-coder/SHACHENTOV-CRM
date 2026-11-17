@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { useHQSuppliers, useAddHQSupplier, useUpdateHQSupplier, useDeleteHQSupplier } from '../../hooks/useHQSuppliers'
-import { useAddHQPartner } from '../../hooks/useHQPartners'
+import { useHQSuppliers, useAddHQSupplier, useUpdateHQSupplier } from '../../hooks/useHQSuppliers'
+import { transferSupplierToPartner } from '../../lib/hqTransfer'
+import { useToast } from '../../context/ToastContext'
 import type { HQSupplier, Contact } from '../../types'
 import { useAuth } from '../../context/AuthContext'
 import { useContacts } from '../../hooks/useContacts'
@@ -221,10 +222,9 @@ export function SuppliersTab() {
   const { suppliers, loading } = useHQSuppliers()
   const addSupplier = useAddHQSupplier()
   const updateSupplier = useUpdateHQSupplier()
-  const deleteSupplier = useDeleteHQSupplier()
-  const addPartner = useAddHQPartner()
   const { contacts } = useContacts()
-  const { access } = useAuth()
+  const { access, firebaseUser } = useAuth()
+  const { toast } = useToast()
   const isAdmin = access === 'admin' || access === 'hq'
 
   const [showForm, setShowForm] = useState(false)
@@ -246,27 +246,20 @@ export function SuppliersTab() {
       contactIds: form.contactIds.length > 0 ? form.contactIds : undefined,
       notes: form.notes || undefined,
       active: true,
-      branchIds: [],
     }
     if (editing) await updateSupplier(editing.id, data)
-    else await addSupplier(data)
+    else await addSupplier({ ...data, branchIds: [] })
   }
 
   const handleTransfer = async () => {
-    if (!transferConfirm) return
+    if (!transferConfirm || !firebaseUser) return
     setTransferring(true)
     try {
-      const s = transferConfirm
-      await addPartner({
-        name: s.name,
-        partnerType: 'partner',
-        categories: [],
-        status: s.status === 'active' ? 'active' : 'inactive',
-        notes: s.notes,
-        active: true,
-      })
-      await deleteSupplier(s.id)
+      await transferSupplierToPartner(transferConfirm, firebaseUser.uid)
+      toast(`"${transferConfirm.name}" הועבר לשותפים`, 'success')
       setTransferConfirm(null)
+    } catch {
+      toast('ההעברה נכשלה — לא בוצע שינוי. נסה שוב.', 'error')
     } finally {
       setTransferring(false)
     }
