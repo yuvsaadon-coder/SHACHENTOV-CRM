@@ -8,10 +8,11 @@ import type { Branch } from '../../types'
 export type PortalOutletContext = { branch: Branch }
 
 const NAV_ITEMS = [
-  { to: '/portal/home',      label: 'בית',    icon: '🏠' },
-  { to: '/portal/report',    label: 'דיווח',  icon: '📋' },
-  { to: '/portal/knowledge', label: 'ידע',    icon: '📚' },
-  { to: '/portal/chat',      label: "צ'אט",   icon: '🤖' },
+  { to: '/portal/home',       label: 'בית',    icon: '🏠' },
+  { to: '/portal/volunteers', label: 'שיבוץ',  icon: '📅' },
+  { to: '/portal/report',     label: 'דיווח',  icon: '📋' },
+  { to: '/portal/knowledge',  label: 'ידע',    icon: '📚' },
+  { to: '/portal/chat',       label: "צ'אט",   icon: '🤖' },
 ]
 
 function BranchPicker({ branches, onSelect }: { branches: Branch[]; onSelect: (id: string) => void }) {

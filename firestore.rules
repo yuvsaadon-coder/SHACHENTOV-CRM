@@ -143,5 +143,52 @@ service cloud.firestore {
       allow delete: if isManager() || (isAuthed() && request.auth.uid == uid);
       allow create, update: if false;
     }
+
+    // ── Volunteer scheduling ─────────────────────────────────────────────────
+
+    // Volunteer records — HQ reads all; coordinator reads/writes for their branches.
+    // No auth check on the volunteer doc itself because public volunteer page
+    // goes through the Netlify Function (server-side Admin SDK), not the client SDK.
+    match /volunteers/{id} {
+      allow read:   if isHQ() || (isCoordinator() && resource.data.branchIds.hasAny(me().get('branchIds', [])));
+      allow create: if isHQ() || isCoordinator();
+      allow update: if isHQ()
+                    || (isCoordinator() && resource.data.branchIds.hasAny(me().get('branchIds', [])));
+      allow delete: if isHQ() || isAdmin();
+    }
+
+    // Token lookup docs — read/write only by coordinators managing that branch,
+    // and by HQ. The public page uses the Admin SDK so it bypasses these rules.
+    match /volunteer_tokens/{token} {
+      allow read:   if isHQ() || isCoordinator();
+      allow write:  if isHQ() || isCoordinator();
+    }
+
+    // Shifts — coordinators manage their own branches; HQ reads all.
+    match /shifts/{id} {
+      allow read:   if isHQ() || (isCoordinator() && coordinatesBranch(resource.data.branchId));
+      allow create: if isCoordinator() && coordinatesBranch(request.resource.data.branchId);
+      allow update: if isHQ()
+                    || (isCoordinator() && coordinatesBranch(resource.data.branchId));
+      allow delete: if isHQ()
+                    || (isCoordinator() && coordinatesBranch(resource.data.branchId));
+    }
+
+    // Assignments — coordinators manage their own branches; HQ reads all.
+    // Volunteer self-service goes through the Netlify Function (Admin SDK).
+    match /assignments/{id} {
+      allow read:   if isHQ() || (isCoordinator() && coordinatesBranch(resource.data.branchId));
+      allow create: if isCoordinator() && coordinatesBranch(request.resource.data.branchId);
+      allow update: if isHQ()
+                    || (isCoordinator() && coordinatesBranch(resource.data.branchId));
+      allow delete: if isAdmin();
+    }
+
+    // Monthly responses — same access as assignments.
+    match /monthly_responses/{id} {
+      allow read:   if isHQ() || (isCoordinator() && coordinatesBranch(resource.data.branchId));
+      allow write:  if isHQ()
+                    || (isCoordinator() && coordinatesBranch(request.resource.data.branchId));
+    }
   }
 }

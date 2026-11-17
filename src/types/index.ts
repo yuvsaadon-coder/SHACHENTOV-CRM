@@ -544,3 +544,71 @@ export interface HQSupplier {
   createdAt: Timestamp
   updatedAt: Timestamp
 }
+
+// ─── Volunteer Scheduling ─────────────────────────────────────────────────────
+
+/** A volunteer (not an HQ user) who signs up for distribution shifts. */
+export interface VolunteerMember {
+  id: string
+  name: string
+  phone: string         // E.164 e.g. +972501234567
+  branchIds: string[]
+  tags: string[]        // e.g. ['קבועים', 'נהגים']
+  status: 'active' | 'inactive'
+  optOut: boolean       // "do not send me messages"
+  /** Per-branch token for the personal link: {branchId: token} */
+  tokens: Record<string, string>
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+/** Lookup doc so the Netlify function can resolve a token in O(1). */
+export interface VolunteerToken {
+  volunteerId: string
+  branchId: string
+  active: boolean
+}
+
+/** A single distribution shift. */
+export interface Shift {
+  id: string
+  branchId: string
+  month: string        // "2026-12"
+  date: string         // "2026-12-02" (ISO)
+  startTime: string    // "08:30"
+  endTime: string      // "11:00"
+  location: string
+  capacity: number
+  notes?: string
+  status: 'open' | 'full' | 'cancelled'
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+export type AssignmentStatus = 'committed' | 'cancelled' | 'attended' | 'no_show'
+
+/** One volunteer signed up for one shift. Doc ID = `{shiftId}_{volunteerId}`. */
+export interface Assignment {
+  id: string
+  shiftId: string
+  volunteerId: string
+  branchId: string
+  status: AssignmentStatus
+  /** self = volunteer chose it; coordinator = coordinator added manually */
+  source: 'self' | 'coordinator'
+  cancelledAt?: Timestamp
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+export type MonthlyResponseStatus = 'answered' | 'declined' | 'none'
+
+/** Tracks whether a volunteer responded to this month's scheduling request. */
+export interface MonthlyResponse {
+  id: string              // `{branchId}_{month}_{volunteerId}`
+  branchId: string
+  month: string           // "2026-12"
+  volunteerId: string
+  status: MonthlyResponseStatus
+  updatedAt: Timestamp
+}

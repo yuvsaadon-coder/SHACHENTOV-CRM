@@ -16,6 +16,8 @@ import { PortalHome } from './pages/portal/PortalHome'
 import { PortalReport } from './pages/portal/PortalReport'
 import { PortalKnowledge } from './pages/portal/PortalKnowledge'
 import { PortalChat } from './pages/portal/PortalChat'
+import { PortalVolunteers } from './pages/portal/PortalVolunteers'
+import { VolunteerPage } from './pages/VolunteerPage'
 import { BranchesAdminPage } from './pages/admin/BranchesAdminPage'
 import { KnowledgeAdminPage } from './pages/admin/KnowledgeAdminPage'
 import { ReportQuestionsAdminPage } from './pages/admin/ReportQuestionsAdminPage'
@@ -62,6 +64,9 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/portal/login" element={<Navigate to="/login" replace />} />
 
+          {/* Public volunteer self-service page — no auth required */}
+          <Route path="/v/:token" element={<VolunteerPage />} />
+
           {/* Home screen — no sidebar */}
           <Route path="/dashboard" element={<RequireAuth><HomePage /></RequireAuth>} />
 
@@ -79,6 +84,7 @@ export default function App() {
             <Route path="report" element={<PortalReport />} />
             <Route path="knowledge" element={<PortalKnowledge />} />
             <Route path="chat" element={<PortalChat />} />
+            <Route path="volunteers" element={<PortalVolunteers />} />
           </Route>
 
           {/* HQ — with sidebar */}
