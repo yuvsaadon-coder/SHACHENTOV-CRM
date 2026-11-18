@@ -21,6 +21,7 @@ import { cert, initializeApp, getApps } from 'firebase-admin/app'
 import { getFirestore, Timestamp } from 'firebase-admin/firestore'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
+import { keepFile } from './lib/taskAttachmentPolicy.mjs'
 
 const SA_PATH = process.env.FIREBASE_SERVICE_ACCOUNT_PATH
   ?? '/root/.claude/uploads/8ffa83cb-c50c-5072-9f83-eeaa819b9bcb/9113bd15-shachentovcrmfirebaseadminsdkfbsvcb312d1804d.json'
@@ -172,8 +173,8 @@ async function main() {
 
   for (const task of tasks.docs) {
     const category = task.data().category
-    const files = FILES_BY_CATEGORY[category]
-    if (!files) continue
+    const files = (FILES_BY_CATEGORY[category] ?? []).filter(([, url]) => keepFile(task.data(), url))
+    if (!FILES_BY_CATEGORY[category]) continue
 
     // Replace previously seeded attachments so re-runs stay idempotent.
     const existing = await task.ref.collection('attachments').where('seeded', '==', true).get()

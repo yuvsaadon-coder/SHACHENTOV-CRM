@@ -33,7 +33,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,woff}'],
         // Skip large static files that aren't needed offline
         globIgnores: ['**/articles/**', '**/templates/**'],
-        navigateFallbackDenylist: [/^\/\.netlify\//, /^\/__\//],
+        // Opening an attachment is a navigation: without these the service worker answers with the app shell and the user lands on the home screen instead of the file.
+        navigateFallbackDenylist: [/^\/\.netlify\//, /^\/__\//, /^\/templates\//, /^\/articles\//, /\.[a-zA-Z0-9]{2,5}$/],
         runtimeCaching: [
           {
             // Google Fonts — cache aggressively

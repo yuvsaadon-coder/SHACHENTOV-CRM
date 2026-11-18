@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { occurrencesInRange, STEP_MONTHS } from '../../lib/ganttRecurrence'
 import { useNavigate } from 'react-router-dom'
 import type { Task, Domain } from '../../types'
 import { DOMAIN_COLORS, DOMAIN_LABELS, DOMAINS } from '../../types'
@@ -62,28 +63,12 @@ function expandForMonthly(t: Task, year: number): DisplayTask[] {
         displayEnd: new Date(year, m, dom + BAR_DAYS),
       }))
     }
-    case 'רבעוני': {
-      const dom = Math.min(end.getDate(), 28)
-      return [2, 5, 8, 11].map(m => ({
-        ...t,
-        displayStart: new Date(year, m, dom),
-        displayEnd: new Date(year, m, dom + BAR_DAYS),
-      }))
-    }
-    case 'חצי-שנתי': {
-      const dom = Math.min(end.getDate(), 28)
-      return [5, 11].map(m => ({
-        ...t,
-        displayStart: new Date(year, m, dom),
-        displayEnd: new Date(year, m, dom + BAR_DAYS),
-      }))
-    }
+    case 'רבעוני':
+    case 'חצי-שנתי':
     case 'שנתי':
-    case 'לפי חג': {
-      const m = end.getMonth()
-      const dom = Math.min(end.getDate(), 28)
-      return [{ ...t, displayStart: new Date(year, m, dom), displayEnd: new Date(year, m, dom + BAR_DAYS) }]
-    }
+    case 'לפי חג':
+      return occurrencesInRange(start, end, STEP_MONTHS[t.frequency], new Date(year, 0, 1), new Date(year, 11, 31))
+        .map(o => ({ ...t, displayStart: o.start, displayEnd: o.end }))
     default:
       return [{ ...t, displayStart: start, displayEnd: end }]
   }
@@ -111,25 +96,13 @@ function expandForHalfYear(t: Task, year: number, half: 1 | 2): DisplayTask[] {
         displayEnd:   new Date(year, halfStartMonth + i, dom + BAR_DAYS),
       }))
     }
-    case 'רבעוני': {
-      const dom = Math.min(end.getDate(), 28)
-      const months = half === 1 ? [2, 5] : [8, 11]
-      return months.map(m => ({
-        ...t,
-        displayStart: new Date(year, m, dom),
-        displayEnd:   new Date(year, m, dom + BAR_DAYS),
-      }))
-    }
-    case 'חצי-שנתי': {
-      const dom = Math.min(end.getDate(), 28)
-      return [{ ...t, displayStart: new Date(year, halfEndMonth, dom), displayEnd: new Date(year, halfEndMonth, dom + BAR_DAYS) }]
-    }
+    case 'רבעוני':
+    case 'חצי-שנתי':
     case 'שנתי':
     case 'לפי חג': {
-      const m = end.getMonth()
-      if (m < halfStartMonth || m > halfEndMonth) return []
-      const dom = Math.min(end.getDate(), 28)
-      return [{ ...t, displayStart: new Date(year, m, dom), displayEnd: new Date(year, m, dom + BAR_DAYS) }]
+      const start = t.startDate?.toDate() ?? end
+      return occurrencesInRange(start, end, STEP_MONTHS[t.frequency], new Date(year, halfStartMonth, 1), new Date(year, halfEndMonth + 1, 0))
+        .map(o => ({ ...t, displayStart: o.start, displayEnd: o.end }))
     }
     default: {
       const start = t.startDate?.toDate() ?? end
@@ -152,6 +125,12 @@ function expandForSingleMonth(t: Task, year: number, month: number): DisplayTask
       if (ds > de) return []
       return [{ ...t, displayStart: ds, displayEnd: de }]
     }
+    case 'רבעוני':
+    case 'חצי-שנתי':
+    case 'שנתי':
+    case 'לפי חג':
+      return occurrencesInRange(start, end, STEP_MONTHS[t.frequency], mStart, mEnd)
+        .map(o => ({ ...t, displayStart: o.start, displayEnd: o.end }))
     default: {
       const dom = Math.min(end.getDate(), mEnd.getDate())
       const barStart = new Date(year, month, dom)
