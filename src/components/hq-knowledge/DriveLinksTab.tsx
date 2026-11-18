@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { DocTransferDialog } from './DocTransferDialog'
+import { fromDrive, type DocSource } from '../../lib/hqDocTransfer'
 import { useHQDriveLinks, useAddHQDriveLink, useUpdateHQDriveLink, useDeleteHQDriveLink } from '../../hooks/useHQDriveLinks'
 import { DRIVE_TYPE_LABELS, DRIVE_CAT_LABELS, type HQDriveLink, type DriveItemType, type DriveLinkCategory } from '../../types'
 import { useAuth } from '../../context/AuthContext'
@@ -104,6 +106,7 @@ export function DriveLinksTab() {
   const { access } = useAuth()
   const isAdmin = access === 'admin' || access === 'hq'
   const { isManager } = useAuth()
+  const [transferSrc, setTransferSrc] = useState<DocSource | null>(null)
 
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<HQDriveLink | null>(null)
@@ -188,6 +191,7 @@ export function DriveLinksTab() {
                     {isAdmin && (
                       <div className="mr-auto flex gap-1.5">
                         <button onClick={() => { setEditing(l); setShowForm(true) }} className="text-xs px-2 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100">✏️</button>
+                        {isManager && <button onClick={() => setTransferSrc(fromDrive(l))} className="text-xs px-2 py-1.5 rounded-lg border border-orange-100 text-orange-600 hover:bg-orange-50" title="העבר ללשונית אחרת">⇄ העבר</button>}
                         {isManager && <button onClick={() => setConfirmDelete(l.id)} className="text-xs px-2 py-1.5 rounded-lg border border-red-100 text-red-500 hover:bg-red-50">🗑</button>}
                       </div>
                     )}
@@ -224,6 +228,7 @@ export function DriveLinksTab() {
           onClose={() => { setShowForm(false); setEditing(null) }}
         />
       )}
+      {transferSrc && <DocTransferDialog source={transferSrc} onClose={() => setTransferSrc(null)} />}
     </div>
   )
 }

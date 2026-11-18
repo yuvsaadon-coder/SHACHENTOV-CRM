@@ -3,6 +3,7 @@ import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, d
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import type { HQSupplier } from '../types'
+import { normalizeSupplier } from '../lib/hqNormalize'
 
 /** An explicit undefined means "cleared in the form": remove the field instead of keeping the old value. */
 export function clearUndefined<T extends object>(data: T): Record<string, unknown> {
@@ -16,7 +17,7 @@ export function useHQSuppliers() {
   useEffect(() => {
     const q = query(collection(db, 'hq_suppliers'), orderBy('name'))
     return onSnapshot(q, (snap) => {
-      setSuppliers(snap.docs.map((d) => ({ id: d.id, ...d.data() } as HQSupplier)))
+      setSuppliers(snap.docs.map((d) => normalizeSupplier(d.id, d.data() as Partial<HQSupplier>)))
       setLoading(false)
     })
   }, [])

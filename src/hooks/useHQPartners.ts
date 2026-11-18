@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import type { HQPartner, PartnerStatus } from '../types'
 
 import { clearUndefined } from './useHQSuppliers'
+import { normalizePartner } from '../lib/hqNormalize'
 
 export function useHQPartners() {
   const [partners, setPartners] = useState<HQPartner[]>([])
@@ -13,7 +14,7 @@ export function useHQPartners() {
   useEffect(() => {
     const q = query(collection(db, 'hq_partners'), orderBy('name'))
     return onSnapshot(q, (snap) => {
-      setPartners(snap.docs.map((d) => ({ id: d.id, ...d.data() } as HQPartner)))
+      setPartners(snap.docs.map((d) => normalizePartner(d.id, d.data() as Partial<HQPartner>)))
       setLoading(false)
     })
   }, [])

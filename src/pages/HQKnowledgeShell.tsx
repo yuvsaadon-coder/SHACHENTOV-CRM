@@ -5,6 +5,7 @@ import { OfficialTab } from '../components/hq-knowledge/OfficialTab'
 import { DriveLinksTab } from '../components/hq-knowledge/DriveLinksTab'
 import { PartnersTab } from '../components/hq-knowledge/PartnersTab'
 import { SuppliersTab } from '../components/hq-knowledge/SuppliersTab'
+import { ErrorBoundary } from '../components/ui/ErrorBoundary'
 
 type TabId = 'general' | 'finance' | 'official' | 'drive' | 'partners' | 'suppliers'
 
@@ -53,6 +54,7 @@ export function HQKnowledgeShell() {
 
       {/* Tab content */}
       <div className="flex-1">
+        <ErrorBoundary key={activeTab} label="שגיאה בטעינת הלשונית">
         {activeTab === 'general' && <HQKnowledgePage />}
         {activeTab === 'finance' && (
           <div>
@@ -114,6 +116,7 @@ export function HQKnowledgeShell() {
             <SuppliersTab />
           </div>
         )}
+        </ErrorBoundary>
       </div>
     </div>
   )

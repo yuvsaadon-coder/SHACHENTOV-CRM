@@ -3,6 +3,8 @@ import { Timestamp } from 'firebase/firestore'
 import { useHQOfficialDocs, useAddHQOfficialDoc, useUpdateHQOfficialDoc } from '../../hooks/useHQOfficialDocs'
 import { OFFICIAL_DOC_LABELS, type HQOfficialDoc, type OfficialDocSubtype } from '../../types'
 import { useAuth } from '../../context/AuthContext'
+import { DocTransferDialog } from './DocTransferDialog'
+import { fromOfficial, type DocSource } from '../../lib/hqDocTransfer'
 import { uploadFile, storagePath } from '../../lib/uploadFile'
 
 const SUBTYPES = Object.entries(OFFICIAL_DOC_LABELS) as [OfficialDocSubtype, string][]
@@ -24,53 +26,40 @@ function ExpiryBadge({ validUntil }: { validUntil?: Timestamp }) {
   return <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">תקף עד {validUntil!.toDate().toLocaleDateString('he-IL')}</span>
 }
 
-function DocCard({ doc: d, isAdmin, onEdit }: { doc: HQOfficialDoc; isAdmin: boolean; onEdit: (d: HQOfficialDoc) => void }) {
-  const [open, setOpen] = useState(false)
+function DocCard({ doc: d, isAdmin, onEdit, onTransfer }: { doc: HQOfficialDoc; isAdmin: boolean; onEdit: (d: HQOfficialDoc) => void; onTransfer?: (d: HQOfficialDoc) => void }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="w-full text-right px-4 py-4 hover:bg-gray-50 transition-colors flex items-center gap-3"
-      >
-        <span className="text-2xl shrink-0">📋</span>
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden hover:shadow-md transition-shadow">
+      <div className="p-4 flex items-start gap-3">
+        <span className="text-2xl shrink-0 mt-0.5">📋</span>
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-sm mb-1" style={{ color: '#141348' }}>
-            {OFFICIAL_DOC_LABELS[d.subtype]}
+          <div className="font-semibold text-sm leading-snug mb-1" style={{ color: '#141348' }}>
+            {OFFICIAL_DOC_LABELS[d.subtype] ?? d.subtype}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             <ExpiryBadge validUntil={d.validUntil} />
             {d.year && <span className="text-xs text-gray-400">שנת {d.year}</span>}
             {d.registrationNumber && <span className="text-xs text-gray-400">מס׳ {d.registrationNumber}</span>}
           </div>
         </div>
-        <span className="text-gray-400 text-xs shrink-0">{open ? '▲' : '▼'}</span>
-      </button>
-      {open && (
-        <div className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gray-50/50 flex flex-col gap-2">
-          {d.notes && <p className="text-sm text-gray-600 whitespace-pre-wrap">{d.notes}</p>}
-          <div className="flex gap-2 flex-wrap">
-            {d.fileUrl && (
-              <a
-                href={d.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg text-white transition-opacity hover:opacity-90"
-                style={{ backgroundColor: '#141348' }}
-              >
-                📎 {d.fileName ?? 'פתח קובץ'}
-              </a>
-            )}
-            {isAdmin && (
-              <button
-                onClick={() => onEdit(d)}
-                className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                ✏️ עריכה
-              </button>
+      </div>
+      {d.notes && <p className="px-4 pb-3 text-xs text-gray-500 line-clamp-2 -mt-1">{d.notes}</p>}
+      <div className="mt-auto border-t border-gray-50 px-3 py-2 flex items-center gap-1.5">
+        {d.fileUrl && (
+          <a href={d.fileUrl} target="_blank" rel="noopener noreferrer"
+            className="text-xs px-3 py-1.5 rounded-lg text-white font-medium hover:opacity-90 transition-opacity max-w-[9rem] truncate"
+            style={{ backgroundColor: '#141348' }}>
+            📎 {d.fileName ?? 'פתח'}
+          </a>
+        )}
+        {isAdmin && (
+          <div className="mr-auto flex gap-1.5">
+            <button onClick={() => onEdit(d)} className="text-xs px-2 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100">✏️</button>
+            {onTransfer && (
+              <button onClick={() => onTransfer(d)} className="text-xs px-2 py-1.5 rounded-lg border border-orange-100 text-orange-600 hover:bg-orange-50" title="העבר ללשונית אחרת">⇄ העבר</button>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
@@ -210,7 +199,8 @@ export function OfficialTab() {
   const { docs, loading } = useHQOfficialDocs()
   const addDoc = useAddHQOfficialDoc()
   const updateDoc = useUpdateHQOfficialDoc()
-  const { access, firebaseUser } = useAuth()
+  const { access, firebaseUser, isManager } = useAuth()
+  const [transferSrc, setTransferSrc] = useState<DocSource | null>(null)
   const isAdmin = access === 'admin' || access === 'hq'
 
   const [showForm, setShowForm] = useState(false)
@@ -260,9 +250,9 @@ export function OfficialTab() {
       ) : docs.length === 0 ? (
         <div className="text-sm text-gray-400 py-8 text-center">אין מסמכים רשמיים</div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {docs.map((d) => (
-            <DocCard key={d.id} doc={d} isAdmin={isAdmin} onEdit={(d) => { setEditing(d); setShowForm(true) }} />
+            <DocCard key={d.id} doc={d} isAdmin={isAdmin} onEdit={(d) => { setEditing(d); setShowForm(true) }} onTransfer={isManager ? (d) => setTransferSrc(fromOfficial(d)) : undefined} />
           ))}
         </div>
       )}
@@ -275,6 +265,7 @@ export function OfficialTab() {
           uid={firebaseUser?.uid ?? ''}
         />
       )}
+      {transferSrc && <DocTransferDialog source={transferSrc} onClose={() => setTransferSrc(null)} />}
     </div>
   )
 }

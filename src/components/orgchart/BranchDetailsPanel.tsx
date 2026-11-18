@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { BranchSuppliers } from '../BranchSuppliers'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import type { OrgRole, BranchVolunteerInfo, VolunteerStatus, SeasonalPeriod, QuarterlyReport } from '../../types'
@@ -390,6 +391,10 @@ export function BranchDetailsPanel({ role, branchId, onClose, onEditRole }: Prop
                   />
                   <label htmlFor="acceptsGroups" className="text-sm text-gray-700">קולט קבוצות מתנדבים</label>
                 </div>
+              </section>
+
+              <section>
+                <BranchSuppliers branchId={branchId} />
               </section>
 
               {/* Seasonal periods */}

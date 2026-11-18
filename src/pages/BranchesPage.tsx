@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { BranchSuppliers } from '../components/BranchSuppliers'
 import { Link } from 'react-router-dom'
 import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
@@ -619,6 +620,7 @@ function BranchCard({ branch, coordinators, org }: { branch: Branch; coordinator
           {!branch.distributionFrequency && !branch.distributionDay && !branch.weeklyBaskets && !branch.address && (
             <div className="text-xs text-gray-400">אין נתוני תפעול — לחץ עריכה להוסיף</div>
           )}
+          <BranchSuppliers branchId={branch.id} />
         </div>
 
         {/* Footer */}
