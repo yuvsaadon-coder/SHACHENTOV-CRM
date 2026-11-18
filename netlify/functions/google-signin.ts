@@ -50,8 +50,13 @@ export const handler: Handler = async (event) => {
   let email: string
   try {
     const decoded = await firebaseAuth.verifyIdToken(idToken)
-    if (!decoded.email) throw new Error('no email')
-    email = decoded.email
+    // Only a Google-issued, verified e-mail may be linked to an existing person. Without
+    // this, anyone could self-register an unverified password account under a staff
+    // member's address and trade its token for that person's session.
+    if (!decoded.email || decoded.email_verified !== true || decoded.firebase?.sign_in_provider !== 'google.com') {
+      throw new Error('not a verified Google sign-in')
+    }
+    email = decoded.email.toLowerCase()
   } catch {
     return json(cors, 401, { error: 'Token לא תקף.' })
   }
