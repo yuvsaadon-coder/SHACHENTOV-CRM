@@ -1,5 +1,9 @@
 import { useState, useMemo } from 'react'
 import { useContacts } from '../hooks/useContacts'
+import { useAuth } from '../context/AuthContext'
+import { useHQSuppliers } from '../hooks/useHQSuppliers'
+import { useHQPartners } from '../hooks/useHQPartners'
+import { BranchMultiSelect } from '../components/ui/BranchMultiSelect'
 import { useTasks } from '../hooks/useTasks'
 import { useRoles } from '../hooks/useRoles'
 import { PersonEditModal } from '../components/people/PersonEditModal'
@@ -208,6 +212,11 @@ function ContactEditModal({ contact, onSave, onDelete, onClose }: {
   onClose: () => void
 }) {
   const [form, setForm] = useState<ContactForm>(formFromContact(contact))
+  const [branchIds, setBranchIds] = useState<string[]>(contact.branchIds ?? [])
+  const { suppliers } = useHQSuppliers()
+  const { partners } = useHQPartners()
+  const linkedSuppliers = suppliers.filter((s) => s.contactIds?.includes(contact.id))
+  const linkedPartners = partners.filter((p) => p.internalContactId === contact.id || p.externalContactId === contact.id || p.contactIds?.includes(contact.id))
   const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -215,10 +224,11 @@ function ContactEditModal({ contact, onSave, onDelete, onClose }: {
   const handleSave = async () => {
     if (!form.name.trim()) return
     setSaving(true)
-    try { await onSave(formToContact(form)); onClose() }
+    try { await onSave({ ...formToContact(form), branchIds }); onClose() }
     finally { setSaving(false) }
   }
 
+  const { isManager } = useAuth()
   const handleDelete = async () => {
     if (!confirmDelete) { setConfirmDelete(true); return }
     setDeleting(true)
@@ -236,6 +246,18 @@ function ContactEditModal({ contact, onSave, onDelete, onClose }: {
         </div>
         <div className="p-5">
           <ContactFormFields form={form} onChange={setForm} />
+          <div className="mt-4 flex flex-col gap-3">
+            <BranchMultiSelect label="סניפים קשורים" value={branchIds} onChange={setBranchIds} />
+            {(linkedSuppliers.length > 0 || linkedPartners.length > 0) && (
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-gray-700">מקושר ל</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {linkedSuppliers.map((s) => <span key={s.id} className="text-xs px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700">🚚 ספק: {s.name}</span>)}
+                  {linkedPartners.map((p) => <span key={p.id} className="text-xs px-2 py-0.5 rounded-md bg-teal-50 text-teal-700">🤝 שותף: {p.name}</span>)}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         <div className="px-5 py-4 border-t border-gray-100 flex gap-3 items-center">
           <button onClick={() => void handleSave()} disabled={saving || !form.name.trim()}
@@ -244,12 +266,14 @@ function ContactEditModal({ contact, onSave, onDelete, onClose }: {
             {saving ? 'שומר...' : 'שמור'}
           </button>
           <button onClick={onClose} className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">ביטול</button>
+          {isManager && (
           <button onClick={() => void handleDelete()} disabled={deleting || saving}
             className={`mr-auto px-4 py-2 text-sm rounded-lg font-medium disabled:opacity-50 transition-colors ${
               confirmDelete ? 'bg-red-600 text-white' : 'border border-red-300 text-red-600 hover:bg-red-50'
             }`}>
             {deleting ? 'מוחק...' : confirmDelete ? 'אשר מחיקה' : 'מחק'}
           </button>
+          )}
         </div>
       </div>
     </div>

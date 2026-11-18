@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from 'react'
 import { useHQKnowledge, useAddHQKnowledge, useUpdateHQKnowledge, useDeleteHQKnowledge } from '../hooks/useHQKnowledge'
 import { extractFileText } from '../lib/extractFileText'
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_ERROR, isHttpsUrl } from '../lib/uploadFile'
 import { useAuth } from '../context/AuthContext'
 import {
   DOMAINS, DOMAIN_LABELS, DOMAIN_COLORS,
@@ -150,6 +151,7 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
   const [tags, setTags] = useState<string[]>(initialItem?.tags ?? [])
   const [file, setFile] = useState<File | null>(null)
   const [keepExistingFile, setKeepExistingFile] = useState(true)
+  const [linkUrl, setLinkUrl] = useState('')
   const [extracting, setExtracting] = useState(false)
   const [autoExtracted, setAutoExtracted] = useState(false)
   const [visibleToCoordinators, setVisibleToCoordinators] = useState(initialItem?.visibleToCoordinators ?? false)
@@ -182,15 +184,20 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
 
   const handleSave = async () => {
     if (!title.trim()) return
-    if (file && file.size > 30 * 1024 * 1024) {
-      alert('קובץ גדול מדי — מקסימום 30 MB')
+    if (file && file.size > MAX_UPLOAD_BYTES) {
+      setSaveError(MAX_UPLOAD_ERROR)
+      return
+    }
+    if (!file && linkUrl.trim() && !isHttpsUrl(linkUrl)) {
+      setSaveError('הקישור חייב להתחיל ב-https://')
       return
     }
     setSaving(true)
     setSaveError('')
     try {
-      const existingFileUrl = isEdit && keepExistingFile && !file ? initialItem?.fileUrl : undefined
-      const existingFileName = isEdit && keepExistingFile && !file ? initialItem?.fileName : undefined
+      const useLink = !file && !!linkUrl.trim()
+      const existingFileUrl = useLink ? linkUrl.trim() : (isEdit && keepExistingFile && !file ? initialItem?.fileUrl : undefined)
+      const existingFileName = useLink ? 'קישור' : (isEdit && keepExistingFile && !file ? initialItem?.fileName : undefined)
       const payload = {
         domain, category: category as HQKnowledgeCategory,
         title: title.trim(), content: content.trim(), tags,
@@ -375,6 +382,16 @@ function ItemModal({ initialItem, onClose }: { initialItem?: HQKnowledgeItem; on
             </button>
             {autoExtracted && (
               <p className="text-xs text-teal-700 mt-1">✓ טקסט חולץ אוטומטית מהקובץ ומולא בשדה "תוכן"</p>
+            )}
+            {!file && (
+              <input
+                type="url"
+                dir="ltr"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="או הדבק קישור (Drive / אתר) https://..."
+                className="w-full mt-2 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none"
+              />
             )}
           </div>
 

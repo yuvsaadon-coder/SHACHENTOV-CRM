@@ -103,6 +103,7 @@ export function DriveLinksTab() {
   const deleteLink = useDeleteHQDriveLink()
   const { access } = useAuth()
   const isAdmin = access === 'admin' || access === 'hq'
+  const { isManager } = useAuth()
 
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<HQDriveLink | null>(null)
@@ -187,7 +188,7 @@ export function DriveLinksTab() {
                     {isAdmin && (
                       <div className="mr-auto flex gap-1.5">
                         <button onClick={() => { setEditing(l); setShowForm(true) }} className="text-xs px-2 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100">✏️</button>
-                        <button onClick={() => setConfirmDelete(l.id)} className="text-xs px-2 py-1.5 rounded-lg border border-red-100 text-red-500 hover:bg-red-50">🗑</button>
+                        {isManager && <button onClick={() => setConfirmDelete(l.id)} className="text-xs px-2 py-1.5 rounded-lg border border-red-100 text-red-500 hover:bg-red-50">🗑</button>}
                       </div>
                     )}
                   </div>

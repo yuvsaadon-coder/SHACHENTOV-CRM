@@ -53,6 +53,8 @@ export interface Contact {
   cadence?: string
   /** Set when the sheet had no phone or email for this contact. */
   needsInfo?: boolean
+  /** Branches this contact relates to (e.g. the supplier rep of a branch). */
+  branchIds?: string[]
   /** Set on contacts archived automatically when a person left a position. */
   formerPersonId?: string
   formerRoleId?: string
@@ -525,11 +527,19 @@ export interface HQPartner {
   email?: string
   branchIds?: string[]
   supplierCategories?: string[]
+  files?: HQFileRef[]
   active: boolean
   createdBy: string
   updatedBy?: string
   createdAt: Timestamp
   updatedAt: Timestamp
+}
+
+/** A file attached to a partner/supplier: uploaded to Storage or just a link. */
+export interface HQFileRef {
+  name: string
+  url: string
+  uploaded?: boolean
 }
 
 // ─── Suppliers ───────────────────────────────────────────────────────────────
@@ -555,6 +565,7 @@ export interface HQSupplier {
   partnerCategories?: PartnerCategory[]
   partnerStatus?: PartnerStatus
   statusHistory?: PartnerStatusChange[]
+  files?: HQFileRef[]
   active: boolean
   createdBy: string
   updatedBy?: string

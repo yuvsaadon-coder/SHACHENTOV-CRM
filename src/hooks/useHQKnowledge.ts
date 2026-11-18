@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { collection, query, where, onSnapshot, addDoc, deleteDoc, updateDoc, setDoc, doc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
+import { uploadFileAsync } from '../lib/uploadFile'
 import type { HQKnowledgeItem, HQKnowledgeCategory, Domain } from '../types'
 
 async function syncToCoordinators(docId: string, title: string, content: string, storageUrl?: string) {
@@ -21,13 +22,10 @@ async function removeFromCoordinators(docId: string) {
   await deleteDoc(doc(db, 'knowledgeItems', `hq-${docId}`))
 }
 
-async function fileToDataUri(file: File): Promise<{ fileUrl: string; fileName: string }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve({ fileUrl: reader.result as string, fileName: file.name })
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
+async function uploadKnowledgeFile(file: File, uid: string): Promise<{ fileUrl: string; fileName: string }> {
+  const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const up = await uploadFileAsync(`hq_knowledge/${uid}/${Date.now()}_${safe}`, file)
+  return { fileUrl: up.url, fileName: file.name }
 }
 
 export function useHQKnowledge(domainFilter?: Domain | 'all' | null) {
@@ -71,6 +69,8 @@ export function useAddHQKnowledge() {
     title: string
     content: string
     file?: File
+    fileUrl?: string
+    fileName?: string
     tags: string[]
     visibleToCoordinators?: boolean
   }) => {
@@ -82,9 +82,9 @@ export function useAddHQKnowledge() {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
-    let fileUrl: string | undefined
+    let fileUrl: string | undefined = rest.fileUrl
     if (file) {
-      const uploaded = await fileToDataUri(file)
+      const uploaded = await uploadKnowledgeFile(file, appUser?.uid ?? '')
       fileUrl = uploaded.fileUrl
       await updateDoc(docRef, { fileUrl: uploaded.fileUrl, fileName: uploaded.fileName, updatedAt: serverTimestamp() })
     }
@@ -97,6 +97,7 @@ export function useAddHQKnowledge() {
 }
 
 export function useUpdateHQKnowledge() {
+  const { appUser } = useAuth()
   const updateItem = async (id: string, data: {
     domain: Domain | 'all'
     category: HQKnowledgeCategory
@@ -111,7 +112,7 @@ export function useUpdateHQKnowledge() {
     const { file, visibleToCoordinators, ...rest } = data
     let fileUrl = rest.fileUrl
     if (file) {
-      const uploaded = await fileToDataUri(file)
+      const uploaded = await uploadKnowledgeFile(file, appUser?.uid ?? '')
       fileUrl = uploaded.fileUrl
       await updateDoc(doc(db, 'hq_knowledge', id), { ...rest, fileUrl: uploaded.fileUrl, fileName: uploaded.fileName, visibleToCoordinators: visibleToCoordinators ?? false, updatedAt: serverTimestamp() })
     } else {

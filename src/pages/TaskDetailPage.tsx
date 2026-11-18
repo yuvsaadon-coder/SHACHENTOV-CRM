@@ -7,6 +7,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
+import { uploadFileAsync, isHttpsUrl, MAX_UPLOAD_BYTES, MAX_UPLOAD_ERROR } from '../lib/uploadFile'
 import { useToast } from '../context/ToastContext'
 import { StatusBadge } from '../components/ui/StatusBadge'
 import { DomainBadge } from '../components/ui/DomainBadge'
@@ -46,6 +47,8 @@ export function TaskDetailPage() {
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [newComment, setNewComment] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [uploadPct, setUploadPct] = useState<number | null>(null)
+  const [linkInput, setLinkInput] = useState('')
   const [tab, setTab] = useState<'details' | 'comments' | 'files' | 'history'>('details')
   const [subTasks, setSubTasks] = useState<Task[]>([])
   const [parentTask, setParentTask] = useState<Task | null>(null)
@@ -172,35 +175,55 @@ export function TaskDetailPage() {
     }
   }
 
+  const saveAttachment = async (fileName: string, storageUrl: string) => {
+    if (!id) return
+    await addDoc(collection(db, 'tasks', id, 'attachments'), {
+      fileName, storageUrl,
+      uploadedBy: appUser?.name, uploadedAt: serverTimestamp(),
+    })
+    // Denormalized onto the task doc so list/kanban cards can show a 📎
+    // count without a subcollection read per card.
+    await updateDoc(doc(db, 'tasks', id), { attachmentCount: increment(1) })
+  }
+
   const uploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file || !id) return
-    if (file.size > 500 * 1024) {
-      toast('הקובץ גדול מדי — מקסימום 500 KB', 'error')
+    const uid = appUser?.uid
+    if (!file || !id || !uid) return
+    if (file.size > MAX_UPLOAD_BYTES) {
+      toast(MAX_UPLOAD_ERROR, 'error')
       e.target.value = ''
       return
     }
     setUploading(true)
+    setUploadPct(0)
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = (ev) => resolve(ev.target?.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-      })
-      await addDoc(collection(db, 'tasks', id, 'attachments'), {
-        fileName: file.name, storageUrl: dataUrl,
-        uploadedBy: appUser?.name, uploadedAt: serverTimestamp(),
-      })
-      // Denormalized onto the task doc so list/kanban cards can show a 📎
-      // count without a subcollection read per card.
-      await updateDoc(doc(db, 'tasks', id), { attachmentCount: increment(1) })
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const up = await uploadFileAsync(`tasks/${uid}/${id}/${Date.now()}_${safe}`, file, setUploadPct)
+      await saveAttachment(file.name, up.url)
       toast('הקובץ הועלה בהצלחה', 'success')
     } catch {
       toast('שגיאה בהעלאת הקובץ. נסה שוב.', 'error')
     } finally {
       setUploading(false)
+      setUploadPct(null)
       e.target.value = ''
+    }
+  }
+
+  const addLinkAttachment = async () => {
+    const url = linkInput.trim()
+    if (!url) return
+    if (!isHttpsUrl(url)) {
+      toast('הקישור חייב להתחיל ב-https://', 'error')
+      return
+    }
+    try {
+      await saveAttachment(new URL(url).hostname, url)
+      setLinkInput('')
+      toast('הקישור נוסף', 'success')
+    } catch {
+      toast('שגיאה בהוספת הקישור. נסה שוב.', 'error')
     }
   }
 
@@ -622,10 +645,28 @@ export function TaskDetailPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-4">
           <label className="flex items-center gap-2 cursor-pointer">
             <span className="bg-brand-teal hover:bg-brand-tealDark text-white text-sm px-4 py-2 rounded-lg transition-colors">
-              {uploading ? 'מעלה...' : '+ צרף קובץ'}
+              {uploading ? `מעלה... ${uploadPct ?? 0}%` : '+ צרף קובץ'}
             </span>
             <input type="file" className="hidden" onChange={uploadFile} disabled={uploading} />
           </label>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              dir="ltr"
+              value={linkInput}
+              onChange={(e) => setLinkInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void addLinkAttachment() } }}
+              placeholder="או הדבק קישור (Drive / אתר) https://..."
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
+            />
+            <button
+              onClick={() => void addLinkAttachment()}
+              disabled={!linkInput.trim()}
+              className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40"
+            >
+              הוסף קישור
+            </button>
+          </div>
           <div className="space-y-2">
             {attachments.map((a) => (
               <div key={a.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">

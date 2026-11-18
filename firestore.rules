@@ -50,15 +50,18 @@ service cloud.firestore {
     }
 
     // ── CRM (HQ staff & admins) ──────────────────────────────────────────────
+    // Deleting shared records is reserved for system managers; HQ staff may
+    // still create and edit them.
     match /tasks/{taskId} {
-      allow read, write: if isHQ();
+      allow read, create, update: if isHQ();
+      allow delete: if isManager();
       match /{sub}/{subId} {
         allow read, write: if isHQ();
       }
     }
 
-    match /contacts/{id} { allow read, write: if isHQ(); }
-    match /roles/{id}    { allow read, write: if isHQ(); }
+    match /contacts/{id} { allow read, create, update: if isHQ(); allow delete: if isManager(); }
+    match /roles/{id}    { allow read, create, update: if isHQ(); allow delete: if isManager(); }
 
     // Coordinators need to read their own branch document to enter the portal.
     match /branches/{id} {
@@ -75,11 +78,11 @@ service cloud.firestore {
     }
 
     // ── HQ Knowledge Base (new collections) ─────────────────────────────────
-    match /hq_finance/{id}       { allow read: if isHQ(); allow write: if isHQ(); }
-    match /hq_official_docs/{id} { allow read: if isHQ(); allow write: if isHQ(); }
-    match /hq_drive_links/{id}   { allow read: if isHQ(); allow write: if isHQ(); }
-    match /hq_partners/{id}      { allow read: if isHQ(); allow write: if isHQ(); }
-    match /hq_suppliers/{id}     { allow read: if isHQ(); allow write: if isHQ(); }
+    match /hq_finance/{id} { allow read, create, update: if isHQ(); allow delete: if isManager(); }
+    match /hq_official_docs/{id} { allow read, create, update: if isHQ(); allow delete: if isManager(); }
+    match /hq_drive_links/{id} { allow read, create, update: if isHQ(); allow delete: if isManager(); }
+    match /hq_partners/{id} { allow read, create, update: if isHQ(); allow delete: if isManager(); }
+    match /hq_suppliers/{id} { allow read, create, update: if isHQ(); allow delete: if isManager(); }
 
     // ── Quarterly reports ────────────────────────────────────────────────────
     // HQ sees everything (the /reports page). A coordinator reads the reports of

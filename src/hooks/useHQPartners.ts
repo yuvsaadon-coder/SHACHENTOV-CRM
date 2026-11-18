@@ -4,6 +4,8 @@ import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import type { HQPartner, PartnerStatus } from '../types'
 
+import { clearUndefined } from './useHQSuppliers'
+
 export function useHQPartners() {
   const [partners, setPartners] = useState<HQPartner[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,7 +46,7 @@ export function useUpdateHQPartner() {
   const { firebaseUser: user } = useAuth()
   return async (id: string, data: Partial<HQPartner>, prevStatus?: PartnerStatus) => {
     const update: Record<string, unknown> = {
-      ...data,
+      ...clearUndefined(data),
       updatedBy: user?.uid ?? '',
       updatedAt: serverTimestamp(),
     }

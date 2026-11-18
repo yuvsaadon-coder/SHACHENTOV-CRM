@@ -1,3 +1,4 @@
+import { useAuth } from '../../context/AuthContext'
 import { useEffect, useState } from 'react'
 import type { AppUser, Domain, OrgRole, RoleLevel, RoleStatus, RolePriority, RecruitmentUrgency, StoredOrgRole } from '../../types'
 import {
@@ -42,6 +43,7 @@ function toForm(role: OrgRole | null): StoredOrgRole {
 type PersonDialog = { mode: 'new' } | { mode: 'edit'; uid: string } | null
 
 export function RoleEditModal({ role, allRoles, people, onClose }: Props) {
+  const { isManager } = useAuth()
   const { toast } = useToast()
   const [createdId, setCreatedId] = useState<string | null>(null)
   const roleId = role?.id ?? createdId
@@ -335,7 +337,7 @@ export function RoleEditModal({ role, allRoles, people, onClose }: Props) {
           >
             {roleId ? 'סגור' : 'ביטול'}
           </button>
-          {live && (
+          {live && isManager && (
             <button
               onClick={() => void handleDelete()}
               disabled={deleting || saving}

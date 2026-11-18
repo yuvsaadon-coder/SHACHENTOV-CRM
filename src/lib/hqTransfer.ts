@@ -33,6 +33,7 @@ export function partnerToSupplier(p: HQPartner): Fields<HQSupplier> {
     partnerCategories: p.categories,
     partnerStatus: p.status,
     statusHistory: p.statusHistory,
+    files: p.files,
     active: true,
   })
 }
@@ -59,6 +60,7 @@ export function supplierToPartner(s: HQSupplier): Fields<HQPartner> {
     email: s.email,
     branchIds: s.branchIds,
     supplierCategories: s.categories,
+    files: s.files,
     active: true,
   })
 }

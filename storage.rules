@@ -22,9 +22,30 @@ service firebase.storage {
       allow write: if isHQ() && request.auth.uid == uid;
     }
 
+    // Partner files (agreements, invoices): HQ read, owner write
+    match /hq_partners/{uid}/{fileName} {
+      allow read: if isHQ();
+      allow write: if isHQ() && request.auth.uid == uid && request.resource.size < 25 * 1024 * 1024;
+    }
+
     // Research articles uploaded from the knowledge admin screen: HQ only
     match /knowledge_articles/{docId}/{fileName} {
       allow read, write: if isHQ();
+    }
+
+    match /tasks/{uid}/{taskId}/{fileName} {
+      allow read:  if isHQ();
+      allow write: if isHQ() && request.auth.uid == uid && request.resource.size < 25 * 1024 * 1024;
+    }
+
+    match /hq_knowledge/{uid}/{fileName} {
+      allow read:  if isHQ();
+      allow write: if isHQ() && request.auth.uid == uid && request.resource.size < 25 * 1024 * 1024;
+    }
+
+    match /hq_suppliers/{uid}/{fileName} {
+      allow read:  if isHQ();
+      allow write: if isHQ() && request.auth.uid == uid && request.resource.size < 25 * 1024 * 1024;
     }
   }
 }

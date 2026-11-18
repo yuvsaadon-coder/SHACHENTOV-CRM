@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { useHQPartners, useAddHQPartner, useUpdateHQPartner } from '../../hooks/useHQPartners'
 import { transferPartnerToSupplier } from '../../lib/hqTransfer'
 import { useToast } from '../../context/ToastContext'
+import { BranchMultiSelect, BranchChips } from '../ui/BranchMultiSelect'
+import { FileLinkList } from '../ui/FileLinkList'
 import {
   PARTNER_TYPE_LABELS, PARTNER_STATUS_LABELS, PARTNER_CAT_LABELS,
   PAYMENT_METHOD_LABELS, RECEIPT_GEN_LABELS, PARTNER_USED_FOR_LABELS,
   type HQPartner, type PartnerType, type PartnerStatus, type PartnerCategory,
-  type PaymentMethod, type ReceiptGeneration, type PartnerUsedFor,
+  type PaymentMethod, type ReceiptGeneration, type PartnerUsedFor, type HQFileRef,
 } from '../../types'
 import { useAuth } from '../../context/AuthContext'
 
@@ -35,10 +37,12 @@ interface FormState {
   paymentMethods: PaymentMethod[]
   receiptGeneration: ReceiptGeneration | ''
   usedFor: PartnerUsedFor[]
+  branchIds: string[]
+  files: HQFileRef[]
 }
 
 function emptyForm(): FormState {
-  return { name: '', partnerType: 'partner', categories: [], status: 'potential', websiteUrl: '', adminUrl: '', notes: '', paymentMethods: [], receiptGeneration: '', usedFor: [] }
+  return { name: '', partnerType: 'partner', categories: [], status: 'potential', websiteUrl: '', adminUrl: '', notes: '', paymentMethods: [], receiptGeneration: '', usedFor: [], branchIds: [], files: [] }
 }
 
 function toggleArr<T>(arr: T[], val: T): T[] {
@@ -61,7 +65,7 @@ function CheckboxGroup<T extends string>({ label, options, value, onChange }: { 
   )
 }
 
-function PartnerForm({ initial, onSave, onClose }: { initial?: HQPartner; onSave: (form: FormState, prevStatus?: PartnerStatus) => Promise<void>; onClose: () => void }) {
+function PartnerForm({ initial, onSave, onClose, uid }: { initial?: HQPartner; onSave: (form: FormState, prevStatus?: PartnerStatus) => Promise<void>; onClose: () => void; uid: string }) {
   const [form, setForm] = useState<FormState>(
     initial
       ? {
@@ -75,6 +79,8 @@ function PartnerForm({ initial, onSave, onClose }: { initial?: HQPartner; onSave
           paymentMethods: initial.paymentMethods ?? [],
           receiptGeneration: initial.receiptGeneration ?? '',
           usedFor: initial.usedFor ?? [],
+          branchIds: initial.branchIds ?? [],
+          files: initial.files ?? [],
         }
       : emptyForm()
   )
@@ -147,6 +153,10 @@ function PartnerForm({ initial, onSave, onClose }: { initial?: HQPartner; onSave
           </>
         )}
 
+        <BranchMultiSelect label="סניפים קשורים" value={form.branchIds} onChange={(branchIds) => setForm((f) => ({ ...f, branchIds }))} />
+
+        <FileLinkList label="קבצים וקישורים (הסכמים, חשבוניות...)" value={form.files} onChange={(files) => setForm((f) => ({ ...f, files }))} folder="hq_partners" uid={uid} />
+
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-gray-700">הערות</label>
           <textarea className="border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" rows={3} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
@@ -165,7 +175,7 @@ function PartnerForm({ initial, onSave, onClose }: { initial?: HQPartner; onSave
   )
 }
 
-function PartnerCard({ partner: p, isAdmin, onEdit, onTransfer }: { partner: HQPartner; isAdmin: boolean; onEdit: (p: HQPartner) => void; onTransfer: (p: HQPartner) => void }) {
+function PartnerCard({ partner: p, isAdmin, onEdit, onTransfer }: { partner: HQPartner; isAdmin: boolean; onEdit: (p: HQPartner) => void; onTransfer?: (p: HQPartner) => void }) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden hover:shadow-md transition-shadow">
       <div className="p-4 flex items-start gap-3">
@@ -197,6 +207,18 @@ function PartnerCard({ partner: p, isAdmin, onEdit, onTransfer }: { partner: HQP
         </div>
       )}
 
+      <BranchChips ids={p.branchIds ?? []} />
+
+      {(p.files?.length ?? 0) > 0 && (
+        <div className="px-4 pb-2 flex flex-wrap gap-1.5">
+          {p.files?.map((f, i) => (
+            <a key={`${f.url}-${i}`} href={f.url} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 hover:underline max-w-[10rem] truncate">
+              {f.uploaded ? '📎' : '🔗'} {f.name}
+            </a>
+          ))}
+        </div>
+      )}
+
       {p.notes && (
         <p className="px-4 pb-3 text-xs text-gray-500 line-clamp-2">{p.notes}</p>
       )}
@@ -211,13 +233,15 @@ function PartnerCard({ partner: p, isAdmin, onEdit, onTransfer }: { partner: HQP
         {isAdmin && (
           <div className="mr-auto flex gap-1.5">
             <button onClick={() => onEdit(p)} className="text-xs px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">✏️</button>
-            <button
-              onClick={() => onTransfer(p)}
-              className="text-xs px-2 py-1 rounded-lg border border-orange-100 text-orange-600 hover:bg-orange-50"
-              title="העבר לספקים"
-            >
-              → ספקים
-            </button>
+            {onTransfer && (
+              <button
+                onClick={() => onTransfer(p)}
+                className="text-xs px-2 py-1 rounded-lg border border-orange-100 text-orange-600 hover:bg-orange-50"
+                title="העבר לספקים"
+              >
+                → ספקים
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -229,7 +253,7 @@ export function PartnersTab() {
   const { partners, loading } = useHQPartners()
   const addPartner = useAddHQPartner()
   const updatePartner = useUpdateHQPartner()
-  const { access, firebaseUser } = useAuth()
+  const { access, firebaseUser, isManager } = useAuth()
   const { toast } = useToast()
   const isAdmin = access === 'admin' || access === 'hq'
 
@@ -253,6 +277,8 @@ export function PartnersTab() {
       paymentMethods: form.paymentMethods.length > 0 ? form.paymentMethods : undefined,
       receiptGeneration: (form.receiptGeneration || undefined) as ReceiptGeneration | undefined,
       usedFor: form.usedFor.length > 0 ? form.usedFor : undefined,
+      branchIds: form.branchIds,
+      files: form.files,
       active: true,
     }
     if (editing) await updatePartner(editing.id, data, prevStatus)
@@ -329,7 +355,7 @@ export function PartnersTab() {
                   partner={p}
                   isAdmin={isAdmin}
                   onEdit={(p) => { setEditing(p); setShowForm(true) }}
-                  onTransfer={setTransferConfirm}
+                  onTransfer={isManager ? setTransferConfirm : undefined}
                 />
               ))}
             </div>
@@ -362,6 +388,7 @@ export function PartnersTab() {
 
       {showForm && (
         <PartnerForm
+          uid={firebaseUser?.uid ?? ''}
           initial={editing ?? undefined}
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditing(null) }}

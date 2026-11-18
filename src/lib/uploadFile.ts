@@ -36,3 +36,24 @@ export function storagePath(collection: string, uid: string, fileName: string): 
   const safe = fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
   return `${collection}/${uid}/${ts}_${safe}`
 }
+
+export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024
+export const MAX_UPLOAD_ERROR = 'הקובץ גדול מדי — מקסימום 25 MB'
+
+export function isHttpsUrl(value: string): boolean {
+  try { return new URL(value.trim()).protocol === 'https:' } catch { return false }
+}
+
+export function uploadFileAsync(
+  path: string,
+  file: File,
+  onProgress?: (pct: number) => void,
+): Promise<{ url: string; fileName: string }> {
+  if (file.size > MAX_UPLOAD_BYTES) return Promise.reject(new Error(MAX_UPLOAD_ERROR))
+  return new Promise((resolve, reject) => {
+    uploadFile(path, file, (p) => {
+      if (!p.done) onProgress?.(p.progress)
+      else resolve({ url: p.url, fileName: p.fileName })
+    }, reject)
+  })
+}

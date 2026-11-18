@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { useHQSuppliers, useAddHQSupplier, useUpdateHQSupplier } from '../../hooks/useHQSuppliers'
 import { transferSupplierToPartner } from '../../lib/hqTransfer'
 import { useToast } from '../../context/ToastContext'
-import type { HQSupplier, Contact } from '../../types'
+import type { HQSupplier, HQFileRef, Contact } from '../../types'
+import { BranchMultiSelect, BranchChips } from '../ui/BranchMultiSelect'
+import { FileLinkList } from '../ui/FileLinkList'
 import { useAuth } from '../../context/AuthContext'
 import { useContacts } from '../../hooks/useContacts'
 
@@ -14,17 +16,20 @@ interface FormState {
   phone: string
   email: string
   contactIds: string[]
+  branchIds: string[]
+  files: HQFileRef[]
+  websiteUrl: string
   notes: string
 }
 
 function emptyForm(): FormState {
-  return { name: '', categories: '', status: 'active', contactName: '', phone: '', email: '', contactIds: [], notes: '' }
+  return { name: '', categories: '', status: 'active', contactName: '', phone: '', email: '', contactIds: [], branchIds: [], files: [], websiteUrl: '', notes: '' }
 }
 
-function SupplierForm({ initial, onSave, onClose, allContacts }: { initial?: HQSupplier; onSave: (form: FormState) => Promise<void>; onClose: () => void; allContacts: Contact[] }) {
+function SupplierForm({ initial, onSave, onClose, allContacts, uid }: { initial?: HQSupplier; onSave: (form: FormState) => Promise<void>; onClose: () => void; allContacts: Contact[]; uid: string }) {
   const [form, setForm] = useState<FormState>(
     initial
-      ? { name: initial.name, categories: initial.categories.join(', '), status: initial.status, contactName: initial.contactName ?? '', phone: initial.phone ?? '', email: initial.email ?? '', contactIds: initial.contactIds ?? [], notes: initial.notes ?? '' }
+      ? { name: initial.name, categories: initial.categories.join(', '), status: initial.status, contactName: initial.contactName ?? '', phone: initial.phone ?? '', email: initial.email ?? '', contactIds: initial.contactIds ?? [], branchIds: initial.branchIds ?? [], files: initial.files ?? [], websiteUrl: initial.websiteUrl ?? '', notes: initial.notes ?? '' }
       : emptyForm()
   )
   const [contactSearch, setContactSearch] = useState('')
@@ -130,6 +135,15 @@ function SupplierForm({ initial, onSave, onClose, allContacts }: { initial?: HQS
           )}
         </div>
 
+        <BranchMultiSelect label="סניפים שהספק מספק להם" value={form.branchIds} onChange={(branchIds) => setForm((f) => ({ ...f, branchIds }))} />
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-gray-700">אתר</label>
+          <input className="border border-gray-200 rounded-lg px-3 py-2 text-sm" type="url" dir="ltr" value={form.websiteUrl} onChange={(e) => setForm((f) => ({ ...f, websiteUrl: e.target.value }))} placeholder="https://" />
+        </div>
+
+        <FileLinkList label="חוזים, הצעות מחיר וקישורים" value={form.files} onChange={(files) => setForm((f) => ({ ...f, files }))} folder="hq_suppliers" uid={uid} />
+
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-gray-700">הערות</label>
           <textarea className="border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" rows={3} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
@@ -148,7 +162,7 @@ function SupplierForm({ initial, onSave, onClose, allContacts }: { initial?: HQS
   )
 }
 
-function SupplierCard({ supplier: s, isAdmin, onEdit, onTransfer, linkedContacts }: { supplier: HQSupplier; isAdmin: boolean; onEdit: (s: HQSupplier) => void; onTransfer: (s: HQSupplier) => void; linkedContacts: Contact[] }) {
+function SupplierCard({ supplier: s, isAdmin, onEdit, onTransfer, linkedContacts }: { supplier: HQSupplier; isAdmin: boolean; onEdit: (s: HQSupplier) => void; onTransfer?: (s: HQSupplier) => void; linkedContacts: Contact[] }) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden hover:shadow-md transition-shadow">
       <div className="p-4 flex items-start gap-3">
@@ -176,6 +190,8 @@ function SupplierCard({ supplier: s, isAdmin, onEdit, onTransfer, linkedContacts
         </div>
       )}
 
+      <BranchChips ids={s.branchIds ?? []} />
+
       {(s.contactName || s.phone || s.email) && (
         <div className="px-4 pb-2 text-xs text-gray-500 flex flex-wrap gap-2">
           {s.contactName && <span>👤 {s.contactName}</span>}
@@ -196,6 +212,17 @@ function SupplierCard({ supplier: s, isAdmin, onEdit, onTransfer, linkedContacts
         </div>
       )}
 
+      {((s.files?.length ?? 0) > 0 || s.websiteUrl) && (
+        <div className="px-4 pb-2 flex flex-wrap gap-1.5">
+          {s.websiteUrl && <a href={s.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 hover:underline">🌐 אתר</a>}
+          {s.files?.map((f, i) => (
+            <a key={`${f.url}-${i}`} href={f.url} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 hover:underline max-w-[10rem] truncate">
+              {f.uploaded ? '📎' : '🔗'} {f.name}
+            </a>
+          ))}
+        </div>
+      )}
+
       {s.notes && (
         <p className="px-4 pb-3 text-xs text-gray-500 line-clamp-2">{s.notes}</p>
       )}
@@ -204,13 +231,15 @@ function SupplierCard({ supplier: s, isAdmin, onEdit, onTransfer, linkedContacts
         {isAdmin && (
           <div className="mr-auto flex gap-1.5">
             <button onClick={() => onEdit(s)} className="text-xs px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">✏️</button>
-            <button
-              onClick={() => onTransfer(s)}
-              className="text-xs px-2 py-1 rounded-lg border border-orange-100 text-orange-600 hover:bg-orange-50"
-              title="העבר לשותפים"
-            >
-              → שותפים
-            </button>
+            {onTransfer && (
+              <button
+                onClick={() => onTransfer(s)}
+                className="text-xs px-2 py-1 rounded-lg border border-orange-100 text-orange-600 hover:bg-orange-50"
+                title="העבר לשותפים"
+              >
+                → שותפים
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -223,7 +252,7 @@ export function SuppliersTab() {
   const addSupplier = useAddHQSupplier()
   const updateSupplier = useUpdateHQSupplier()
   const { contacts } = useContacts()
-  const { access, firebaseUser } = useAuth()
+  const { access, firebaseUser, isManager } = useAuth()
   const { toast } = useToast()
   const isAdmin = access === 'admin' || access === 'hq'
 
@@ -244,11 +273,14 @@ export function SuppliersTab() {
       phone: form.phone || undefined,
       email: form.email || undefined,
       contactIds: form.contactIds.length > 0 ? form.contactIds : undefined,
+      websiteUrl: form.websiteUrl.trim() || undefined,
+      files: form.files,
+      branchIds: form.branchIds,
       notes: form.notes || undefined,
       active: true,
     }
     if (editing) await updateSupplier(editing.id, data)
-    else await addSupplier({ ...data, branchIds: [] })
+    else await addSupplier(data)
   }
 
   const handleTransfer = async () => {
@@ -310,7 +342,7 @@ export function SuppliersTab() {
                 supplier={s}
                 isAdmin={isAdmin}
                 onEdit={(s) => { setEditing(s); setShowForm(true) }}
-                onTransfer={setTransferConfirm}
+                onTransfer={isManager ? setTransferConfirm : undefined}
                 linkedContacts={linked}
               />
             )
@@ -346,7 +378,7 @@ export function SuppliersTab() {
           initial={editing ?? undefined}
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditing(null) }}
-          allContacts={contacts}
+          uid={firebaseUser?.uid ?? ''} allContacts={contacts}
         />
       )}
     </div>
