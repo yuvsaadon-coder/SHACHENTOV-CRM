@@ -5,14 +5,18 @@ import { ShiftsTab } from '../../components/volunteers/ShiftsTab'
 import { VolunteersTab } from '../../components/volunteers/VolunteersTab'
 import { TrackingTab } from '../../components/volunteers/TrackingTab'
 import { SendTab } from '../../components/volunteers/SendTab'
+import { RemindersTab } from '../../components/volunteers/RemindersTab'
+import { ReportTab } from '../../components/volunteers/ReportTab'
 
-type Tab = 'shifts' | 'volunteers' | 'tracking' | 'send'
+type Tab = 'shifts' | 'volunteers' | 'tracking' | 'send' | 'reminders' | 'report'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'shifts',     label: 'חלוקות' },
   { id: 'volunteers', label: 'מתנדבים' },
   { id: 'tracking',   label: 'מעקב' },
   { id: 'send',       label: 'שליחה' },
+  { id: 'reminders',  label: 'תזכורות' },
+  { id: 'report',     label: 'דוח' },
 ]
 
 export function PortalVolunteers() {
@@ -42,6 +46,8 @@ export function PortalVolunteers() {
         {tab === 'volunteers' && <VolunteersTab  branch={branch} />}
         {tab === 'tracking'   && <TrackingTab   branch={branch} />}
         {tab === 'send'       && <SendTab        branch={branch} />}
+        {tab === 'reminders'  && <RemindersTab   branch={branch} />}
+        {tab === 'report'     && <ReportTab      branch={branch} />}
       </div>
     </div>
   )

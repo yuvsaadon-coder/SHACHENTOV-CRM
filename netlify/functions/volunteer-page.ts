@@ -66,10 +66,8 @@ export const handler: Handler = async (event) => {
 
     // Current + next month shifts
     const now = new Date()
-    const months = [
-      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
-      `${now.getFullYear()}-${String(now.getMonth() + 2).padStart(2, '0')}`,
-    ]
+    const ym = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const months = [ym(now), ym(new Date(now.getFullYear(), now.getMonth() + 1, 1))]
 
     const shiftsSnap = await db.collection('shifts')
       .where('branchId', '==', branchId)
@@ -80,6 +78,15 @@ export const handler: Handler = async (event) => {
       .get()
 
     const shifts = shiftsSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
+
+    // Record that the personal link was opened — only where the coordinator logged a send.
+    await Promise.all(months.map(async (m) => {
+      const ref = db.collection('monthly_responses').doc(`${branchId}_${m}_${volunteerId}`)
+      const snap = await ref.get()
+      if (snap.exists && !snap.data()?.openedAt) {
+        await ref.set({ openedAt: FieldValue.serverTimestamp() }, { merge: true })
+      }
+    })).catch(() => undefined)
 
     // Counts of committed assignments per shift
     const shiftIds = shifts.map((s) => (s as { id: string }).id)

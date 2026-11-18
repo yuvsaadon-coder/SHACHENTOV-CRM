@@ -101,3 +101,13 @@ export function useCancelAssignment() {
     })
   }
 }
+
+/** Marks that the day-before reminder was sent, so nobody is reminded twice. */
+export function useMarkReminderSent() {
+  return async (assignmentId: string) => {
+    await updateDoc(doc(db, 'assignments', assignmentId), {
+      reminderSentAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
+  }
+}

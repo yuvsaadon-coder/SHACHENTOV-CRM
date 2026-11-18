@@ -3,13 +3,19 @@ import type { Branch } from '../../types'
 import { useShifts } from '../../hooks/useShifts'
 import { useAssignments, useMarkAttendance, useCancelAssignment } from '../../hooks/useAssignments'
 import { useVolunteerMembers } from '../../hooks/useVolunteerMembers'
-import { useMonthlyResponses } from '../../hooks/useMonthlyResponses'
-import { currentMonth, nextMonth, prevMonth, monthLabel, formatShiftDate } from '../../lib/volunteerUtils'
+import { useMonthlyResponses, useSetMonthlyResponse } from '../../hooks/useMonthlyResponses'
+import {
+  currentMonth, nextMonth, prevMonth, monthLabel, formatShiftDate,
+  replyState, isMissingReply, REPLY_LABEL, type ReplyState,
+} from '../../lib/volunteerUtils'
 
 interface Props { branch: Branch }
 
 const STATUS_LABEL: Record<string, string> = {
   committed: 'רשום', cancelled: 'בוטל', attended: 'הגיע', no_show: 'לא הגיע',
+}
+const STATE_COLOR: Record<ReplyState, string> = {
+  none: '#9CA3AF', sent: '#E97400', opened: '#2563EB', answered: '#16A34A', declined: '#DC2626',
 }
 const STATUS_COLOR: Record<string, string> = {
   committed: '#189A9F', cancelled: '#9CA3AF', attended: '#16A34A', no_show: '#DC2626',
@@ -23,7 +29,9 @@ export function TrackingTab({ branch }: Props) {
   const { responses } = useMonthlyResponses(branch.id, month)
   const markAttendance = useMarkAttendance()
   const cancelAssign = useCancelAssignment()
+  const setResponse = useSetMonthlyResponse()
   const [openShiftId, setOpenShiftId] = useState<string | null>(null)
+  const [onlyMissing, setOnlyMissing] = useState(false)
 
   const volById = Object.fromEntries(volunteers.map((v) => [v.id, v]))
   const assignsByShift = assignments.reduce<Record<string, typeof assignments>>((acc, a) => {
@@ -31,8 +39,13 @@ export function TrackingTab({ branch }: Props) {
     return acc
   }, {})
 
-  const declined = responses.filter((r) => r.status === 'declined').length
-  const answered = responses.filter((r) => r.status === 'answered').length
+  const eligible = volunteers.filter((v) => v.status === 'active' && !v.optOut)
+  const stateOf = (id: string) => replyState(responses.find((r) => r.volunteerId === id))
+  const declined = eligible.filter((v) => stateOf(v.id) === 'declined').length
+  const answered = eligible.filter((v) => stateOf(v.id) === 'answered').length
+  const sent = eligible.filter((v) => stateOf(v.id) !== 'none').length
+  const missing = eligible.filter((v) => isMissingReply(stateOf(v.id))).length
+  const replyRows = eligible.filter((v) => !onlyMissing || isMissingReply(stateOf(v.id)))
   const totalCommitted = assignments.filter((a) => a.status === 'committed').length
   const totalAttended = assignments.filter((a) => a.status === 'attended').length
 
@@ -48,10 +61,12 @@ export function TrackingTab({ branch }: Props) {
       </div>
 
       {/* Summary row */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {[
+          { label: 'נשלחו', value: sent, color: '#E97400' },
           { label: 'ענו', value: answered, color: '#189A9F' },
-          { label: 'סירבו', value: declined, color: '#E97400' },
+          { label: 'סירבו', value: declined, color: '#DC2626' },
+          { label: 'לא ענו', value: missing, color: '#6B7280' },
           { label: 'רשומים', value: totalCommitted, color: '#141348' },
           { label: 'הגיעו', value: totalAttended, color: '#16A34A' },
         ].map((s) => (
@@ -60,6 +75,44 @@ export function TrackingTab({ branch }: Props) {
             <div className="text-[10px] text-gray-500">{s.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* Replies to the scheduling request */}
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-100">
+          <span className="text-sm font-semibold" style={{ color: '#141348' }}>מענה לבקשת השיבוץ</span>
+          <button onClick={() => setOnlyMissing((o) => !o)}
+            className={`text-xs px-2.5 py-1 rounded-lg border ${onlyMissing ? 'bg-[#141348] text-white border-[#141348]' : 'border-gray-200 text-gray-500'}`}>
+            {onlyMissing ? `חסרי מענה (${missing})` : 'הצג רק חסרי מענה'}
+          </button>
+        </div>
+        {replyRows.length === 0 ? (
+          <div className="text-xs text-gray-400 text-center py-4">{onlyMissing ? 'כולם ענו 🎉' : 'אין מתנדבים פעילים'}</div>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {replyRows.map((v) => {
+              const st = stateOf(v.id)
+              return (
+                <div key={v.id} className="flex items-center gap-2 px-3 py-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm truncate" style={{ color: '#141348' }}>{v.name}</div>
+                    <div className="text-xs font-medium" style={{ color: STATE_COLOR[st] }}>{REPLY_LABEL[st]}</div>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <button onClick={() => void setResponse(branch.id, month, v.id, 'answered')} title="סמן שענה (למשל בהודעת WhatsApp)"
+                      className={`text-xs px-2 py-1 rounded-lg border ${st === 'answered' ? 'bg-green-100 border-green-300 text-green-700' : 'border-gray-200 text-gray-500 hover:bg-green-50'}`}>
+                      ענה
+                    </button>
+                    <button onClick={() => void setResponse(branch.id, month, v.id, 'declined')} title="סמן שסירב"
+                      className={`text-xs px-2 py-1 rounded-lg border ${st === 'declined' ? 'bg-red-100 border-red-300 text-red-700' : 'border-gray-200 text-gray-500 hover:bg-red-50'}`}>
+                      סירב
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Per-shift tracking */}

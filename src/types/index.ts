@@ -625,6 +625,8 @@ export interface Assignment {
   /** self = volunteer chose it; coordinator = coordinator added manually */
   source: 'self' | 'coordinator'
   cancelledAt?: Timestamp
+  /** Set when the coordinator sent the day-before reminder. */
+  reminderSentAt?: Timestamp
   createdAt: Timestamp
   updatedAt: Timestamp
 }
@@ -637,6 +639,11 @@ export interface MonthlyResponse {
   branchId: string
   month: string           // "2026-12"
   volunteerId: string
-  status: MonthlyResponseStatus
+  /** Missing on a doc that only records that the request was sent. */
+  status?: MonthlyResponseStatus
+  /** The coordinator sent the request (WhatsApp opened). */
+  sentAt?: Timestamp
+  /** The volunteer opened the personal link (set by the server). */
+  openedAt?: Timestamp
   updatedAt: Timestamp
 }

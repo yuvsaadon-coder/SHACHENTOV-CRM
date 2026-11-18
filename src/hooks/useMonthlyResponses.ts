@@ -36,3 +36,15 @@ export function useSetMonthlyResponse() {
     }, { merge: true })
   }
 }
+
+/** Records that the coordinator opened WhatsApp for this volunteer; never touches an existing answer. */
+export function useMarkRequestSent() {
+  return async (branchId: string, month: string, volunteerId: string) => {
+    const id = `${branchId}_${month}_${volunteerId}`
+    await setDoc(doc(db, 'monthly_responses', id), {
+      branchId, month, volunteerId,
+      sentAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }, { merge: true })
+  }
+}

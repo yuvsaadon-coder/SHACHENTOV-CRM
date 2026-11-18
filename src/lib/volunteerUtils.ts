@@ -44,13 +44,106 @@ export function monthLabel(month: string): string {
   return `${names[m - 1]} ${y}`
 }
 
+export const DEFAULT_SEND_TEMPLATE =
+  'היי {name}, פתחנו שיבוצים לחלוקות שכן טוב {branch} לחודש {month}. אפשר לבחור מתי מתאים כאן: {link}'
+
+export const DEFAULT_REMINDER_TEMPLATE =
+  'היי {name}, תזכורת: מחר ({date}) חלוקה של שכן טוב {branch} בשעה {shift time} ב{place}. מחכים לך! אם משהו השתנה, עדכן אותנו.'
+
+/** Replace {placeholders} (any name, spaces allowed); unknown ones are left untouched. */
+export function fillTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{([^}]+)\}/g, (m, key: string) => (key in vars ? vars[key] : m))
+}
+
+/** Digits-only international number for wa.me; accepts +972…, 972… and local 05x… forms. */
+export function toWaNumber(phone: string): string {
+  const digits = phone.replace(/\D/g, '')
+  if (digits.startsWith('972')) return digits
+  if (digits.startsWith('0')) return '972' + digits.slice(1)
+  return digits
+}
+
+export function waUrl(phone: string, message: string): string {
+  return `https://wa.me/${toWaNumber(phone)}?text=${encodeURIComponent(message)}`
+}
+
 /** Build the WhatsApp web link for a volunteer + personal URL. */
-export function waLink(phone: string, name: string, branchName: string, monthStr: string, token: string): string {
-  const month = monthLabel(monthStr)
-  const url = `${window.location.origin}/v/${token}`
-  const msg = `היי ${name}, פתחנו שיבוצים לחלוקות שכן טוב ${branchName} לחודש ${month}. אפשר לבחור מתי מתאים כאן: ${url}`
-  const e164 = phone.replace('+', '')
-  return `https://wa.me/${e164}?text=${encodeURIComponent(msg)}`
+export function waLink(phone: string, name: string, branchName: string, monthStr: string, token: string, template = DEFAULT_SEND_TEMPLATE): string {
+  const msg = fillTemplate(template, {
+    name, branch: branchName, month: monthLabel(monthStr), link: `${window.location.origin}/v/${token}`,
+  })
+  return waUrl(phone, msg)
+}
+
+export type ReplyState = 'none' | 'sent' | 'opened' | 'answered' | 'declined'
+
+export const REPLY_LABEL: Record<ReplyState, string> = {
+  none: 'לא נשלח', sent: 'נשלח', opened: 'נפתח', answered: 'ענה', declined: 'סירב',
+}
+
+/** Where a volunteer stands for the month, from the stored response doc (if any). */
+export function replyState(r?: { status?: string; sentAt?: unknown; openedAt?: unknown }): ReplyState {
+  if (!r) return 'none'
+  if (r.status === 'answered') return 'answered'
+  if (r.status === 'declined') return 'declined'
+  if (r.openedAt) return 'opened'
+  if (r.sentAt) return 'sent'
+  return 'none'
+}
+
+/** True when the volunteer has not yet answered or declined. */
+export const isMissingReply = (s: ReplyState) => s !== 'answered' && s !== 'declined'
+
+export function isoDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export function tomorrowISO(now = new Date()): string {
+  return isoDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1))
+}
+
+export interface ReportShift { id: string; date: string; startTime: string; endTime: string; location: string; capacity: number; status: string }
+export interface ReportAssignment { shiftId: string; volunteerId: string; status: string }
+export interface ReportVolunteer { id: string; name: string; status: string; optOut: boolean }
+export interface ReportResponse { volunteerId: string; status?: string; sentAt?: unknown; openedAt?: unknown }
+
+/** Plain-text coordinator report for a month, ready to paste into WhatsApp. */
+export function buildReport(input: {
+  branchName: string
+  month: string
+  shifts: ReportShift[]
+  assignments: ReportAssignment[]
+  volunteers: ReportVolunteer[]
+  responses: ReportResponse[]
+}): string {
+  const { branchName, month, shifts, assignments, volunteers, responses } = input
+  const name = (id: string) => volunteers.find((v) => v.id === id)?.name ?? id
+  const lines: string[] = [`דוח חלוקות ${branchName} — ${monthLabel(month)}`, '']
+
+  const active = shifts.filter((s) => s.status !== 'cancelled')
+  if (active.length === 0) lines.push('אין חלוקות בחודש זה.')
+  for (const s of active) {
+    const mine = assignments.filter((a) => a.shiftId === s.id)
+    const committed = mine.filter((a) => a.status === 'committed' || a.status === 'attended' || a.status === 'no_show')
+    const missing = Math.max(0, s.capacity - committed.length)
+    const { dayName, label } = formatShiftDate(s.date)
+    lines.push(`${dayName} ${label} ${s.startTime}–${s.endTime}${s.location ? ` · ${s.location}` : ''}`)
+    lines.push(`  רשומים ${committed.length}/${s.capacity}${missing > 0 ? ` · חסרים ${missing}` : ' · מלא'}`)
+    const attended = mine.filter((a) => a.status === 'attended').length
+    const noShows = mine.filter((a) => a.status === 'no_show')
+    if (attended > 0) lines.push(`  הגיעו ${attended}`)
+    if (noShows.length > 0) lines.push(`  לא הגיעו: ${noShows.map((a) => name(a.volunteerId)).join(', ')}`)
+  }
+
+  const eligible = volunteers.filter((v) => v.status === 'active' && !v.optOut)
+  const stateOf = (id: string) => replyState(responses.find((r) => r.volunteerId === id))
+  const notAnswered = eligible.filter((v) => isMissingReply(stateOf(v.id)))
+  const declined = eligible.filter((v) => stateOf(v.id) === 'declined')
+  lines.push('')
+  lines.push(`ענו: ${eligible.filter((v) => stateOf(v.id) === 'answered').length} · סירבו: ${declined.length} · לא ענו: ${notAnswered.length}`)
+  if (notAnswered.length > 0) lines.push(`לא ענו: ${notAnswered.map((v) => v.name).join(', ')}`)
+  if (declined.length > 0) lines.push(`סירבו: ${declined.map((v) => v.name).join(', ')}`)
+  return lines.join('\n')
 }
 
 /** Generate an .ics file content for given shift dates. */
