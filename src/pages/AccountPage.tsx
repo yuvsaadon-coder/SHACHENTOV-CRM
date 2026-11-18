@@ -8,10 +8,12 @@ import { deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import { useInitialPassword } from '../hooks/useInitialPassword'
 
 export function AccountPage() {
   const { appUser, firebaseUser } = useAuth()
   const { toast } = useToast()
+  const mustChangePassword = useInitialPassword()
 
   const [name, setName] = useState(appUser?.name ?? '')
   const [savingName, setSavingName] = useState(false)
@@ -44,7 +46,7 @@ export function AccountPage() {
 
   const handleChangePassword = async () => {
     if (!newPassword) { setPwdError('יש להזין סיסמא חדשה'); return }
-    if (newPassword.length < 6) { setPwdError('סיסמא חייבת להכיל לפחות 6 תווים'); return }
+    if (newPassword.length < 8) { setPwdError('סיסמא חייבת להכיל לפחות 8 תווים'); return }
     if (newPassword !== confirmPassword) { setPwdError('הסיסמאות אינן תואמות'); return }
     if (!currentPassword) { setPwdError('יש להזין את הסיסמא הנוכחית'); return }
     if (!firebaseUser || !firebaseUser.email) return
@@ -104,6 +106,11 @@ export function AccountPage() {
       {/* Password */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-3">
         <h2 className="font-semibold text-sm" style={{ color: '#141348' }}>שינוי סיסמא</h2>
+        {mustChangePassword && (
+          <div className="text-sm text-orange-800 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+            הסיסמה שלך עדיין הסיסמה הראשונית (מספר הטלפון). יש לבחור סיסמה חדשה לפני שממשיכים למערכת.
+          </div>
+        )}
         <div>
           <label className="block text-xs text-gray-500 mb-1">סיסמא נוכחית</label>
           <input

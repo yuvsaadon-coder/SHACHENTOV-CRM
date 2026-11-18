@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { signInWithCustomToken } from 'firebase/auth'
+import { signInWithCustomToken, sendPasswordResetEmail } from 'firebase/auth'
 import { useAuth } from '../context/AuthContext'
 import { auth } from '../lib/firebase'
 
@@ -20,7 +20,16 @@ export function LoginPage() {
   const [phone, setPhone] = useState('')
 
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const handleForgot = async () => {
+    setError('')
+    setNotice('')
+    if (!email.trim()) { setError('הזן את כתובת האימייל ואז לחץ "שכחתי סיסמה"'); return }
+    try { await sendPasswordResetEmail(auth, email.trim()) } catch { /* same answer either way, so the form does not reveal who has an account */ }
+    setNotice('אם הכתובת רשומה במערכת, נשלח אליה קישור לאיפוס הסיסמה.')
+  }
 
   const handleHQ = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -131,6 +140,7 @@ export function LoginPage() {
                 />
               </div>
               {error && <div className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</div>}
+              {notice && <div className="text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2">{notice}</div>}
               <button
                 type="submit"
                 disabled={loading}
@@ -138,6 +148,9 @@ export function LoginPage() {
                 style={{ backgroundColor: '#141348' }}
               >
                 {loading ? 'מתחבר...' : 'כניסה'}
+              </button>
+              <button type="button" onClick={() => void handleForgot()} className="w-full text-xs text-gray-500 hover:text-[#189A9F] underline">
+                שכחתי סיסמה
               </button>
               <div className="flex items-center gap-3 my-1">
                 <div className="flex-1 h-px bg-gray-200" />

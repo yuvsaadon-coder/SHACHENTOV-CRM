@@ -142,7 +142,7 @@ service cloud.firestore {
     // Written only by the server; the owner may delete theirs after choosing a
     // password of their own, so a stale one is never shown.
     match /userSecrets/{uid} {
-      allow read:   if isManager();
+      allow read:   if isManager() || (isAuthed() && request.auth.uid == uid);
       allow delete: if isManager() || (isAuthed() && request.auth.uid == uid);
       allow create, update: if false;
     }

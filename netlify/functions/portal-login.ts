@@ -3,6 +3,7 @@ import { cert, initializeApp, getApps } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getFirestore } from 'firebase-admin/firestore'
 import { corsHeaders, handleOptions } from './_cors'
+import { lockedMinutes, recordFailure, clearKey, type LimitKey } from './_rateLimit'
 
 function initFirebase() {
   if (getApps().length > 0) return
@@ -35,6 +36,29 @@ export const handler: Handler = async (event) => {
   }
 
   const db = getFirestore()
+
+  // At most 4 wrong tries per person from one device, then a 15 minute lock. A looser limit per
+  // name and per address stops guessing from many devices without letting a stranger lock a
+  // coordinator out from their own phone.
+  const ip = (event.headers['x-nf-client-connection-ip'] ?? event.headers['x-forwarded-for'] ?? 'unknown').split(',')[0].trim()
+  const nameKey = name.trim().replace(/\s+/g, ' ').toLowerCase()
+  const pairKey = `pair:${nameKey}|${ip}`
+  const keys: LimitKey[] = [
+    { key: pairKey, limit: 4 },
+    { key: `name:${nameKey}`, limit: 20 },
+    { key: `ip:${ip}`, limit: 15 },
+  ]
+
+  const waitMin = await lockedMinutes(db, keys)
+  if (waitMin > 0) {
+    return { statusCode: 429, headers: cors, body: JSON.stringify({ error: `יותר מדי ניסיונות. נסה שוב בעוד ${waitMin} דקות.` }) }
+  }
+
+  const fail = async () => {
+    await recordFailure(db, keys)
+    return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'שם או טלפון שגויים' }) }
+  }
+
   const snap = await db
     .collection('users')
     .where('name', '==', name.trim())
@@ -42,9 +66,7 @@ export const handler: Handler = async (event) => {
     .limit(5)
     .get()
 
-  if (snap.empty) {
-    return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'שם לא נמצא' }) }
-  }
+  if (snap.empty) return fail()
 
   const inputDigits = digitsOnly(phone)
   const match = snap.docs.find((d) => {
@@ -55,9 +77,9 @@ export const handler: Handler = async (event) => {
     return stored !== '' && stored === inputDigits
   })
 
-  if (!match) {
-    return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'שם או טלפון שגויים' }) }
-  }
+  if (!match) return fail()
+
+  await clearKey(db, pairKey)
 
   const token = await getAuth().createCustomToken(match.id)
   return {

@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { useInitialPassword } from './hooks/useInitialPassword'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { AppLayout } from './components/layout/AppLayout'
 import { LoginPage } from './pages/LoginPage'
@@ -33,9 +34,12 @@ import { ToastProvider } from './context/ToastContext'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { firebaseUser, appUser, access, loading } = useAuth()
+  const mustChangePassword = useInitialPassword()
+  const { pathname } = useLocation()
   if (loading) return <Spinner size="lg" />
   if (!firebaseUser || !appUser) return <Navigate to="/login" replace />
   if (access === 'coordinator') return <Navigate to="/portal/home" replace />
+  if (mustChangePassword && pathname !== '/account') return <Navigate to="/account" replace state={{ mustChangePassword: true }} />
   return <>{children}</>
 }
 
