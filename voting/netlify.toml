@@ -1,0 +1,7 @@
+# Netlify site for the voting app. In the Netlify UI set "Base directory" = voting
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"

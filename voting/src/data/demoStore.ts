@@ -1,0 +1,43 @@
+import type { LegacyConfig, LegacyVote } from './legacy'
+import type { ConfigField, ConfigValue, Store } from './store'
+
+const K_CONFIG = 'shachen-tov-demo-config'
+const K_VOTES = 'shachen-tov-demo-votes'
+const K_ARCHIVE = 'shachen-tov-demo-archived-votes'
+
+/** Browser-only store for previews/E2E. Same semantics as the Firestore store. */
+export function createDemoStore(ls: Storage): Store {
+  const read = <T,>(k: string, fallback: T): T => {
+    try { const raw = ls.getItem(k); return raw ? (JSON.parse(raw) as T) : fallback } catch { return fallback }
+  }
+  const write = (k: string, v: unknown) => { ls.setItem(k, JSON.stringify(v)); emit() }
+  const listeners = new Set<() => void>()
+  const emit = () => listeners.forEach((l) => l())
+  // Other tabs of the same browser (e.g. survey in one tab, admin in another)
+  if (typeof window !== 'undefined') window.addEventListener('storage', (e) => { if (e.key?.startsWith('shachen-tov-demo')) emit() })
+  const subscribe = (fn: () => void) => { listeners.add(fn); queueMicrotask(fn); return () => { listeners.delete(fn) } }
+
+  return {
+    mode: 'demo',
+    subscribeConfig(cb) {
+      return subscribe(() => cb(read<Partial<LegacyConfig> | null>(K_CONFIG, null)))
+    },
+    async updateConfigField<F extends ConfigField>(field: F, value: ConfigValue<F>) {
+      write(K_CONFIG, { ...read<Partial<LegacyConfig>>(K_CONFIG, {}), [field]: value })
+    },
+    subscribeVotes(cb) {
+      return subscribe(() => cb(read<Record<string, LegacyVote>>(K_VOTES, {})))
+    },
+    async submitVote(vote) {
+      write(K_VOTES, { ...read<Record<string, LegacyVote>>(K_VOTES, {}), [vote.coordinatorId]: vote })
+    },
+    async archiveAllVotes(reason, roundNum) {
+      const votes = read<Record<string, LegacyVote>>(K_VOTES, {})
+      const archive = read<unknown[]>(K_ARCHIVE, [])
+      const now = Date.now()
+      for (const v of Object.values(votes)) archive.push({ ...v, round: roundNum, archivedReason: reason, archivedAt: now })
+      ls.setItem(K_ARCHIVE, JSON.stringify(archive))
+      write(K_VOTES, {})
+    },
+  }
+}
