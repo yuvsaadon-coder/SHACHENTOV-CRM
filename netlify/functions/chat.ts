@@ -1,4 +1,5 @@
 import { corsHeaders, handleOptions } from './_cors'
+import { canAccessBranch } from './_branchAuth'
 import type { Handler } from '@netlify/functions'
 import { cert, initializeApp, getApps } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
@@ -66,30 +67,9 @@ export const handler: Handler = async (event) => {
     return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'Missing branchId' }) }
   }
 
-  // Authorize: the branch must be one of the caller's portal branches — those of
-  // the positions they hold, kept on their person record.
+  // Authorize: the branch must be one of the caller's portal branches.
   const db = getFirestore()
-  const callerDoc = await db.collection('users').doc(uid).get()
-  const caller = (callerDoc.data() ?? {}) as { active?: boolean; role?: string; branchIds?: string[]; roleIds?: string[] }
-  if (!callerDoc.exists || caller.active === false) {
-    return { statusCode: 403, headers: cors, body: JSON.stringify({ error: 'Not authorized' }) }
-  }
-
-  // Check branch access: first try branchIds on the user doc (fast path),
-  // then fall back to looking up the user's roles (branchIds may not be set on older accounts).
-  let authorized = (caller.branchIds ?? []).includes(branchId)
-  if (!authorized) {
-    const roleIds = caller.roleIds ?? []
-    const roleSnaps = await Promise.all(roleIds.map((id) => db.collection('roles').doc(id).get()))
-    const derivedBranchIds = roleSnaps
-      .map((d) => (d.data() as { portalBranchId?: string } | undefined)?.portalBranchId)
-      .filter(Boolean) as string[]
-    authorized = derivedBranchIds.includes(branchId)
-    if (authorized) {
-      await callerDoc.ref.update({ branchIds: derivedBranchIds }).catch(() => null)
-    }
-  }
-  if (!authorized) {
+  if (!(await canAccessBranch(db, uid, branchId))) {
     return { statusCode: 403, headers: cors, body: JSON.stringify({ error: 'Not authorized for this branch' }) }
   }
 
