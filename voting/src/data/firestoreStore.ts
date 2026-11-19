@@ -5,6 +5,7 @@ import {
 } from 'firebase/firestore'
 import type { LegacyConfig, LegacyVote } from './legacy'
 import type { ConfigField, ConfigValue, QuoteRecord, Store } from './store'
+import { decisionKey, type PeriodDecision } from '../lib/prices/history'
 
 export function createFirestoreStore(): Store {
   const env = import.meta.env
@@ -59,6 +60,19 @@ export function createFirestoreStore(): Store {
     subscribeQuoteRecords(cb, onError) {
       const q = query(collection(db, 'priceQuotes'), orderBy('createdAt', 'desc'), limit(30))
       return onSnapshot(q, (snap) => cb(snap.docs.map((d) => d.data() as QuoteRecord)), (e) => onError?.(e))
+    },
+    async saveSupplierChoice(periodId, category, supplierName, decidedAt) {
+      await setDoc(doc(db, 'priceDecisions', decisionKey(periodId, category)), { periodId, category, supplierName, decidedAt, serverDecidedAt: serverTimestamp() }, { merge: true })
+    },
+    async saveDiscount(periodId, category, discount) {
+      await setDoc(doc(db, 'priceDecisions', decisionKey(periodId, category)), { periodId, category, discount }, { merge: true })
+    },
+    subscribeDecisions(cb, onError) {
+      return onSnapshot(collection(db, 'priceDecisions'), (snap) => {
+        const out: Record<string, PeriodDecision> = {}
+        snap.forEach((d) => { out[d.id] = d.data() as PeriodDecision })
+        cb(out)
+      }, (e) => onError?.(e))
     },
   }
 }

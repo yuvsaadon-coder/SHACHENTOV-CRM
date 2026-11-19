@@ -2,15 +2,20 @@
 //
 // A period is one half-year order: 'YYYY-H1' (January) or 'YYYY-H2' (July).
 // Sources: the owner's historical spreadsheet (seed/price-history.json) + every applied supplier quote.
-// For each product and period the tracked price is the CHEAPEST offer received.
+// ONE supplier per period: the tracked prices of a period are those of the chosen supplier (the decision), or,
+// while no supplier was chosen yet, of the cheapest supplier on a common basket (marked provisional).
+// Discounts are negotiated per order after quantities are known. They are kept as a separate "net" layer
+// (rate applied to every unit price, i.e. split in proportion to each product's value in the order) and never
+// written into list prices, so list-vs-list and net-vs-net comparisons never mix.
 // Normalisation: the change between two periods is computed only over products supplied in BOTH
 // (sum of current prices / sum of previous prices - 1), exactly like the owner's spreadsheet;
 // products that are new or no longer supplied are listed, not mixed into the change.
 import { normalizeName } from '../quotes/match'
+import { categoryOf, compareSuppliers, groupBySupplier, supplierKey } from './suppliers'
 
 export type PeriodId = string
 
-export interface HistoryItem { key: string; name: string; productId: string | null }
+export interface HistoryItem { key: string; name: string; productId: string | null; category: string }
 export interface SeedHistory {
   items: HistoryItem[]
   periods: { id: PeriodId; supplier: string; prices: Record<string, number> }[]
@@ -19,11 +24,42 @@ export interface OfferRecord {
   id: string
   createdAt: number
   supplierName: string
+  /** supplier category (dry, eggs, poultry, vegetables, bermann); '' = dry */
+  supplierId?: string
   periodId?: PeriodId
-  offers?: { key: string; name: string; productId: string | null; price: number }[]
+  offers?: { key: string; name: string; productId: string | null; price: number; emoji?: string; cat?: 'dry' | 'fresh' }[]
 }
+
+export interface Discount {
+  type: 'percent' | 'amount'
+  value: number
+  /** order total before the discount (needed for an amount discount) */
+  baseTotal: number | null
+  note?: string
+  savedAt: number
+}
+export interface PeriodDecision {
+  periodId: PeriodId
+  category: string
+  supplierName: string
+  decidedAt: number
+  discount?: Discount | null
+}
+
+/** Effective discount rate in [0,1), or null when it cannot be computed. */
+export function discountRate(d: Discount | null | undefined): number | null {
+  if (!d || !(d.value > 0)) return null
+  const r = d.type === 'percent' ? d.value / 100 : d.baseTotal && d.baseTotal > 0 ? d.value / d.baseTotal : null
+  return r != null && r > 0 && r < 1 ? r : null
+}
+
+export type Layer = 'list' | 'net'
+
+/** Decisions are per half-year AND supplier category (one dry-goods supplier, one egg supplier, …). */
+export const decisionKey = (periodId: PeriodId, category: string) => `${periodId}|${category}`
 export interface Offer {
   key: string
+  category: string
   price: number
   supplier: string
   source: 'history' | 'quote'
@@ -33,10 +69,14 @@ export interface Offer {
 export interface PriceHistory {
   periods: PeriodId[]
   items: HistoryItem[]
-  /** cheapest offer per period per item */
+  /** the chosen (or provisional) supplier's offer per period per item */
   best: Record<PeriodId, Record<string, Offer>>
   /** every offer per period per item, cheapest first */
   offers: Record<PeriodId, Record<string, Offer[]>>
+  /** supplier whose prices the period uses, per category */
+  chosen: Record<PeriodId, Record<string, { supplier: string; provisional: boolean }>>
+  /** discount rate per period and category (net layer); 0 = none */
+  rate: Record<PeriodId, Record<string, number>>
 }
 
 const EPS = 1e-9
@@ -69,20 +109,24 @@ export function periodStart(id: PeriodId): { year: number; month: number } {
 
 const cmpPeriod = (a: PeriodId, b: PeriodId) => (a < b ? -1 : a > b ? 1 : 0)
 
-export function buildHistory(seed: SeedHistory, records: OfferRecord[], catalog: { id: string; name: string }[]): PriceHistory {
+export function buildHistory(
+  seed: SeedHistory, records: OfferRecord[], catalog: { id: string; name: string; supplier?: string }[],
+  decisions: Record<PeriodId, PeriodDecision> = {}, weights: Record<string, number> | null = null,
+): PriceHistory {
   const catalogByName = new Map(catalog.map((p) => [normalizeName(p.name), p]))
+  const catOfProduct = new Map(catalog.map((p) => [p.id, p.supplier || 'dry']))
   const catalogById = new Map(catalog.map((p) => [p.id, p]))
   const items = new Map<string, HistoryItem>()
   /** history-only names that now exist in the catalog are tracked under the product id */
   const rekey = new Map<string, string>()
 
-  const addItem = (key: string, name: string, productId: string | null): string => {
+  const addItem = (key: string, name: string, productId: string | null, category = 'dry'): string => {
     let k = key, pid = productId
     if (!pid) {
       const p = catalogByName.get(normalizeName(name))
       if (p) { rekey.set(key, p.id); k = p.id; pid = p.id }
     }
-    if (!items.has(k)) items.set(k, { key: k, name: (pid && catalogById.get(pid)?.name) || name, productId: pid })
+    if (!items.has(k)) items.set(k, { key: k, name: (pid && catalogById.get(pid)?.name) || name, productId: pid, category: (pid && catOfProduct.get(pid)) || category })
     return k
   }
 
@@ -96,15 +140,37 @@ export function buildHistory(seed: SeedHistory, records: OfferRecord[], catalog:
   for (const p of seed.periods) {
     for (const [key, price] of Object.entries(p.prices)) {
       if (!(price > 0)) continue
-      push(p.id, { key: rekey.get(key) ?? key, price, supplier: p.supplier, source: 'history' })
+      push(p.id, { key: rekey.get(key) ?? key, category: 'dry', price, supplier: supplierKey(p.supplier), source: 'history' })
     }
   }
   for (const r of records) {
     if (!r.periodId || !isPeriodId(r.periodId) || !r.offers) continue
     for (const o of r.offers) {
       if (!(o.price > 0)) continue
-      const key = addItem(o.key, o.name, o.productId)
-      push(r.periodId, { key, price: o.price, supplier: r.supplierName, source: 'quote', quoteId: r.id, date: r.createdAt })
+      const key = addItem(o.key, o.name, o.productId, categoryOf(r))
+      push(r.periodId, { key, category: categoryOf(r), price: o.price, supplier: supplierKey(r.supplierName), source: 'quote', quoteId: r.id, date: r.createdAt })
+    }
+  }
+
+  // who supplies each period: decision > historical record > cheapest quote (provisional)
+  const seedSupplier = new Map(seed.periods.map((p) => [p.id, supplierKey(p.supplier)]))
+  const chosen: PriceHistory['chosen'] = {}
+  const rate: PriceHistory['rate'] = {}
+  const recordsRekeyed = records.map((r) => ({ ...r, offers: r.offers?.map((o) => ({ ...o, key: rekey.get(o.key) ?? (o.productId ? o.key : catalogByName.get(normalizeName(o.name))?.id ?? o.key) })) }))
+  for (const [period, per] of Object.entries(offers)) {
+    chosen[period] = {}
+    rate[period] = {}
+    const cats = new Set(Object.values(per).flat().map((o) => o.category))
+    for (const cat of cats) {
+      const d = decisions[decisionKey(period, cat)]
+      if (d?.supplierName) chosen[period]![cat] = { supplier: supplierKey(d.supplierName), provisional: false }
+      else if (cat === 'dry' && seedSupplier.has(period)) chosen[period]![cat] = { supplier: seedSupplier.get(period)!, provisional: false }
+      else {
+        const relevant = catalog.filter((p) => (p.supplier || 'dry') === cat).map((p) => p.id)
+        const cmp = compareSuppliers(groupBySupplier(recordsRekeyed, period, cat), { relevant, weights })
+        chosen[period]![cat] = { supplier: cmp.cheapest ?? '', provisional: true }
+      }
+      rate[period]![cat] = discountRate(d?.discount) ?? 0
     }
   }
 
@@ -112,16 +178,17 @@ export function buildHistory(seed: SeedHistory, records: OfferRecord[], catalog:
   for (const [period, per] of Object.entries(offers)) {
     best[period] = {}
     for (const [key, list] of Object.entries(per)) {
-      // cheapest first; on equal price the earlier offer wins (history before quotes, then by date)
-      list.sort((a, b) => a.price - b.price || (a.source === b.source ? (a.date ?? 0) - (b.date ?? 0) : a.source === 'history' ? -1 : 1))
-      best[period]![key] = list[0]!
+      list.sort((a, b) => a.price - b.price || (a.date ?? 0) - (b.date ?? 0))
+      // the chosen supplier's latest price for the item; other suppliers' offers stay in `offers` for comparison
+      const mine = list.filter((o) => o.supplier === chosen[period]![o.category]?.supplier).sort((a, b) => (b.date ?? 0) - (a.date ?? 0))[0]
+      if (mine) best[period]![key] = mine
     }
   }
 
   // catalog order first, then history-only items
   const order = new Map(catalog.map((p, i) => [p.id, i]))
   const sortedItems = [...items.values()].sort((a, b) => (order.get(a.key) ?? 1e9) - (order.get(b.key) ?? 1e9))
-  return { periods: Object.keys(offers).sort(cmpPeriod), items: sortedItems, best, offers }
+  return { periods: Object.keys(offers).sort(cmpPeriod), items: sortedItems, best, offers, chosen, rate }
 }
 
 export interface PeriodChange {
@@ -138,7 +205,14 @@ export interface PeriodChange {
   yearChange: number | null
 }
 
-export function periodChanges(h: PriceHistory): PeriodChange[] {
+/** Price of an item in a period on the given layer. */
+export function priceAt(h: PriceHistory, period: PeriodId, key: string, layer: Layer = 'list'): number | null {
+  const o = h.best[period]?.[key]
+  if (!o) return null
+  return layer === 'net' ? o.price * (1 - (h.rate[period]?.[o.category] ?? 0)) : o.price
+}
+
+export function periodChanges(h: PriceHistory, layer: Layer = 'list'): PeriodChange[] {
   const out: PeriodChange[] = []
   h.periods.forEach((period, i) => {
     const cur = h.best[period] ?? {}
@@ -147,8 +221,8 @@ export function periodChanges(h: PriceHistory): PeriodChange[] {
     const common = Object.keys(cur).filter((k) => prev[k])
     let change: number | null = null
     if (previous && common.length) {
-      const a = common.reduce((s, k) => s + cur[k]!.price, 0)
-      const b = common.reduce((s, k) => s + prev[k]!.price, 0)
+      const a = common.reduce((s, k) => s + priceAt(h, period, k, layer)!, 0)
+      const b = common.reduce((s, k) => s + priceAt(h, previous, k, layer)!, 0)
       change = b > EPS ? a / b - 1 : null
     }
     const index = i === 0 ? 100 : out[i - 1]!.index * (1 + (change ?? 0))

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import priceSeed from '../../../seed/price-history.json'
 import { he } from '../../i18n/he'
 import { money } from '../../lib/format'
-import { buildHistory, periodChanges, type PeriodChange, type PriceHistory, type SeedHistory } from '../../lib/prices/history'
+import { buildHistory, periodChanges, priceAt, type Layer, type PeriodChange, type PeriodDecision, type PriceHistory, type SeedHistory } from '../../lib/prices/history'
+import { basketWeights } from '../../lib/prices/suppliers'
 import { periodLabel } from '../../lib/prices/label'
 import type { QuoteRecord } from '../../data/store'
 import { Card, SectionHeader, Stat } from '../../ui/components'
@@ -12,12 +13,16 @@ const PRICE_SEED = priceSeed as unknown as SeedHistory
 const pctText = (v: number | null) => (v == null ? he.dash : he.prices.pct(v))
 
 export function PricesPanel() {
-  const { config, store } = useAdmin()
+  const { config, store, results } = useAdmin()
   const [records, setRecords] = useState<QuoteRecord[]>([])
+  const [decisions, setDecisions] = useState<Record<string, PeriodDecision>>({})
+  const [layer, setLayer] = useState<Layer>('list')
   useEffect(() => store.subscribeQuoteRecords(setRecords, (e) => console.warn('quote history failed', e)), [store])
-  const catalog = useMemo(() => config.products.map((p) => ({ id: p.id, name: p.name })), [config.products])
-  const h = useMemo(() => buildHistory(PRICE_SEED, records, catalog), [records, catalog])
-  const changes = useMemo(() => periodChanges(h), [h])
+  useEffect(() => store.subscribeDecisions(setDecisions, (e) => console.warn('decisions failed', e)), [store])
+  const catalog = useMemo(() => config.products.map((p) => ({ id: p.id, name: p.name, supplier: p.supplier as string | undefined })), [config.products])
+  const weights = useMemo(() => basketWeights(results), [results])
+  const h = useMemo(() => buildHistory(PRICE_SEED, records, catalog, decisions, weights), [records, catalog, decisions, weights])
+  const changes = useMemo(() => periodChanges(h, layer), [h, layer])
   const emoji = useMemo(() => new Map(config.products.map((p) => [p.id, p.emoji])), [config.products])
 
   if (!h.periods.length) return <SectionHeader title={he.prices.title} subtitle={he.prices.empty} />
@@ -27,6 +32,11 @@ export function PricesPanel() {
   return (
     <div>
       <SectionHeader title={he.prices.title} subtitle={he.prices.subtitle} />
+      <div className="toolbar" role="group" aria-label={he.prices.layerLabel}>
+        <button type="button" className="seg" aria-pressed={layer === 'list'} onClick={() => setLayer('list')}>{he.prices.layerList}</button>
+        <button type="button" className="seg" aria-pressed={layer === 'net'} onClick={() => setLayer('net')}>{he.prices.layerNet}</button>
+        {layer === 'net' && <span className="small muted">{he.prices.layerNetHint}</span>}
+      </div>
       <div className="grid-stats">
         <Stat accent label={he.prices.statLast(periodLabel(last.period))} value={<>{pctText(last.change)}<div className="stat-sub">{he.prices.comparedOn(last.compared)}</div></>} />
         <Stat label={he.prices.statYear} value={pctText(last.yearChange)} />
@@ -38,33 +48,31 @@ export function PricesPanel() {
         <Card title={he.prices.chartTitle}><IndexChart changes={changes} /></Card>
       </div>
 
-      <Card title={<div className="toolbar" style={{ margin: 0 }}><span>{he.prices.tableTitle}</span><button type="button" className="btn btn-small push-end" onClick={() => void exportXlsx(h, changes)}>{he.prices.exportXlsx}</button></div>}>
-        <PriceTable h={h} changes={changes} emoji={emoji} />
+      <Card title={<div className="toolbar" style={{ margin: 0 }}><span>{he.prices.tableTitle}</span><button type="button" className="btn btn-small push-end" onClick={() => void exportXlsx(h, changes, layer)}>{he.prices.exportXlsx}</button></div>}>
+        <PriceTable h={h} changes={changes} emoji={emoji} layer={layer} />
       </Card>
 
       <div style={{ marginBlockStart: 24 }}>
         <Card title={he.prices.howTitle}>
-          <ul className="small how-list"><li>{he.prices.how1}</li><li>{he.prices.how2}</li><li>{he.prices.how3}</li></ul>
+          <ul className="small how-list"><li>{he.prices.how1}</li><li>{he.prices.how2}</li><li>{he.prices.how3}</li><li>{he.prices.how4}</li></ul>
         </Card>
       </div>
     </div>
   )
 }
 
+/** Supplier names of a period (dry goods first, then other categories). */
 function periodSupplier(h: PriceHistory, period: string): string {
-  const count = new Map<string, number>()
-  for (const o of Object.values(h.best[period] ?? {})) if (o.supplier) count.set(o.supplier, (count.get(o.supplier) ?? 0) + 1)
-  const sorted = [...count.entries()].sort((a, b) => b[1] - a[1])
-  if (!sorted.length) return ''
-  return sorted.length > 1 ? `${sorted[0]![0]} +${sorted.length - 1}` : sorted[0]![0]
+  const ch = h.chosen[period] ?? {}
+  return Object.entries(ch).sort(([a], [b]) => (a === 'dry' ? -1 : b === 'dry' ? 1 : a < b ? -1 : 1)).map(([, c]) => c.supplier).filter(Boolean).join(' · ')
 }
 
-/** The latest period is still open while its prices come only from quotes (no historical record yet). */
+/** No supplier chosen yet for this period: prices shown are the cheapest quote's, provisionally. */
 export function isCollecting(h: PriceHistory, period: string): boolean {
-  return period === h.periods.at(-1) && Object.values(h.best[period] ?? {}).every((o) => o.source === 'quote')
+  return Object.values(h.chosen[period] ?? {}).some((c) => c.provisional)
 }
 
-function PriceTable({ h, changes, emoji }: { h: PriceHistory; changes: PeriodChange[]; emoji: Map<string, string> }) {
+function PriceTable({ h, changes, emoji, layer }: { h: PriceHistory; changes: PeriodChange[]; emoji: Map<string, string>; layer: Layer }) {
   const nameOf = (k: string) => h.items.find((i) => i.key === k)?.name ?? k
   const names = (keys: string[]) => keys.slice(0, 6).map(nameOf).join(', ') + (keys.length > 6 ? he.prices.andMore(keys.length - 6) : '')
   return (
@@ -77,7 +85,8 @@ function PriceTable({ h, changes, emoji }: { h: PriceHistory; changes: PeriodCha
               <th key={p}>
                 <div>{periodLabel(p)}</div>
                 <div className="muted" style={{ fontWeight: 400 }}>{periodSupplier(h, p) || he.dash}</div>
-                {isCollecting(h, p) && <div className="chip chip-warn" style={{ display: 'inline-block', marginBlockStart: 2 }}>{he.prices.inProgress}</div>}
+                {isCollecting(h, p) && <div className="chip chip-warn" style={{ display: 'inline-block', marginBlockStart: 2 }}>{he.prices.provisionalTag}</div>}
+                {layer === 'net' && (h.rate[p]?.dry ?? 0) > 0 && <div className="chip chip-ok" style={{ display: 'inline-block', marginBlockStart: 2 }}>{he.prices.discountTag(((h.rate[p]!.dry!) * 100).toFixed(1))}</div>}
               </th>
             ))}
           </tr>
@@ -96,14 +105,15 @@ function PriceTable({ h, changes, emoji }: { h: PriceHistory; changes: PeriodCha
                   const label = isCollecting(h, p) ? he.prices.inProgress : he.prices.notSupplied
                   return <td key={p} className="muted" title={label}><span aria-label={label}>{he.dash}</span></td>
                 }
-                // like the owner's sheet: compare with the immediately previous half-year only
+                // like the owner's sheet: compare with the immediately previous half-year only, on the same layer
                 const i = h.periods.indexOf(p)
-                const prev = i > 0 ? h.best[h.periods[i - 1]!]?.[it.key] : undefined
-                const ch = prev ? o.price / prev.price - 1 : null
+                const price = priceAt(h, p, it.key, layer)!
+                const prev = i > 0 ? priceAt(h, h.periods[i - 1]!, it.key, layer) : null
+                const ch = prev ? price / prev - 1 : null
                 const n = h.offers[p]?.[it.key]?.length ?? 1
                 return (
                   <td key={p} title={[o.supplier && he.prices.cheapestFrom(o.supplier), n > 1 && he.prices.offersCount(n)].filter(Boolean).join(' · ')}>
-                    <div>{money(o.price)}</div>
+                    <div>{money(price)}</div>
                     {ch != null && Math.abs(ch) >= 0.0005 && <div className={`small ${ch > 0 ? 'txt-up' : 'txt-down'}`}>{he.prices.pct(ch)}</div>}
                   </td>
                 )
@@ -196,7 +206,7 @@ function IndexChart({ changes }: { changes: PeriodChange[] }) {
 }
 
 /** Rows in the layout of the owner's spreadsheet: per period a price column, then a % column (none for the first). */
-export function trackingRows(h: PriceHistory, changes: PeriodChange[], supplierOf: (p: string) => string) {
+export function trackingRows(h: PriceHistory, changes: PeriodChange[], supplierOf: (p: string) => string, layer: Layer = 'list') {
   type Cell = string | number | Date | null
   const perPeriod = <T,>(price: (p: string, i: number) => T, pct: (p: string, i: number) => T, first: T[]) =>
     h.periods.reduce<T[]>((row, p, i) => (i === 0 ? [...row, price(p, i)] : [...row, price(p, i), pct(p, i)]), first)
@@ -204,8 +214,8 @@ export function trackingRows(h: PriceHistory, changes: PeriodChange[], supplierO
   const suppliers = perPeriod<Cell>((p) => supplierOf(p) || null, () => null, [he.prices.xlsxSupplier])
   const heads = perPeriod<Cell>(() => he.prices.xlsxPriceHead, () => he.prices.xlsxPctHead, [he.prices.xlsxProducts])
   const items = h.items.map((it) => perPeriod<Cell>(
-    (p) => (h.best[p]?.[it.key] ? Math.round(h.best[p]![it.key]!.price * 1000) / 1000 : null),
-    (p, i) => { const o = h.best[p]?.[it.key], prev = h.best[h.periods[i - 1]!]?.[it.key]; return o && prev ? o.price / prev.price - 1 : null },
+    (p) => { const v = priceAt(h, p, it.key, layer); return v != null ? Math.round(v * 1000) / 1000 : null },
+    (p, i) => { const v = priceAt(h, p, it.key, layer), prev = priceAt(h, h.periods[i - 1]!, it.key, layer); return v != null && prev ? v / prev - 1 : null },
     [it.name],
   ))
   const byPeriod = new Map(changes.map((c) => [c.period, c]))
@@ -214,12 +224,12 @@ export function trackingRows(h: PriceHistory, changes: PeriodChange[], supplierO
   return { dates, suppliers, heads, items, change, year }
 }
 
-async function exportXlsx(h: PriceHistory, changes: PeriodChange[]) {
+async function exportXlsx(h: PriceHistory, changes: PeriodChange[], layer: Layer) {
   const ExcelJS = (await import('exceljs')).default
   const wb = new ExcelJS.Workbook()
   const ws = wb.addWorksheet('מעקב', { views: [{ rightToLeft: true }] })
-  const t = trackingRows(h, changes, (p) => periodSupplier(h, p))
-  ws.addRow([he.prices.xlsxTitle]).font = { bold: true, size: 14 }
+  const t = trackingRows(h, changes, (p) => periodSupplier(h, p), layer)
+  ws.addRow([`${he.prices.xlsxTitle} · ${layer === 'net' ? he.prices.layerNet : he.prices.layerList}`]).font = { bold: true, size: 14 }
   const dates = ws.addRow(t.dates); dates.numFmt = 'mm/yyyy'; dates.font = { bold: true }
   ws.addRow(t.suppliers).font = { bold: true }
   ws.addRow(t.heads).font = { bold: true }

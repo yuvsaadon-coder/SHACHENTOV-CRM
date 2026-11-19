@@ -5,25 +5,30 @@ import { he } from '../../i18n/he'
 import { money } from '../../lib/format'
 import { ACCEPT, readQuoteFile, UnsupportedFileError, type ReadFile } from '../../lib/quotes/extract'
 import { AiFailedError, AiUnavailableError, analyzeLocally, analyzeWithAi } from '../../lib/quotes/analyzeClient'
-import { applyCheapestRule, applyProposals, buildProposals, finalPrice, offerKey, pctChange } from '../../lib/quotes/plan'
-import { buildHistory, upcomingPeriod, shiftPeriod, type SeedHistory } from '../../lib/prices/history'
+import { buildProposals, finalPrice, offerKey, pctChange } from '../../lib/quotes/plan'
+import {
+  buildHistory, decisionKey, discountRate, shiftPeriod, upcomingPeriod, type Discount, type PeriodDecision, type SeedHistory,
+} from '../../lib/prices/history'
+import { basketWeights, compareSuppliers, groupBySupplier, supplierKey } from '../../lib/prices/suppliers'
+import { applySupplierChoice } from '../../lib/prices/decide'
 import { jerusalemYearMonth, periodLabel } from '../../lib/prices/label'
 import type { CatalogEntry, Proposal, ProposalAction, QuoteLine, VatMode } from '../../lib/quotes/types'
 import type { QuoteRecord } from '../../data/store'
 import { Card, Field, SectionHeader } from '../../ui/components'
 import { useAdmin } from './context'
 
-const SUPPLIERS = (seedJson as unknown as { suppliers: { id: string; name: string }[] }).suppliers
-const OTHER = '__other'
+/** Supplier categories (what is ordered). The supplier itself is a free name: one supplier per category per order. */
+const CATEGORIES = (seedJson as unknown as { suppliers: { id: string; name: string }[] }).suppliers
 const PRICE_SEED = priceSeed as unknown as SeedHistory
 const LOW_CONFIDENCE = 0.6
+const categoryLabel = (id: string) => CATEGORIES.find((c) => c.id === id)?.name ?? id
 
-type Phase = { step: 'upload' } | { step: 'busy'; label: string } | { step: 'review' } | { step: 'done'; message: string }
+type Phase = { step: 'upload' } | { step: 'busy'; label: string } | { step: 'review' } | { step: 'saved'; message: string }
 
 export function QuotesPanel() {
-  const { config, votes, store, now } = useAdmin()
-  const [supplierId, setSupplierId] = useState(SUPPLIERS[0]?.id ?? OTHER)
-  const [otherName, setOtherName] = useState('')
+  const { config, votes, store, now, results } = useAdmin()
+  const [category, setCategory] = useState(CATEGORIES[0]?.id ?? 'dry')
+  const [supplierName, setSupplierName] = useState('')
   const [vatMode, setVatMode] = useState<VatMode>('auto')
   const [files, setFiles] = useState<File[]>([])
   const [phase, setPhase] = useState<Phase>({ step: 'upload' })
@@ -34,22 +39,29 @@ export function QuotesPanel() {
   const [method, setMethod] = useState<'ai' | 'local'>('ai')
   const [proposals, setProposals] = useState<Proposal[]>([])
   const [priceEdited, setPriceEdited] = useState<Set<string>>(new Set())
-  const [history, setHistory] = useState<QuoteRecord[]>([])
+  const [records, setRecords] = useState<QuoteRecord[]>([])
+  const [decisions, setDecisions] = useState<Record<string, PeriodDecision>>({})
   const inputRef = useRef<HTMLInputElement>(null)
   const upcoming = useMemo(() => { const { year, month } = jerusalemYearMonth(now); return upcomingPeriod(year, month) }, [now])
   const [periodId, setPeriodId] = useState(upcoming)
 
-  useEffect(() => store.subscribeQuoteRecords(setHistory, (e) => console.warn('quote history failed', e)), [store])
+  useEffect(() => store.subscribeQuoteRecords(setRecords, (e) => console.warn('quote history failed', e)), [store])
+  useEffect(() => store.subscribeDecisions(setDecisions, (e) => console.warn('decisions failed', e)), [store])
 
   const catalog: CatalogEntry[] = useMemo(() => config.products.map((p) => ({ id: p.id, name: p.name, price: Number(p.price) || 0 })), [config.products])
   const productById = useMemo(() => new Map(config.products.map((p) => [p.id, p])), [config.products])
-  const supplierName = supplierId === OTHER ? otherName.trim() : SUPPLIERS.find((s) => s.id === supplierId)?.name ?? ''
-  const priceHistory = useMemo(() => buildHistory(PRICE_SEED, history, catalog), [history, catalog])
-  const periodOptions = useMemo(() => [...new Set([...priceHistory.periods, upcoming, shiftPeriod(upcoming, 1)])].sort().reverse(), [priceHistory.periods, upcoming])
-  const latestPeriod = priceHistory.periods.at(-1) ?? periodId
-  const catalogFollowsPeriod = periodId >= latestPeriod
-  const bestByKey = useMemo(() => Object.fromEntries(Object.entries(priceHistory.best[periodId] ?? {}).map(([k, o]) => [k, { price: o.price, supplier: o.supplier }])), [priceHistory, periodId])
+  const weights = useMemo(() => basketWeights(results), [results])
+  const history = useMemo(
+    () => buildHistory(PRICE_SEED, records, config.products.map((p) => ({ id: p.id, name: p.name, supplier: p.supplier as string | undefined })), decisions, weights),
+    [records, config.products, decisions, weights],
+  )
+  const periodOptions = useMemo(() => [...new Set([...history.periods, upcoming, shiftPeriod(upcoming, 1)])].sort().reverse(), [history.periods, upcoming])
+  const knownSuppliers = useMemo(() => [...new Set([
+    ...records.filter((r) => (r.supplierId || 'dry') === category).map((r) => supplierKey(r.supplierName)),
+    ...(category === 'dry' ? PRICE_SEED.periods.map((p) => supplierKey(p.supplier)) : []),
+  ].filter(Boolean))], [records, category])
   const hasOpenVotes = config.round?.open !== false && config.coordinators.some((c) => votes[c.id])
+  const name = supplierKey(supplierName)
 
   const addFiles = (list: FileList | null) => {
     if (!list) return
@@ -60,7 +72,7 @@ export function QuotesPanel() {
 
   const showLines = (lines: QuoteLine[], how: 'ai' | 'local') => {
     setMethod(how)
-    setProposals(applyCheapestRule(buildProposals(lines, catalog, vatMode), bestByKey, catalogFollowsPeriod))
+    setProposals(buildProposals(lines, catalog, vatMode))
     setPriceEdited(new Set())
     setPhase({ step: 'review' })
   }
@@ -87,7 +99,7 @@ export function QuotesPanel() {
     setReadFiles(ok)
     if (!ok.length) { setPhase({ step: 'upload' }); return }
     try {
-      const lines = await analyzeWithAi(ok, catalog, supplierName, (d, t) => setPhase({ step: 'busy', label: he.quotes.analyzing(d, t) }))
+      const lines = await analyzeWithAi(ok, catalog, name, (d, t) => setPhase({ step: 'busy', label: he.quotes.analyzing(d, t) }))
       setNotices([])
       showLines(lines, 'ai')
     } catch (e) {
@@ -99,48 +111,37 @@ export function QuotesPanel() {
 
   // VAT choice can be changed during review; prices the admin typed by hand are kept.
   useEffect(() => {
-    setProposals((ps) => ps.map((p) => {
-      const newPrice = priceEdited.has(p.key) ? p.newPrice : finalPrice(p.line, vatMode)
-      const best = p.productId ? bestByKey[p.productId] : undefined
-      return { ...p, newPrice, cheaper: best && newPrice != null && best.price < newPrice - 1e-9 ? best : null }
-    }))
+    setProposals((ps) => ps.map((p) => (priceEdited.has(p.key) ? p : { ...p, newPrice: finalPrice(p.line, vatMode) })))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recompute only when the VAT choice changes
   }, [vatMode])
 
   const patch = (key: string, upd: Partial<Proposal>) => setProposals((ps) => ps.map((p) => (p.key === key ? { ...p, ...upd } : p)))
   const setAction = (p: Proposal, action: ProposalAction) => {
-    const productId = action === 'update' || action === 'record' ? p.productId ?? p.line.matchId : p.productId
+    const productId = action === 'update' ? p.productId ?? p.line.matchId : p.productId
     patch(p.key, { action, productId, oldPrice: productId ? productById.get(productId)?.price ?? null : null })
   }
 
-  const active = proposals.filter((p) => p.action !== 'ignore' && p.newPrice != null && (p.action === 'update' ? p.productId : p.action === 'add' ? p.newName.trim() : p.productId || p.newName.trim()))
-  const nUpdate = active.filter((p) => p.action === 'update').length
-  const nAdd = active.filter((p) => p.action === 'add').length
-  const nRecord = active.filter((p) => p.action === 'record').length
+  const active = proposals.filter((p) => p.newPrice != null && offerKey(p))
+  const nMatched = active.filter((p) => p.action === 'update').length
+  const nNew = active.filter((p) => p.action === 'add').length
 
-  const apply = async () => {
-    if (!active.length || !confirm(he.quotes.confirmApply(nUpdate, nAdd, nRecord))) return
-    setPhase({ step: 'busy', label: he.quotes.applying })
+  /** Saving a quote records the supplier's prices for the period. It does not touch the catalog. */
+  const saveQuote = async () => {
+    if (!active.length || !name) return
+    setPhase({ step: 'busy', label: he.quotes.saving })
     const stamp = Date.now()
-    const sid = supplierId === OTHER ? undefined : supplierId
+    const offers = active.map((p) => {
+      const key = offerKey(p)!
+      return p.action === 'add'
+        ? { key, name: p.newName.trim(), productId: null, price: p.newPrice!, emoji: p.emoji || '🛒', cat: p.cat }
+        : { key, name: productById.get(key)?.name ?? p.line.name, productId: key, price: p.newPrice! }
+    })
     try {
-      const res = applyProposals(config.products, active.filter((p) => p.action !== 'record'), { supplierId: sid, idPrefix: `q${stamp}` })
-      const offers = active.flatMap((p) => {
-        const key = offerKey(p, res.addedIds)
-        return key ? [{ key, name: p.action === 'add' ? p.newName.trim() : productById.get(p.productId ?? '')?.name ?? p.newName.trim(), productId: key.startsWith('name:') ? null : key, price: p.newPrice! }] : []
-      })
-      await store.updateConfigField('products', res.products)
-      const before = new Set(config.products.map((p) => p.id))
       await store.saveQuoteRecord({
-        id: `q${stamp}`, createdAt: stamp, supplierId: supplierId === OTHER ? '' : supplierId, supplierName,
-        fileNames: readFiles.map((f) => f.name), method, vatMode, updated: res.updated, added: res.added, periodId, offers,
-        changes: [
-          ...active.filter((p) => p.action === 'update' && p.productId).map((p) => ({
-            productId: p.productId!, name: productById.get(p.productId!)?.name ?? '', action: 'update' as const, oldPrice: p.oldPrice, newPrice: p.newPrice!,
-          })),
-          ...res.products.filter((p) => !before.has(p.id)).map((p) => ({ productId: p.id, name: p.name, action: 'add' as const, oldPrice: null, newPrice: p.price })),
-        ],
+        id: `q${stamp}`, createdAt: stamp, supplierId: category, supplierName: name, fileNames: readFiles.map((f) => f.name),
+        method, vatMode, updated: 0, added: 0, changes: [], periodId, offers,
       })
-      setPhase({ step: 'done', message: he.quotes.applied(res.updated, res.added, offers.length) })
+      setPhase({ step: 'saved', message: he.quotes.quoteSaved(name) })
       setFiles([]); setProposals([])
     } catch (e) {
       alert(he.errorPrefix + (e instanceof Error ? e.message : String(e)))
@@ -153,7 +154,21 @@ export function QuotesPanel() {
     <div>
       <SectionHeader title={he.quotes.title} subtitle={he.quotes.subtitle} />
 
-      {phase.step === 'done' && (
+      {/* shared selection: the quote, the comparison and the discount all refer to this category + order */}
+      <div className="quote-form">
+        <Field label={he.quotes.category}>
+          <select className="input" value={category} onChange={(e) => setCategory(e.target.value)} disabled={busy}>
+            {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </Field>
+        <Field label={he.quotes.period}>
+          <select className="input" value={periodId} onChange={(e) => setPeriodId(e.target.value)} disabled={busy}>
+            {periodOptions.map((p) => <option key={p} value={p}>{he.quotes.periodOption(periodLabel(p))}</option>)}
+          </select>
+        </Field>
+      </div>
+
+      {phase.step === 'saved' && (
         <div className="notice notice-block" role="status">
           {phase.message}{' '}
           <button type="button" className="btn btn-small" onClick={() => setPhase({ step: 'upload' })}>{he.quotes.startOver}</button>
@@ -161,25 +176,14 @@ export function QuotesPanel() {
       )}
 
       {(phase.step === 'upload' || busy) && (
-        <Card title={he.quotes.uploadTitle}>
+        <Card title={he.quotes.step1}>
           <div className="quote-form">
-            <Field label={he.quotes.supplier}>
-              <select className="input" value={supplierId} onChange={(e) => setSupplierId(e.target.value)} disabled={busy}>
-                {SUPPLIERS.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                <option value={OTHER}>{he.quotes.otherSupplier}</option>
-              </select>
-            </Field>
-            {supplierId === OTHER && (
-              <Field label={he.quotes.otherSupplierName}><input className="input" value={otherName} onChange={(e) => setOtherName(e.target.value)} disabled={busy} /></Field>
-            )}
-            <Field label={he.quotes.period}>
-              <select className="input" value={periodId} onChange={(e) => setPeriodId(e.target.value)} disabled={busy}>
-                {periodOptions.map((p) => <option key={p} value={p}>{he.quotes.periodOption(periodLabel(p))}</option>)}
-              </select>
+            <Field label={he.quotes.supplierName}>
+              <input className="input" list="known-suppliers" value={supplierName} placeholder={he.quotes.supplierPlaceholder} onChange={(e) => setSupplierName(e.target.value)} disabled={busy} />
+              <datalist id="known-suppliers">{knownSuppliers.map((s) => <option key={s} value={s} />)}</datalist>
             </Field>
             <VatChoice value={vatMode} onChange={setVatMode} disabled={busy} />
           </div>
-          <p className="small muted" style={{ marginBlockStart: 0 }}>{he.quotes.periodHint}</p>
 
           <div
             className="dropzone" role="button" tabIndex={0} aria-label={he.quotes.dropHint}
@@ -214,7 +218,7 @@ export function QuotesPanel() {
           )}
 
           <div className="toolbar" style={{ marginBlockStart: 12, marginBlockEnd: 0 }}>
-            <button type="button" className="btn btn-primary" disabled={!files.length || busy || (supplierId === OTHER && !otherName.trim())} onClick={() => void analyze()}>
+            <button type="button" className="btn btn-primary" disabled={!files.length || busy || !name} onClick={() => void analyze()}>
               {busy ? phase.label : he.quotes.analyze}
             </button>
           </div>
@@ -222,105 +226,254 @@ export function QuotesPanel() {
       )}
 
       {phase.step === 'review' && (
-        <Card title={he.quotes.reviewTitle} accent>
+        <Card title={he.quotes.step2} accent>
           {notices.map((n) => <div key={n} className="banner-warn small" role="status">{n}</div>)}
-          {hasOpenVotes && catalogFollowsPeriod && <div className="banner-warn small" role="status">{he.quotes.openRoundWarn}</div>}
-          {!catalogFollowsPeriod && <div className="banner-warn small" role="status">{he.quotes.olderPeriod}</div>}
-          {proposals.length === 0 ? (
-            <p>{he.quotes.nothingFound}</p>
-          ) : (
+          {proposals.length === 0 ? <p>{he.quotes.nothingFound}</p> : (
             <>
               <div className="toolbar">
-                <span className="cell-strong">{he.quotes.summary(nUpdate, nAdd, nRecord, proposals.length - active.length)}</span>
+                <span className="cell-strong">{he.quotes.summary(nMatched, nNew, proposals.length - active.length)}</span>
                 <span className="push-end" />
                 <VatChoice value={vatMode} onChange={setVatMode} compact />
               </div>
-              <div className="table-wrap">
-                <table className="data quote-table">
-                  <thead>
-                    <tr>
-                      <th>{he.quotes.colInQuote}</th><th>{he.quotes.colAction}</th><th>{he.quotes.colCatalog}</th>
-                      <th>{he.quotes.colOld}</th><th>{he.quotes.colNew}</th><th>{he.quotes.colChange}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {proposals.map((p) => {
-                      const pct = p.action === 'update' || p.action === 'record' ? pctChange(p.oldPrice, p.newPrice) : null
-                      return (
-                        <tr key={p.key} className={p.action === 'ignore' ? 'is-ignored' : ''}>
-                          <td data-label={he.quotes.colInQuote}>
-                            <div className="cell-strong">{p.line.name}</div>
-                            {p.line.note && <div className="small muted">{p.line.note}</div>}
-                            {p.cheaper && <div className="small txt-warn" style={{ marginInlineStart: 0 }}>{he.quotes.cheaperExists(money(p.cheaper.price), p.cheaper.supplier)}</div>}
-                            {p.line.confidence < LOW_CONFIDENCE && p.action !== 'ignore' && <div className="small txt-warn" style={{ marginInlineStart: 0 }}>{he.quotes.lowConfidence}</div>}
-                          </td>
-                          <td data-label={he.quotes.colAction}>
-                            <select aria-label={`${he.quotes.colAction}: ${p.line.name}`} className="input" value={p.action} onChange={(e) => setAction(p, e.target.value as ProposalAction)}>
-                              <option value="update">{he.quotes.actUpdate}</option>
-                              <option value="add">{he.quotes.actAdd}</option>
-                              <option value="record">{he.quotes.actRecord}</option>
-                              <option value="ignore">{he.quotes.actIgnore}</option>
-                            </select>
-                          </td>
-                          <td data-label={he.quotes.colCatalog}>
-                            {(p.action === 'update' || p.action === 'record') && (
-                              <select aria-label={`${he.quotes.colCatalog}: ${p.line.name}`} className="input" value={p.productId ?? ''}
-                                onChange={(e) => { const id = e.target.value || null; patch(p.key, { productId: id, oldPrice: id ? productById.get(id)?.price ?? null : null }) }}>
-                                <option value="">{he.quotes.pickProduct}</option>
-                                {config.products.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
-                              </select>
-                            )}
-                            {p.action === 'add' && (
-                              <div className="new-product">
-                                <input aria-label={`${he.quotes.icon}: ${p.line.name}`} className="input input-emoji" value={p.emoji} onChange={(e) => patch(p.key, { emoji: e.target.value })} />
-                                <input aria-label={`${he.quotes.newName}: ${p.line.name}`} className="input" value={p.newName} onChange={(e) => patch(p.key, { newName: e.target.value })} />
-                                <select aria-label={`${he.quotes.category}: ${p.line.name}`} className="input" value={p.cat} onChange={(e) => patch(p.key, { cat: e.target.value as 'dry' | 'fresh' })}>
-                                  <option value="dry">{he.catDry}</option><option value="fresh">{he.catFresh}</option>
-                                </select>
-                              </div>
-                            )}
-                          </td>
-                          <td data-label={he.quotes.colOld}>{p.action !== 'add' && p.action !== 'ignore' && p.oldPrice != null ? money(p.oldPrice) : he.dash}</td>
-                          <td data-label={he.quotes.colNew}>
-                            <input aria-label={`${he.quotes.colNew}: ${p.line.name}`} type="number" step="0.01" min="0" className="input input-num"
-                              value={p.newPrice ?? ''} disabled={p.action === 'ignore'}
-                              onChange={(e) => { const v = parseFloat(e.target.value); patch(p.key, { newPrice: Number.isFinite(v) && v > 0 ? v : null }); setPriceEdited((s) => new Set(s).add(p.key)) }} />
-                          </td>
-                          <td data-label={he.quotes.colChange}>
-                            {pct == null ? he.dash
-                              : Math.abs(pct) < 0.05 ? <span className="muted">{he.quotes.same}</span>
-                              : pct > 0 ? <span className="txt-over" style={{ marginInlineStart: 0 }}>{he.quotes.up(pct.toFixed(1))}</span>
-                              : <span className="txt-ok">{he.quotes.down(Math.abs(pct).toFixed(1))}</span>}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <ReviewTable proposals={proposals} products={config.products} productById={productById} patch={patch} setAction={setAction}
+                onPriceEdit={(k) => setPriceEdited((s) => new Set(s).add(k))} />
             </>
           )}
           <div className="toolbar" style={{ marginBlockStart: 16, marginBlockEnd: 0 }}>
-            <button type="button" className="btn btn-primary" disabled={!active.length} onClick={() => void apply()}>{he.quotes.apply(active.length)}</button>
+            <button type="button" className="btn btn-primary" disabled={!active.length} onClick={() => void saveQuote()}>{he.quotes.saveQuote(name, active.length)}</button>
             <button type="button" className="btn btn-small" onClick={() => setPhase({ step: 'upload' })}>{he.cancel}</button>
           </div>
         </Card>
       )}
 
       <div style={{ marginBlockStart: 24 }}>
+        <SupplierChoice periodId={periodId} category={category} records={records} decisions={decisions} weights={weights}
+          provisional={history.chosen[periodId]?.[category]?.provisional ?? true} hasOpenVotes={hasOpenVotes} />
+      </div>
+
+      <div style={{ marginBlockStart: 24 }}>
+        <DiscountCard periodId={periodId} category={category} decision={decisions[decisionKey(periodId, category)]} />
+      </div>
+
+      <div style={{ marginBlockStart: 24 }}>
         <Card title={he.quotes.historyTitle}>
-          {history.length === 0 ? <div className="muted small">{he.quotes.historyEmpty}</div> : history.map((h) => (
+          {records.length === 0 ? <div className="muted small">{he.quotes.historyEmpty}</div> : records.map((h) => (
             <div key={h.id} className="list-row">
               <span className="grow">
-                <b>{h.supplierName || he.dash}</b> · {new Date(h.createdAt).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', dateStyle: 'short', timeStyle: 'short' })}
-                <span className="muted"> · {h.fileNames.join(', ')}</span>
+                <b>{h.supplierName || he.dash}</b> · {categoryLabel(h.supplierId || 'dry')}{h.periodId ? ` · ${periodLabel(h.periodId)}` : ''}
+                <span className="muted"> · {new Date(h.createdAt).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', dateStyle: 'short', timeStyle: 'short' })} · {h.fileNames.join(', ')}</span>
               </span>
-              <span>{he.quotes.historyLine(h.updated, h.added)} · <span className="muted">{h.method === 'ai' ? he.quotes.methodAi : he.quotes.methodLocal}</span></span>
+              <span>{he.quotes.historyLine(h.offers?.length ?? 0)} · <span className="muted">{h.method === 'ai' ? he.quotes.methodAi : he.quotes.methodLocal}</span></span>
             </div>
           ))}
         </Card>
       </div>
     </div>
+  )
+}
+
+function ReviewTable({ proposals, products, productById, patch, setAction, onPriceEdit }: {
+  proposals: Proposal[]
+  products: { id: string; name: string; emoji: string }[]
+  productById: Map<string, { price: number }>
+  patch: (key: string, upd: Partial<Proposal>) => void
+  setAction: (p: Proposal, a: ProposalAction) => void
+  onPriceEdit: (key: string) => void
+}) {
+  return (
+    <div className="table-wrap">
+      <table className="data quote-table">
+        <thead>
+          <tr>
+            <th>{he.quotes.colInQuote}</th><th>{he.quotes.colAction}</th><th>{he.quotes.colCatalog}</th>
+            <th>{he.quotes.colOld}</th><th>{he.quotes.colNew}</th><th>{he.quotes.colChange}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {proposals.map((p) => {
+            const pct = p.action === 'update' ? pctChange(p.oldPrice, p.newPrice) : null
+            return (
+              <tr key={p.key} className={p.action === 'ignore' ? 'is-ignored' : ''}>
+                <td data-label={he.quotes.colInQuote}>
+                  <div className="cell-strong">{p.line.name}</div>
+                  {p.line.note && <div className="small muted">{p.line.note}</div>}
+                  {p.line.confidence < LOW_CONFIDENCE && p.action !== 'ignore' && <div className="small txt-warn" style={{ marginInlineStart: 0 }}>{he.quotes.lowConfidence}</div>}
+                </td>
+                <td data-label={he.quotes.colAction}>
+                  <select aria-label={`${he.quotes.colAction}: ${p.line.name}`} className="input" value={p.action} onChange={(e) => setAction(p, e.target.value as ProposalAction)}>
+                    <option value="update">{he.quotes.actUpdate}</option>
+                    <option value="add">{he.quotes.actAdd}</option>
+                    <option value="ignore">{he.quotes.actIgnore}</option>
+                  </select>
+                </td>
+                <td data-label={he.quotes.colCatalog}>
+                  {p.action === 'update' && (
+                    <select aria-label={`${he.quotes.colCatalog}: ${p.line.name}`} className="input" value={p.productId ?? ''}
+                      onChange={(e) => { const id = e.target.value || null; patch(p.key, { productId: id, oldPrice: id ? productById.get(id)?.price ?? null : null }) }}>
+                      <option value="">{he.quotes.pickProduct}</option>
+                      {products.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
+                    </select>
+                  )}
+                  {p.action === 'add' && (
+                    <div className="new-product">
+                      <input aria-label={`${he.quotes.icon}: ${p.line.name}`} className="input input-emoji" value={p.emoji} onChange={(e) => patch(p.key, { emoji: e.target.value })} />
+                      <input aria-label={`${he.quotes.newName}: ${p.line.name}`} className="input" value={p.newName} onChange={(e) => patch(p.key, { newName: e.target.value })} />
+                      <select aria-label={`${he.quotes.productCategory}: ${p.line.name}`} className="input" value={p.cat} onChange={(e) => patch(p.key, { cat: e.target.value as 'dry' | 'fresh' })}>
+                        <option value="dry">{he.catDry}</option><option value="fresh">{he.catFresh}</option>
+                      </select>
+                    </div>
+                  )}
+                </td>
+                <td data-label={he.quotes.colOld}>{p.action === 'update' && p.oldPrice != null ? money(p.oldPrice) : he.dash}</td>
+                <td data-label={he.quotes.colNew}>
+                  <input aria-label={`${he.quotes.colNew}: ${p.line.name}`} type="number" step="0.01" min="0" className="input input-num"
+                    value={p.newPrice ?? ''} disabled={p.action === 'ignore'}
+                    onChange={(e) => { const v = parseFloat(e.target.value); patch(p.key, { newPrice: Number.isFinite(v) && v > 0 ? v : null }); onPriceEdit(p.key) }} />
+                </td>
+                <td data-label={he.quotes.colChange}>
+                  {pct == null ? he.dash
+                    : Math.abs(pct) < 0.05 ? <span className="muted">{he.quotes.same}</span>
+                    : pct > 0 ? <span className="txt-up">{he.quotes.up(pct.toFixed(1))}</span>
+                    : <span className="txt-down">{he.quotes.down(Math.abs(pct).toFixed(1))}</span>}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function SupplierChoice({ periodId, category, records, decisions, weights, provisional, hasOpenVotes }: {
+  periodId: string
+  category: string
+  records: QuoteRecord[]
+  decisions: Record<string, PeriodDecision>
+  weights: Record<string, number> | null
+  provisional: boolean
+  hasOpenVotes: boolean
+}) {
+  const { config, store } = useAdmin()
+  const [result, setResult] = useState<{ ok: string; warn: string | null } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const relevant = useMemo(() => config.products.filter((p) => (p.supplier ?? 'dry') === category && p.active !== false).map((p) => p.id), [config.products, category])
+  const quotes = useMemo(() => groupBySupplier(records, periodId, category), [records, periodId, category])
+  const cmp = useMemo(() => compareSuppliers(quotes, { relevant, weights }), [quotes, relevant, weights])
+  const decided = decisions[decisionKey(periodId, category)]?.supplierName
+  const nameOf = (id: string) => config.products.find((p) => p.id === id)?.name ?? id
+  const title = he.quotes.step3(categoryLabel(category), periodLabel(periodId))
+
+  useEffect(() => setResult(null), [periodId, category])
+
+  const choose = async (supplier: string) => {
+    if (!confirm(he.quotes.confirmChoose(supplier, periodLabel(periodId)))) return
+    const quote = quotes.find((q) => q.supplier === supplier)
+    if (!quote) return
+    setBusy(true)
+    try {
+      const stamp = Date.now()
+      const res = applySupplierChoice(config.products, quote, { idPrefix: `s${stamp}`, supplierId: category })
+      await store.updateConfigField('products', res.products)
+      await store.saveSupplierChoice(periodId, category, supplier, stamp)
+      const missing = res.notOffered.map(nameOf)
+      setResult({
+        ok: he.quotes.chooseDone(supplier, res.updated, res.added),
+        warn: missing.length ? he.quotes.notOffered(missing.slice(0, 10).join(', ') + (missing.length > 10 ? he.prices.andMore(missing.length - 10) : '')) : null,
+      })
+    } catch (e) {
+      alert(he.errorPrefix + (e instanceof Error ? e.message : String(e)))
+    } finally { setBusy(false) }
+  }
+
+  if (!quotes.length) return <Card title={title}><div className="muted small">{he.quotes.noQuotes}</div></Card>
+  return (
+    <Card title={title} accent>
+      {result && <div className="notice notice-block" role="status">{result.ok}</div>}
+      {result?.warn && <div className="banner-warn small" role="status">{result.warn}</div>}
+      {hasOpenVotes && <div className="banner-warn small" role="status">{he.quotes.openRoundWarn}</div>}
+      <p className="small" style={{ marginBlockStart: 0 }}>{he.quotes.comparedOn(cmp.common.length, relevant.length)}</p>
+      {quotes.length > 1 && cmp.common.length < relevant.length / 2 && <div className="banner-warn small" role="status">{he.quotes.weakCompare}</div>}
+      <div className="table-wrap">
+        <table className="data">
+          <thead>
+            <tr>
+              <th>{he.quotes.colSupplier}</th><th>{he.quotes.colCovered}</th><th>{he.quotes.colMissing}</th><th>{he.quotes.colEqual}</th>
+              {cmp.basis === 'weighted' && <th>{he.quotes.colWeighted}</th>}<th>{he.quotes.colDiff}</th><th />
+            </tr>
+          </thead>
+          <tbody>
+            {cmp.rows.map((r) => (
+              <tr key={r.supplier}>
+                <td className="cell-strong">
+                  {r.supplier}
+                  {r.supplier === cmp.cheapest && <div><span className="chip chip-ok">{he.quotes.cheapestTag}</span></div>}
+                </td>
+                <td>{r.covered} / {relevant.length}</td>
+                <td className="small muted" style={{ maxWidth: 260, whiteSpace: 'normal' }}>{r.missing.length ? r.missing.slice(0, 8).map(nameOf).join(', ') + (r.missing.length > 8 ? he.prices.andMore(r.missing.length - 8) : '') : he.dash}</td>
+                <td>{money(r.equalTotal)}</td>
+                {cmp.basis === 'weighted' && <td>{money(r.weightedTotal ?? 0)}</td>}
+                <td>{r.diff > 0.00005 ? <span className="txt-up">{he.quotes.up((r.diff * 100).toFixed(1))}</span> : he.dash}</td>
+                <td>
+                  {decided === r.supplier
+                    ? <span className="txt-ok">{he.quotes.chosen}</span>
+                    : <button type="button" className="btn btn-small" disabled={busy} onClick={() => void choose(r.supplier)}>{he.quotes.choose}</button>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="small muted">{cmp.basis === 'weighted' ? he.quotes.basisWeighted : he.quotes.basisEqual}</p>
+      {!decided && provisional && <p className="small txt-warn" style={{ marginInlineStart: 0 }}>{he.quotes.provisional}</p>}
+    </Card>
+  )
+}
+
+function DiscountCard({ periodId, category, decision }: { periodId: string; category: string; decision?: PeriodDecision }) {
+  const { store } = useAdmin()
+  const saved = decision?.discount ?? null
+  const [type, setType] = useState<Discount['type']>(saved?.type ?? 'percent')
+  const [value, setValue] = useState(saved ? String(saved.value) : '')
+  const [base, setBase] = useState(saved?.baseTotal != null ? String(saved.baseTotal) : '')
+  const [note, setNote] = useState(saved?.note ?? '')
+  const [msg, setMsg] = useState<string | null>(null)
+  useEffect(() => {
+    setType(saved?.type ?? 'percent'); setValue(saved ? String(saved.value) : ''); setBase(saved?.baseTotal != null ? String(saved.baseTotal) : ''); setNote(saved?.note ?? ''); setMsg(null)
+  }, [periodId, category, saved?.savedAt]) // eslint-disable-line react-hooks/exhaustive-deps
+  const title = he.quotes.step4(categoryLabel(category), periodLabel(periodId))
+  if (!decision?.supplierName) return <Card title={title}><div className="muted small">{he.quotes.needChoice}</div></Card>
+
+  const draft: Discount = { type, value: parseFloat(value), baseTotal: type === 'amount' ? parseFloat(base) || null : null, note: note.trim(), savedAt: Date.now() }
+  const rate = discountRate(draft)
+  const save = async (d: Discount | null) => {
+    try {
+      await store.saveDiscount(periodId, category, d)
+      setMsg(d ? he.quotes.discountSaved : null)
+      if (!d) { setValue(''); setBase(''); setNote('') }
+    } catch (e) { alert(he.errorPrefix + (e instanceof Error ? e.message : String(e))) }
+  }
+  return (
+    <Card title={title}>
+      <p className="small" style={{ marginBlockStart: 0 }}>{he.quotes.discountIntro}</p>
+      {msg && <div className="notice notice-block" role="status">{msg}</div>}
+      <div className="quote-form">
+        <Field label={he.quotes.discountType}>
+          <select className="input" value={type} onChange={(e) => setType(e.target.value as Discount['type'])}>
+            <option value="percent">{he.quotes.discountPercent}</option>
+            <option value="amount">{he.quotes.discountAmount}</option>
+          </select>
+        </Field>
+        <Field label={he.quotes.discountValue}><input className="input input-num" type="number" min="0" step="0.01" value={value} onChange={(e) => setValue(e.target.value)} /></Field>
+        {type === 'amount' && <Field label={he.quotes.discountBase}><input className="input input-num" style={{ width: 130 }} type="number" min="0" step="0.01" value={base} onChange={(e) => setBase(e.target.value)} /></Field>}
+        <Field label={he.quotes.discountNote} grow><input className="input" value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+      </div>
+      <p className="small" role="status">{rate != null ? he.quotes.discountRate((rate * 100).toFixed(2)) : value ? <span className="txt-warn" style={{ marginInlineStart: 0 }}>{he.quotes.discountInvalid}</span> : null}</p>
+      <div className="toolbar" style={{ marginBlockEnd: 0 }}>
+        <button type="button" className="btn btn-primary" disabled={rate == null} onClick={() => void save(draft)}>{he.quotes.saveDiscount}</button>
+        {saved && <button type="button" className="btn btn-small btn-danger" onClick={() => void save(null)}>{he.quotes.removeDiscount}</button>}
+      </div>
+    </Card>
   )
 }
 

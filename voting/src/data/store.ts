@@ -2,6 +2,7 @@
 //  - Firestore (legacy-compatible schema) when VITE_FIREBASE_* env vars are set
 //  - Demo (browser localStorage) otherwise, so previews and E2E tests run without any backend.
 import type { LegacyConfig, LegacyVote, RoundState } from './legacy'
+import type { Discount, PeriodDecision } from '../lib/prices/history'
 
 /** History entry for an applied supplier quote (no files are stored; Spark plan has no Storage). */
 export interface QuoteRecord {
@@ -18,7 +19,7 @@ export interface QuoteRecord {
   /** half-year order this quote is for (price history) */
   periodId?: string
   /** every approved offer of the quote, incl. VAT, for the price history */
-  offers?: { key: string; name: string; productId: string | null; price: number }[]
+  offers?: { key: string; name: string; productId: string | null; price: number; emoji?: string; cat?: 'dry' | 'fresh' }[]
 }
 
 export type ConfigField = 'products' | 'coordinators' | 'baskets' | 'round'
@@ -36,6 +37,11 @@ export interface Store {
   archiveAllVotes(reason: string, roundNum: number): Promise<void>
   saveQuoteRecord(rec: QuoteRecord): Promise<void>
   subscribeQuoteRecords(cb: (recs: QuoteRecord[]) => void, onError?: (e: Error) => void): () => void
+  /** Which supplier a half-year order goes to (one document per period; each field written on its own). */
+  saveSupplierChoice(periodId: string, category: string, supplierName: string, decidedAt: number): Promise<void>
+  saveDiscount(periodId: string, category: string, discount: Discount | null): Promise<void>
+  /** keyed by decisionKey(periodId, category) */
+  subscribeDecisions(cb: (d: Record<string, PeriodDecision>) => void, onError?: (e: Error) => void): () => void
 }
 
 let storePromise: Promise<Store> | null = null

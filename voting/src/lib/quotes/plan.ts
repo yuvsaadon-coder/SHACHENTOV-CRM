@@ -24,32 +24,16 @@ export function buildProposals(lines: QuoteLine[], catalog: CatalogEntry[], vatM
     const action = newPrice == null || dup ? 'ignore' : match ? 'update' : 'add'
     return {
       key: `${i}-${line.name}`, line, action, productId: match?.id ?? null, oldPrice: match?.price ?? null, newPrice,
-      newName: line.name, emoji: line.emoji || '🛒', cat: line.cat, cheaper: null,
+      newName: line.name, emoji: line.emoji || '🛒', cat: line.cat,
     }
   })
 }
 
-/**
- * Price-history rule (owner 19.11.2026): the catalog follows the CHEAPEST offer for the period.
- * A line that is more expensive than an offer already received becomes "record only".
- * When the quote is for an older period than the latest tracked one, catalog updates also default to "record".
- */
-export function applyCheapestRule(
-  proposals: Proposal[], bestByKey: Record<string, { price: number; supplier: string }>, catalogFollowsPeriod: boolean,
-): Proposal[] {
-  return proposals.map((p) => {
-    const best = p.productId ? bestByKey[p.productId] : undefined
-    const cheaper = best && p.newPrice != null && best.price < p.newPrice - 1e-9 ? { price: best.price, supplier: best.supplier } : null
-    const demote = p.action === 'update' && (cheaper || !catalogFollowsPeriod)
-    return { ...p, cheaper, action: demote ? 'record' : p.action }
-  })
-}
-
-/** Key under which a line is kept in the price history. */
-export function offerKey(p: Proposal, addedIds: Record<string, string>): string | null {
-  if (p.action === 'add') return addedIds[p.key] ?? null
-  if (p.productId) return p.productId
-  return p.action === 'record' && p.newName.trim() ? `name:${p.newName.trim()}` : null
+/** Key under which an approved line is kept as the supplier's offer. */
+export function offerKey(p: Proposal): string | null {
+  if (p.action === 'update' && p.productId) return p.productId
+  if (p.action === 'add' && p.newName.trim()) return `name:${p.newName.trim()}`
+  return null
 }
 
 export interface ApplyResult { products: LegacyProduct[]; updated: number; added: number; addedIds: Record<string, string> }

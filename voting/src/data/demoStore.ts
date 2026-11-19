@@ -1,10 +1,12 @@
 import type { LegacyConfig, LegacyVote } from './legacy'
 import type { ConfigField, ConfigValue, QuoteRecord, Store } from './store'
+import { decisionKey, type PeriodDecision } from '../lib/prices/history'
 
 const K_CONFIG = 'shachen-tov-demo-config'
 const K_VOTES = 'shachen-tov-demo-votes'
 const K_ARCHIVE = 'shachen-tov-demo-archived-votes'
 const K_QUOTES = 'shachen-tov-demo-price-quotes'
+const K_DECISIONS = 'shachen-tov-demo-price-decisions'
 
 /** Browser-only store for previews/E2E. Same semantics as the Firestore store. */
 export function createDemoStore(ls: Storage): Store {
@@ -45,6 +47,19 @@ export function createDemoStore(ls: Storage): Store {
     },
     subscribeQuoteRecords(cb) {
       return subscribe(() => cb(read<QuoteRecord[]>(K_QUOTES, [])))
+    },
+    async saveSupplierChoice(periodId, category, supplierName, decidedAt) {
+      const all = read<Record<string, PeriodDecision>>(K_DECISIONS, {})
+      const k = decisionKey(periodId, category)
+      write(K_DECISIONS, { ...all, [k]: { ...all[k], periodId, category, supplierName, decidedAt } })
+    },
+    async saveDiscount(periodId, category, discount) {
+      const all = read<Record<string, PeriodDecision>>(K_DECISIONS, {})
+      const k = decisionKey(periodId, category)
+      write(K_DECISIONS, { ...all, [k]: { ...(all[k] ?? { periodId, category, supplierName: '', decidedAt: 0 }), discount } })
+    },
+    subscribeDecisions(cb) {
+      return subscribe(() => cb(read<Record<string, PeriodDecision>>(K_DECISIONS, {})))
     },
   }
 }
