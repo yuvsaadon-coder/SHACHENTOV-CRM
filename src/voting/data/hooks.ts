@@ -23,7 +23,7 @@ export function useCrmBranches(): CrmBranch[] | null {
     if (votingDemo()) { setList(DEMO_BRANCHES); return }
     return onSnapshot(collection(db, 'branches'), (snap) => {
       setList(snap.docs.map((d) => ({ id: d.id, ...d.data() } as CrmBranch)).filter((b) => b.type !== 'cafe_youth').sort((a, b) => a.name.localeCompare(b.name, 'he')))
-    }, () => setList([]))
+    }, (e) => { console.error('voting: branches', e); setList([]) })
   }, [])
   return list
 }
@@ -38,7 +38,7 @@ export function useCrmCoordinators(enabled = true): Coordinator[] | null {
     return onSnapshot(q, (snap) => {
       setList(snap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUser)).filter((u) => u.active !== false)
         .map((u) => ({ uid: u.uid, name: u.name, branchIds: u.branchIds ?? [] })))
-    }, () => setList([]))
+    }, (e) => { console.error('voting: coordinators', e); setList([]) })
   }, [enabled])
   return list
 }
@@ -46,7 +46,7 @@ export function useCrmCoordinators(enabled = true): Coordinator[] | null {
 /** Live config; fields not saved yet fall back to the defaults. null while loading. */
 export function useVotingConfig(store: VotingStore | null, branches: CrmBranch[] | null): VotingConfig | null {
   const [doc, setDoc] = useState<Partial<VotingConfig> | null | undefined>(undefined)
-  useEffect(() => { if (!store) return; return store.subscribeConfig(setDoc, () => setDoc(null)) }, [store])
+  useEffect(() => { if (!store) return; return store.subscribeConfig(setDoc, (e) => { console.error('voting: config', e); setDoc(null) }) }, [store])
   return useMemo(() => {
     if (doc === undefined || !branches) return null
     return { ...defaultConfig(branches), ...doc }
@@ -56,7 +56,7 @@ export function useVotingConfig(store: VotingStore | null, branches: CrmBranch[]
 /** Participation and family counts per CRM branch; unsaved branches get name-based defaults. */
 export function useBranchSettings(store: VotingStore | null, branches: CrmBranch[] | null): Record<string, BranchSettings> | null {
   const [saved, setSaved] = useState<Record<string, Partial<BranchSettings>> | null>(null)
-  useEffect(() => { if (!store) return; return store.subscribeBranchSettings(setSaved, () => setSaved({})) }, [store])
+  useEffect(() => { if (!store) return; return store.subscribeBranchSettings(setSaved, (e) => { console.error('voting: branch settings', e); setSaved({}) }) }, [store])
   return useMemo(() => {
     if (!saved || !branches) return null
     return Object.fromEntries(branches.map((b) => [b.id, { ...defaultBranchSettings(b.name), ...saved[b.id] } as BranchSettings]))

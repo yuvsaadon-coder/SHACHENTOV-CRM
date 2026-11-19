@@ -18,6 +18,8 @@ import { PricesPanel } from './features/admin/PricesPanel'
 import { BranchesPanel } from './features/admin/BranchesPanel'
 import { PreviewPanel } from './features/admin/PreviewPanel'
 import { RoundsPanel, roundLabel } from './features/admin/RoundsPanel'
+import { canManageVoting } from '../lib/votingAccess'
+import { ErrorBoundary } from '../components/ui/ErrorBoundary'
 import './styles.css'
 
 const TABS = ['status', 'results', 'optimal', 'compare', 'export', 'catalog', 'quotes', 'prices', 'branches', 'preview', 'rounds'] as const
@@ -27,10 +29,6 @@ const PANELS: Record<Tab, () => JSX.Element> = {
   catalog: CatalogPanel, quotes: QuotesPanel, prices: PricesPanel, branches: BranchesPanel, preview: PreviewPanel, rounds: RoundsPanel,
 }
 
-/** Who may manage the basket survey: system admins and the holders of a "Jerusalem branches" HQ position. */
-export function canManageVoting(access: string, domain: string | null): boolean {
-  return access === 'admin' || domain === 'JLM' || domain === 'CEO'
-}
 
 function useNow(ms = 60_000): number {
   const [now, setNow] = useState(() => Date.now())
@@ -42,7 +40,11 @@ export function VotingAdminGate() {
   const { access, domain, rolesReady } = useAuth()
   if (!votingDemo() && !rolesReady && access !== 'admin') return <div className="voting"><div className="center-msg">{he.loading}</div></div>
   if (!votingDemo() && !canManageVoting(access, domain)) return <div className="voting"><div className="center-msg">{he.crm.noAccess}</div></div>
-  return <VotingAdmin />
+  return (
+    <ErrorBoundary label="אזור סל המזון נתקל בשגיאה">
+      <VotingAdmin />
+    </ErrorBoundary>
+  )
 }
 
 export function VotingAdmin() {
