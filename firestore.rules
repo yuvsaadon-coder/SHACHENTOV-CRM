@@ -193,5 +193,34 @@ service cloud.firestore {
       allow write:  if isHQ()
                     || (isCoordinator() && coordinatesBranch(request.resource.data.branchId));
     }
+      // ── Basket survey (voting module, collections voting_*) ─────────────────
+    // Managing the survey is HQ staff; the CRM screens further limit it to system admins and the
+    // Jerusalem-branches domain. A coordinator reads the round and the catalog, and writes only their OWN vote,
+    // for one of their own branches, while the round is open. Votes are never deleted except when HQ archives them.
+    function votingRoundOpen() {
+      return !exists(/databases/$(database)/documents/voting_config/main)
+        || get(/databases/$(database)/documents/voting_config/main).data.get('round', {}).get('open', true) == true;
+    }
+
+    match /voting_config/{id}   { allow read: if isAuthed(); allow write: if isHQ(); }
+    match /voting_branches/{id} { allow read: if isAuthed(); allow write: if isHQ(); }
+
+    // Document id = {uid}_{branchId}
+    match /voting_votes/{voteId} {
+      allow read: if isHQ() || (isAuthed() && voteId.matches('^' + request.auth.uid + '_.+$'));
+      allow create, update: if isCoordinator()
+        && request.resource.data.uid == request.auth.uid
+        && voteId == request.auth.uid + '_' + request.resource.data.branchId
+        && coordinatesBranch(request.resource.data.branchId)
+        && request.resource.data.keys().hasOnly(['uid', 'branchId', 'name', 'submittedAt', 'baskets', 'round', 'serverSubmittedAt'])
+        && request.resource.data.baskets is map
+        && votingRoundOpen();
+      allow delete: if isHQ();
+    }
+
+    match /voting_archivedVotes/{id}  { allow read, create: if isHQ(); allow update, delete: if false; }
+    match /voting_priceQuotes/{id}    { allow read, create, update: if isHQ(); allow delete: if isManager(); }
+    match /voting_priceDecisions/{id} { allow read, create, update: if isHQ(); allow delete: if isManager(); }
+    match /voting_rounds/{id}         { allow read, create, update: if isHQ(); allow delete: if isManager(); }
   }
 }

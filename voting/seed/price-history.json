@@ -1,0 +1,353 @@
+{
+ "_comment": "Imported from docs/price-history/price-tracking-original.xlsx by scripts/import-price-history.mjs. Prices include VAT. Missing = not supplied that half-year. Do not edit by hand; re-run the script.",
+ "items": [
+  {
+   "key": "pasta",
+   "name": "פסטה",
+   "productId": "pasta"
+  },
+  {
+   "key": "rice",
+   "name": "אורז",
+   "productId": "rice"
+  },
+  {
+   "key": "grape",
+   "name": "מיץ לא בתרומה",
+   "productId": "grape"
+  },
+  {
+   "key": "paste",
+   "name": "רסק",
+   "productId": "paste"
+  },
+  {
+   "key": "pickles",
+   "name": "מלפפונים חמוצים",
+   "productId": "pickles"
+  },
+  {
+   "key": "beans-r",
+   "name": "שעועית ברוטב",
+   "productId": "beans-r"
+  },
+  {
+   "key": "oil",
+   "name": "שמן",
+   "productId": "oil"
+  },
+  {
+   "key": "tuna",
+   "name": "טונה",
+   "productId": "tuna"
+  },
+  {
+   "key": "couscous",
+   "name": "קוסקוס",
+   "productId": "couscous"
+  },
+  {
+   "key": "ptitim",
+   "name": "פתיתים",
+   "productId": "ptitim"
+  },
+  {
+   "key": "olives",
+   "name": "זיתים",
+   "productId": "olives"
+  },
+  {
+   "key": "corn",
+   "name": "תירס",
+   "productId": "corn"
+  },
+  {
+   "key": "name:אפונה וגזר",
+   "name": "אפונה וגזר",
+   "productId": null
+  },
+  {
+   "key": "tahini",
+   "name": "טחינה",
+   "productId": "tahini"
+  },
+  {
+   "key": "buckwheat",
+   "name": "כוסמת",
+   "productId": "buckwheat"
+  },
+  {
+   "key": "beans-w",
+   "name": "שעועית לבנה",
+   "productId": "beans-w"
+  },
+  {
+   "key": "grits",
+   "name": "גריסים",
+   "productId": "grits"
+  },
+  {
+   "key": "bulgur",
+   "name": "בורגול",
+   "productId": "bulgur"
+  },
+  {
+   "key": "peas",
+   "name": "אפונה",
+   "productId": "peas"
+  },
+  {
+   "key": "wheat",
+   "name": "חיטה",
+   "productId": "wheat"
+  },
+  {
+   "key": "chickpeas",
+   "name": "חומוס בשימורים",
+   "productId": "chickpeas"
+  },
+  {
+   "key": "fruit-can",
+   "name": "אננס",
+   "productId": "fruit-can"
+  },
+  {
+   "key": "mushrooms",
+   "name": "פטריות",
+   "productId": "mushrooms"
+  },
+  {
+   "key": "choco",
+   "name": "ממרח שוקולד",
+   "productId": "choco"
+  },
+  {
+   "key": "coffee",
+   "name": "קפה",
+   "productId": "coffee"
+  },
+  {
+   "key": "sugar",
+   "name": "סוכר",
+   "productId": "sugar"
+  },
+  {
+   "key": "flour",
+   "name": "קמח",
+   "productId": "flour"
+  }
+ ],
+ "periods": [
+  {
+   "id": "2023-H2",
+   "supplier": "אריזות",
+   "prices": {
+    "rice": 4.3056,
+    "paste": 5.1129,
+    "beans-r": 4.3056,
+    "oil": 8.073,
+    "tuna": 3.87504,
+    "couscous": 3.7674,
+    "olives": 4.3056,
+    "corn": 4.52088,
+    "tahini": 8.6112,
+    "grits": 3.44448,
+    "bulgur": 3.55212,
+    "chickpeas": 4.19796,
+    "fruit-can": 4.52088,
+    "mushrooms": 3.7674,
+    "choco": 4.8438,
+    "coffee": 3.55212,
+    "sugar": 4.8438,
+    "flour": 3.33684
+   }
+  },
+  {
+   "id": "2024-H1",
+   "supplier": "אריזות",
+   "prices": {
+    "pasta": 3,
+    "rice": 5.16672,
+    "grape": 11.3022,
+    "paste": 5.7,
+    "pickles": 4.3,
+    "beans-r": 4.8,
+    "oil": 7.5,
+    "tuna": 4.1,
+    "couscous": 4.2,
+    "ptitim": 3,
+    "olives": 4.8,
+    "corn": 4.8,
+    "tahini": 9.7,
+    "buckwheat": 5.4,
+    "beans-w": 7.3,
+    "grits": 3.7,
+    "bulgur": 3.6,
+    "peas": 4.1,
+    "wheat": 3.4,
+    "chickpeas": 4.8,
+    "fruit-can": 4.8,
+    "mushrooms": 4.1,
+    "choco": 5.1,
+    "coffee": 3.4,
+    "sugar": 5.4,
+    "flour": 3.6
+   }
+  },
+  {
+   "id": "2024-H2",
+   "supplier": "אריזות",
+   "prices": {
+    "pasta": 2.6,
+    "rice": 5.53644,
+    "grape": 12.8,
+    "paste": 5.589675,
+    "pickles": 4.47,
+    "beans-r": 4.79115,
+    "oil": 6.92055,
+    "tuna": 3.992625,
+    "couscous": 4.15233,
+    "olives": 4.79115,
+    "corn": 5.11056,
+    "tahini": 9.79524,
+    "beans-w": 7.66,
+    "grits": 3.72645,
+    "bulgur": 3.72645,
+    "peas": 4.79,
+    "chickpeas": 4.79115,
+    "fruit-can": 4.79115,
+    "mushrooms": 4.04586,
+    "choco": 5.53644,
+    "coffee": 4.47174,
+    "sugar": 5.3235,
+    "flour": 3.51351
+   }
+  },
+  {
+   "id": "2025-H1",
+   "supplier": "ברוכים",
+   "prices": {
+    "pasta": 2.59,
+    "rice": 5.4,
+    "paste": 5.8,
+    "pickles": 5.192,
+    "beans-r": 6.49,
+    "oil": 6.8,
+    "tuna": 3.8,
+    "couscous": 3.54,
+    "ptitim": 3.54,
+    "olives": 5.5,
+    "corn": 4.6,
+    "tahini": 9.2,
+    "buckwheat": 5.7,
+    "beans-w": 5.9,
+    "grits": 3.4,
+    "bulgur": 4,
+    "peas": 4.3,
+    "wheat": 5.7,
+    "chickpeas": 5.5,
+    "fruit-can": 6,
+    "mushrooms": 3.9,
+    "choco": 5.5,
+    "coffee": 8.142,
+    "sugar": 4.13,
+    "flour": 3.5
+   }
+  },
+  {
+   "id": "2025-H2",
+   "supplier": "ברוכים",
+   "prices": {
+    "pasta": 2.242,
+    "rice": 6.49,
+    "paste": 6.01,
+    "pickles": 4.6,
+    "beans-r": 6.49,
+    "oil": 7.32,
+    "tuna": 3.3,
+    "couscous": 3.42,
+    "ptitim": 3.42,
+    "olives": 7.67,
+    "corn": 5.31,
+    "tahini": 9.33,
+    "buckwheat": 4.72,
+    "beans-w": 6.49,
+    "grits": 3.07,
+    "bulgur": 3.07,
+    "peas": 3.9,
+    "wheat": 3.54,
+    "chickpeas": 4.6,
+    "fruit-can": 6.962,
+    "mushrooms": 3.54,
+    "choco": 5.73,
+    "coffee": 7.67,
+    "sugar": 4.13,
+    "flour": 3.43
+   }
+  },
+  {
+   "id": "2026-H1",
+   "supplier": "",
+   "prices": {
+    "pasta": 2.596,
+    "rice": 6.608,
+    "grape": 6.195,
+    "paste": 5.9,
+    "pickles": 5.192,
+    "beans-r": 6.49,
+    "oil": 7.316,
+    "tuna": 3.304,
+    "couscous": 3.54,
+    "ptitim": 3.54,
+    "olives": 7.788,
+    "corn": 4.72,
+    "tahini": 9.322,
+    "buckwheat": 4.72,
+    "beans-w": 5.9,
+    "grits": 3.186,
+    "bulgur": 3.186,
+    "peas": 3.894,
+    "wheat": 3.186,
+    "chickpeas": 5.31,
+    "fruit-can": 7.08,
+    "mushrooms": 4.248,
+    "choco": 6.962,
+    "coffee": 8.142,
+    "sugar": 4.13,
+    "flour": 3.422
+   }
+  },
+  {
+   "id": "2026-H2",
+   "supplier": "",
+   "prices": {
+    "pasta": 2.596,
+    "rice": 6.608,
+    "paste": 5.9,
+    "pickles": 5.192,
+    "beans-r": 6.49,
+    "oil": 7.316,
+    "tuna": 3.304,
+    "couscous": 3.54,
+    "ptitim": 3.54,
+    "olives": 7.788,
+    "corn": 5.9,
+    "name:אפונה וגזר": 5.782,
+    "tahini": 9.322,
+    "buckwheat": 4.72,
+    "beans-w": 5.9,
+    "grits": 3.422,
+    "bulgur": 3.422,
+    "peas": 4.13,
+    "wheat": 3.422,
+    "chickpeas": 5.782,
+    "fruit-can": 7.08,
+    "mushrooms": 4.248,
+    "choco": 6.962,
+    "coffee": 8.142,
+    "sugar": 4.13,
+    "flour": 3.422
+   }
+  }
+ ]
+}

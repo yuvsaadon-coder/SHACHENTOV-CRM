@@ -7,6 +7,6 @@ export default mergeConfig(viteConfig, defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: false,
-    include: ['src/test/**/*.test.{ts,tsx}'],
+    include: ['src/test/**/*.test.{ts,tsx}', 'src/voting/test/**/*.test.{ts,tsx}'],
   },
 }))

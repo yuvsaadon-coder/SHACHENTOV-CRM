@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { to: '/portal/volunteers', label: 'שיבוץ',  icon: '📅' },
   { to: '/portal/branch',     label: 'הסניף',  icon: '🏬' },
   { to: '/portal/report',     label: 'דיווח',  icon: '📋' },
+  { to: '/portal/basket',     label: 'סל',     icon: '🧺' },
   { to: '/portal/knowledge',  label: 'ידע',    icon: '📚' },
   { to: '/portal/chat',       label: "צ'אט",   icon: '🤖' },
 ]

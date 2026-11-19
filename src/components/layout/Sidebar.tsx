@@ -3,7 +3,7 @@ import { NavLink, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { DOMAIN_LABELS, DOMAINS, type Domain } from '../../types'
 
-interface NavItem { to: string; label: string; icon: string; adminOnly: boolean; hqOnly?: boolean }
+interface NavItem { to: string; label: string; icon: string; adminOnly: boolean; hqOnly?: boolean; votingOnly?: boolean }
 interface NavGroup { title: string; items: NavItem[] }
 
 const navGroups: NavGroup[] = [
@@ -15,6 +15,7 @@ const navGroups: NavGroup[] = [
       { to: '/reports', label: 'דיווחים רבעוניים', icon: '📈', adminOnly: false },
       { to: '/admin/report-questions', label: 'עריכת שאלות דיווח', icon: '📝', adminOnly: true },
       { to: '/admin/branches', label: 'פורטל רכזים', icon: '📋', adminOnly: true },
+      { to: '/voting', label: 'סל המזון', icon: '🧺', adminOnly: false, votingOnly: true },
     ],
   },
   {
@@ -55,7 +56,7 @@ interface Props {
 const STORAGE_KEY = 'sidebarCollapsedGroups'
 
 export function Sidebar({ onClose, collapsed = false, onToggleCollapse }: Props) {
-  const { appUser, orgRole, access, logOut } = useAuth()
+  const { appUser, orgRole, access, domain, logOut } = useAuth()
   const navigate = useNavigate()
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
     try {
@@ -89,6 +90,8 @@ export function Sidebar({ onClose, collapsed = false, onToggleCollapse }: Props)
       items: group.items.filter((item) => {
         if (item.adminOnly && !isAdmin) return false
         if (item.hqOnly && !isHQ) return false
+        // basket survey: system admins and the Jerusalem-branches domain (same rule as the page itself)
+        if (item.votingOnly && !(access === 'admin' || domain === 'JLM' || domain === 'CEO')) return false
         return true
       }),
     }))

@@ -24,3 +24,8 @@ dist/
 
 # Firebase service account — never commit
 serviceAccountKey.json
+
+# Firebase emulator logs
+firestore-debug.log
+firebase-debug.log
+ui-debug.log
