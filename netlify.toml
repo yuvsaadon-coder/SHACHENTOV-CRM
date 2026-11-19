@@ -20,6 +20,10 @@
 [functions."fetch-logo"]
   timeout = 26
 
+# Reading the text out of every uploaded file (PDF, Word, Excel) for the HQ chatbot.
+[functions."index-files"]
+  timeout = 26
+
 # Basket survey: supplier quote analysis calls Claude.
 [functions."analyze-quote"]
   timeout = 26
