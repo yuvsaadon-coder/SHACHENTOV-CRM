@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { canManageVoting } from '../../lib/votingAccess'
 import { NavLink, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { DOMAIN_LABELS, DOMAINS, type Domain } from '../../types'
@@ -91,7 +92,7 @@ export function Sidebar({ onClose, collapsed = false, onToggleCollapse }: Props)
         if (item.adminOnly && !isAdmin) return false
         if (item.hqOnly && !isHQ) return false
         // basket survey: system admins and the Jerusalem-branches domain (same rule as the page itself)
-        if (item.votingOnly && !(access === 'admin' || domain === 'JLM' || domain === 'CEO')) return false
+        if (item.votingOnly && !canManageVoting(access, domain)) return false
         return true
       }),
     }))
