@@ -21,7 +21,8 @@ export interface ExtractOptions {
 }
 
 export const MAX_PDF_PAGES = 400
-const MIN_CHARS_PER_PAGE = 25
+/** A text PDF has hundreds of characters per page; a scan with a stray header or page number has a handful. */
+const MIN_CHARS_PER_PAGE = 100
 
 const extOf = (name: string) => (name.toLowerCase().match(/\.([a-z0-9]+)(?:\?.*)?$/)?.[1] ?? '')
 
@@ -78,12 +79,11 @@ async function xlsxText(buf: Uint8Array): Promise<string> {
 }
 
 interface PdfModule {
-  getDocument: (src: Record<string, unknown>) => { promise: Promise<PdfDocument> }
+  getDocument: (src: Record<string, unknown>) => { promise: Promise<PdfDocument>; destroy: () => Promise<void> }
 }
 interface PdfDocument {
   numPages: number
   getPage: (n: number) => Promise<{ getTextContent: () => Promise<{ items: { str?: string; hasEOL?: boolean }[] }> }>
-  destroy: () => Promise<void>
 }
 
 let pdfjsPromise: Promise<PdfModule> | null = null
@@ -101,13 +101,14 @@ function loadPdfjs(): Promise<PdfModule> {
 
 async function pdfText(buf: Uint8Array): Promise<{ text: string; pages: number }> {
   const pdfjs = await loadPdfjs()
-  const doc = await pdfjs.getDocument({
+  const task = pdfjs.getDocument({
     data: new Uint8Array(buf),
     useSystemFonts: false,
     isEvalSupported: false,
     disableFontFace: true,
     verbosity: 0,
-  }).promise
+  })
+  const doc = await task.promise
   try {
     const pages = doc.numPages
     const out: string[] = []
@@ -124,7 +125,7 @@ async function pdfText(buf: Uint8Array): Promise<{ text: string; pages: number }
     }
     return { text: clean(out.join('\n\n')), pages }
   } finally {
-    await doc.destroy().catch(() => undefined)
+    await task.destroy().catch(() => undefined)
   }
 }
 
@@ -140,12 +141,13 @@ export async function extractText(buf: Uint8Array, name: string, opts: ExtractOp
     case 'pdf': {
       const { text, pages } = await pdfText(buf)
       const plain = text.replace(/\[עמוד \d+\]/g, '').trim()
-      if (plain.length < MIN_CHARS_PER_PAGE * Math.max(1, Math.min(pages, 5))) {
+      if (plain.length < MIN_CHARS_PER_PAGE * Math.max(1, Math.min(pages, MAX_PDF_PAGES))) {
         if (opts.ocr) {
           const ocr = clean(await opts.ocr(buf))
           if (ocr) return { kind, text: ocr, pages, note: 'נקרא בזיהוי תווים (OCR)' }
         }
-        return { kind, text: '', pages, scanned: true, note: 'קובץ סרוק — אין בו טקסט שאפשר לקרוא' }
+        // Whatever little text there is (a header, page numbers) is kept; the rest is an image.
+        return { kind, text: plain ? text : '', pages, scanned: true, note: 'קובץ סרוק — רוב התוכן הוא תמונה שאי אפשר לקרוא בלי זיהוי תווים' }
       }
       return { kind, text, pages }
     }

@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { DOMAIN_LABELS, DOMAINS, type Domain } from '../types'
 import { useChatHistory } from '../hooks/useChatHistory'
+import { useFileIndex } from '../hooks/useFileIndex'
+import { useToast } from '../context/ToastContext'
 import { useAllBranches } from '../hooks/useBranch'
 import type { ChatMessage } from '../hooks/useChatHistory'
 
@@ -18,7 +20,11 @@ const SCOPE_OPTIONS: { key: ScopeKey; label: string; description: string }[] = [
 const DEFAULT_SCOPES: ScopeKey[] = ['hq', 'research', 'global', 'branch']
 
 export function HQChatPage() {
-  const { firebaseUser, appUser } = useAuth()
+  const { firebaseUser, appUser, isManager } = useAuth()
+  const { toast } = useToast()
+  const { status: fileStatus, busy: indexing, refresh: refreshFiles, runAll, runOcr } = useFileIndex()
+  const [indexNote, setIndexNote] = useState('')
+  const autoRan = useRef(false)
   const [scopes, setScopes] = useState<ScopeKey[]>(DEFAULT_SCOPES)
   const [domainFilter, setDomainFilter] = useState<Domain | ''>('')
   const [branchFilter, setBranchFilter] = useState('')
@@ -39,6 +45,46 @@ export function HQChatPage() {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages, loading])
+
+  const updateFiles = async (silent = false) => {
+    setIndexNote('קורא את הקבצים...')
+    try {
+      const r = await runAll((p) => setIndexNote(`קורא את הקבצים... נקראו ${p.done + p.failed}, נשארו ${p.remaining}`))
+      setIndexNote('')
+      if (!silent || r.done + r.failed > 0) {
+        toast(
+          r.done === 0 && r.failed === 0 ? 'כל הקבצים כבר נקראו' : `הבוט קרא ${r.done} קבצים${r.failed ? `, ${r.failed} לא נקראו` : ''}`,
+          r.failed > 0 ? 'info' : 'success',
+        )
+      }
+    } catch (e) {
+      setIndexNote('')
+      toast(e instanceof Error ? e.message : 'עדכון הקבצים נכשל', 'error')
+    }
+  }
+
+  const readScans = async () => {
+    setIndexNote('מתמלל קבצים סרוקים — זה יכול לקחת כמה דקות...')
+    try {
+      const st = await runOcr((s) => s && setIndexNote(`מתמלל קבצים סרוקים — נשארו ${s.ocrPending}...`))
+      setIndexNote('')
+      toast(st && st.ocrPending === 0 ? 'הקבצים הסרוקים נקראו' : 'התמלול עדיין רץ ברקע — חזור לבדוק בעוד כמה דקות', st && st.ocrPending === 0 ? 'success' : 'info')
+    } catch (e) {
+      setIndexNote('')
+      toast(e instanceof Error ? e.message : 'התמלול נכשל', 'error')
+    }
+  }
+
+  // On opening the page: show what the bot has read, and let a manager bring it up to date once.
+  useEffect(() => {
+    void refreshFiles().then((st) => {
+      if (st && st.pending > 0 && isManager && !autoRan.current) {
+        autoRan.current = true
+        void updateFiles(true)
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isManager])
 
   const toggleScope = (key: ScopeKey) => {
     setScopes((prev) =>
@@ -127,6 +173,31 @@ export function HQChatPage() {
           <div>
             <h1 className="font-bold text-sm" style={{ color: '#141348' }}>צ׳אטבוט AI — מטה שכן טוב</h1>
             <p className="text-xs text-gray-400">שלום {appUser?.name}</p>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              {fileStatus && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600" title={fileStatus.failed > 0 ? `${fileStatus.failed} קבצים לא נקראו` : undefined}>
+                  הבוט מכיר {fileStatus.indexed} מתוך {fileStatus.total} קבצים
+                </span>
+              )}
+              <button
+                onClick={() => void updateFiles()}
+                disabled={indexing}
+                className="text-xs px-2 py-0.5 rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+              >
+                {indexing ? 'מעדכן...' : '🔄 עדכן קבצים לבוט'}
+              </button>
+              {fileStatus && fileStatus.ocrPending > 0 && (
+                <button
+                  onClick={() => void readScans()}
+                  disabled={indexing}
+                  className="text-xs px-2 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+                  title="קבצים סרוקים הם תמונות. הבוט מתמלל אותם בעזרת Claude, וזה לוקח כמה דקות"
+                >
+                  🔍 קרא {fileStatus.ocrPending} קבצים סרוקים
+                </button>
+              )}
+              {indexNote && <span className="text-xs text-gray-400">{indexNote}</span>}
+            </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
             {/* Scope selector button */}

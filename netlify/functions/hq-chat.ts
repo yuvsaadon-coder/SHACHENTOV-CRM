@@ -7,6 +7,7 @@ import type { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions'
 import { cert, initializeApp, getApps } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getFirestore } from 'firebase-admin/firestore'
+import { buildLiveContext } from './_chatContext'
 
 function initFirebase() {
   if (getApps().length > 0) return
@@ -125,7 +126,7 @@ async function chat(event: HandlerEvent): Promise<HandlerResponse> {
       if (hasText) {
         contentPart = data.content!.slice(0, 600)
       } else if (hasFile) {
-        contentPart = `[קובץ מצורף: ${data.fileName ?? 'ללא שם'} — אין תוכן טקסטואלי]`
+        contentPart = `[קובץ מצורף: ${data.fileName ?? 'ללא שם'} — תוכנו מופיע בקטעי הקבצים, או בקטלוג הקבצים אם עוד לא נקרא]`
       } else {
         contentPart = ''
       }
@@ -214,10 +215,12 @@ async function chat(event: HandlerEvent): Promise<HandlerResponse> {
   }))
 
   const sections = (await Promise.all(fetches)).filter((s): s is string => s !== null)
+  const knowledgeBlock = sections.join('\n\n')
 
-  const knowledgeBlock = sections.length > 0
-    ? sections.join('\n\n')
-    : 'אין פריטי ידע במקורות שנבחרו עדיין.'
+  // Live system data and the text of every uploaded file — always on, whatever sources were ticked.
+  const userTurns = messages.filter((m) => m.role === 'user' && typeof m.content === 'string').map((m) => m.content)
+  const live = await buildLiveContext(db, userTurns[userTurns.length - 1] ?? '', userTurns.slice(-4, -1), knowledgeBlock.length)
+  sourceWarnings.push(...live.warnings)
 
   const scopeNote = scopes.map((s) => ({
     hq: 'מאגר מטה', research: 'מחקר מקצועי', global: 'ידע כלל-ארגוני', branch: 'ידע סניפי', reports: 'דיווחי רכזים',
@@ -225,20 +228,31 @@ async function chat(event: HandlerEvent): Promise<HandlerResponse> {
 
   const domainNote = domainFilter ? ` תעדף מידע הקשור לתחום: ${domainFilter}.` : ''
 
+  const block = (title: string, body: string) => (body.trim() ? `=== ${title} ===\n${body}` : '')
+  const context = [
+    block('נתוני המערכת (נקראו הרגע)', live.records),
+    block('קטלוג הקבצים', live.catalog),
+    block('קטעים רלוונטיים מתוך הקבצים', live.files),
+    block(`מקורות ידע נוספים (${scopeNote})`, knowledgeBlock),
+  ].filter(Boolean).join('\n\n')
+
   const systemPrompt = `אתה עוזר AI של מטה עמותת שכן טוב, מסייע לצוות המטה.
 ענה בעברית בלבד. היה ישיר, מקצועי ומעשי.${domainNote}
-מקורות הידע הפעילים בשיחה זו: ${scopeNote}.
 
-${knowledgeBlock}
+יש לך גישה לנתוני המערכת החיים (נקראו ברגע שנשלחה השאלה) ולתוכן של הקבצים שהועלו למערכת. המקורות מופיעים למטה:
+• "נתוני המערכת": רשומות של סניפים, תפקידים ואנשים, משימות, אנשי קשר, שותפים וספקים, דוחות כספיים וטפסים רשמיים, ידע, דיווחי רכזים, סיכומי מתנדבים (ספירות בלבד, בלי שמות) וסקר הסלים. בראש הנתונים יש קטלוג של כמה רשומות יש בכל אוסף.
+• "קטלוג הקבצים": כל הקבצים שהמערכת מכירה, ואם התוכן שלהם נקרא.
+• "קטעים רלוונטיים מתוך הקבצים": הטקסט עצמו, מתוך הקבצים הקשורים לשאלה.
+${live.notices.length ? `\nהערות על המידע שקיבלת:\n${live.notices.map((n) => `• ${n}`).join('\n')}\n` : ''}
+${context || 'אין מידע במקורות עדיין.'}
 
-כללי מבנה תשובה — חובה לקיים:
-• תשובתך חייבת להיות שלמה ומסוכמת תוך 3000 תווים לכל היותר.
-• תכנן את תשובתך מראש כך שתסיים אותה בצורה מלאה ועגולה — אף פעם אל תיקטע באמצע משפט או רעיון.
-• אם הנושא רחב ויש עוד מה לומר — כתוב תשובה ממוקדת על הנקודה המרכזית, ובסוף הוסף שורה אחת: "רוצה שאפרט על [נושא ספציפי]?" כך המשתמש יוכל לבקש המשך.
-• כשתשובה נסמכת על פריט ספציפי — ציין את שמו.
-• פריטים המסומנים [קובץ מצורף: ...] הם קבצים שאי אפשר לקרוא את תוכנם — ציין שהמסמך קיים ועל המשתמש לפתוח אותו ישירות.
-• אם אין מידע טקסטואלי אך ישנם קבצים קשורים — הצג אותם בלבד.
-• אם אין כלל מידע רלוונטי — אמור בכנות: "אין לי מידע על זה במקורות שנבחרו." אל תספק מידע כללי שאינו מבוסס על המסמכים לעיל.`
+כללים — חובה לקיים:
+• ענה על סמך המקורות לעיל בלבד, וציין תמיד את המקור: סוג הרשומה ושמה (למשל "משימה JLM-07", "סניף בית שמש") או שם הקובץ והמקום שבו הוא מצורף.
+• חישובים: כשצריך לחשב (סכומים, כפל, ממוצעים) פרט צעד אחר צעד את הנתונים שבהם השתמשת ואת החישוב עצמו, ובדוק אותו לפני שאתה כותב את התוצאה. אם חסר נתון (למשל סניף בלי מספר סלים) אמור איזה נתון חסר ואל תנחש.
+• אל תאמר "אין לי גישה לקובץ" אם הטקסט שלו מופיע בהקשר. אם קובץ מופיע בקטלוג אבל אין לו טקסט (סרוק, לא נתמך או עדיין לא נקרא) — אמור במדויק איזה קובץ ומה הסיבה. קובץ שמוזכר ברשומה ולא מופיע בקטלוג עוד לא נקרא.
+• אם משהו לא מופיע בנתונים — אמור במפורש "אין לי את המידע הזה במערכת" ומה בדיוק חסר. אל תספק מידע כללי שאינו מבוסס על המקורות.
+• אין לך סיסמאות ופרטי מתנדבים, ואל תבקש אותם.
+• התשובה חייבת להיות שלמה ומסוכמת תוך 3500 תווים לכל היותר, בלי להיקטע באמצע משפט. אם הנושא רחב — ענה על העיקר והוסף שורה: "רוצה שאפרט על [נושא ספציפי]?"`
 
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return fail(500, 'משתנה הסביבה ANTHROPIC_API_KEY חסר ב-Netlify.', cors)
@@ -259,8 +273,8 @@ ${knowledgeBlock}
       // Haiku is 3-4x faster than Sonnet for knowledge-grounded Q&A — latency
       // matters here because a synchronous Netlify function is killed after a
       // fixed wall-clock budget regardless of what it's doing.
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1500,
+      model: 'claude-haiku-5-5',
+      max_tokens: 2000,
       system: systemPrompt,
       messages: turns,
     }),
