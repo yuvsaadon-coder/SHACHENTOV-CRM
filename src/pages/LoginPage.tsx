@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { signInWithCustomToken, sendPasswordResetEmail } from 'firebase/auth'
 import { useAuth } from '../context/AuthContext'
 import { auth } from '../lib/firebase'
+import { authErrorMessage } from '../lib/authErrors'
 
 type LoginMode = 'hq' | 'coordinator'
 
@@ -38,8 +39,9 @@ export function LoginPage() {
     try {
       await signIn(email, password)
       navigate('/dashboard')
-    } catch {
-      setError('אימייל או סיסמה שגויים')
+    } catch (err) {
+      console.error('HQ sign-in failed', err)
+      setError(authErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -167,7 +169,8 @@ export function LoginPage() {
                     await signInWithGoogle()
                     navigate('/dashboard')
                   } catch (err) {
-                    setError(err instanceof Error ? err.message : 'שגיאה בכניסה עם גוגל')
+                    console.error('Google sign-in failed', err)
+                    setError(authErrorMessage(err))
                   } finally {
                     setLoading(false)
                   }
