@@ -13,6 +13,7 @@ import { isHolidayOrder, ORDER_TYPES, orderPeriod, recommendBudgets, type OrderT
 import type { QuoteRecord } from '../../data/store'
 import { Card, Field, SectionHeader } from '../../ui/components'
 import { useAdmin } from './context'
+import { LegacyImportCard } from './LegacyImportCard'
 
 const PRICE_SEED = priceSeed as unknown as SeedHistory
 
@@ -84,6 +85,7 @@ export function RoundsPanel() {
               {busy ? he.saving : he.saveBudgets}
             </button>
           </Card>
+          <LegacyImportCard />
         </div>
       )}
     </div>

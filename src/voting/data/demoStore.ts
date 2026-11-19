@@ -32,6 +32,11 @@ export function createDemoStore(ls: Storage): VotingStore {
       write('votes', {})
     },
     async loadArchivedVotes(round) { return read<(VoteDoc & { round?: number })[]>('archive', []).filter((v) => v.round === round) },
+    async importArchivedVotes(votes, reason) {
+      const archive = read<unknown[]>('archive', [])
+      ls.setItem(K('archive'), JSON.stringify([...archive, ...votes.map((v) => ({ ...v, archivedReason: reason, archivedAt: Date.now() }))]))
+      emit()
+    },
     async saveQuoteRecord(rec) { write('quotes', [rec, ...read<QuoteRecord[]>('quotes', [])].slice(0, 60)) },
     subscribeQuoteRecords: (cb) => sub(() => cb(read<QuoteRecord[]>('quotes', []))),
     async saveSupplierChoice(periodId, category, supplierName, decidedAt) {
