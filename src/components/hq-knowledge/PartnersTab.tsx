@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext'
 import { BranchMultiSelect, BranchChips } from '../ui/BranchMultiSelect'
 import { FileLinkList } from '../ui/FileLinkList'
 import { OrgLogo } from '../ui/OrgLogo'
+import { useFetchLogo } from '../../hooks/useFetchLogo'
 import {
   PARTNER_TYPE_LABELS, PARTNER_STATUS_LABELS, PARTNER_CAT_LABELS,
   PAYMENT_METHOD_LABELS, RECEIPT_GEN_LABELS, PARTNER_USED_FOR_LABELS,
@@ -176,7 +177,7 @@ function PartnerForm({ initial, onSave, onClose, uid, types, defaultType }: { in
   )
 }
 
-function PartnerCard({ partner: p, isAdmin, onEdit, onTransfer }: { partner: HQPartner; isAdmin: boolean; onEdit: (p: HQPartner) => void; onTransfer?: (p: HQPartner) => void }) {
+function PartnerCard({ partner: p, isAdmin, onEdit, onTransfer, onFetchLogo }: { partner: HQPartner; isAdmin: boolean; onEdit: (p: HQPartner) => void; onTransfer?: (p: HQPartner) => void; onFetchLogo?: (p: HQPartner) => void }) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden hover:shadow-md transition-shadow">
       <div className="p-4 flex items-start gap-3">
@@ -232,6 +233,9 @@ function PartnerCard({ partner: p, isAdmin, onEdit, onTransfer }: { partner: HQP
         {isAdmin && (
           <div className="mr-auto flex gap-1.5">
             <button onClick={() => onEdit(p)} className="text-xs px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">✏️</button>
+            {p.websiteUrl && onFetchLogo && (
+              <button onClick={() => onFetchLogo(p)} className="text-xs px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100" title="משוך לוגו מהאתר">🖼</button>
+            )}
             {onTransfer && (
               <button
                 onClick={() => onTransfer(p)}
@@ -257,6 +261,11 @@ export function PartnersTab({ types = ALL_PARTNER_TYPES, defaultType = 'partner'
   const updatePartner = useUpdateHQPartner()
   const { access, firebaseUser, isManager } = useAuth()
   const { toast } = useToast()
+  const { fetchLogo } = useFetchLogo()
+  const handleFetchLogo = async (p: HQPartner) => {
+    const r = await fetchLogo('hq_partners', p.id)
+    toast(r.ok ? `הלוגו של "${p.name}" נשמר` : (r.error ?? 'לא נמצא לוגו'), r.ok ? 'success' : 'error')
+  }
   const isAdmin = access === 'admin' || access === 'hq'
 
   const [showForm, setShowForm] = useState(false)
@@ -361,6 +370,7 @@ export function PartnersTab({ types = ALL_PARTNER_TYPES, defaultType = 'partner'
                   isAdmin={isAdmin}
                   onEdit={(p) => { setEditing(p); setShowForm(true) }}
                   onTransfer={isManager ? setTransferConfirm : undefined}
+                  onFetchLogo={handleFetchLogo}
                 />
               ))}
             </div>

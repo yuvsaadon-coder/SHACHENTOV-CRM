@@ -6,6 +6,7 @@ import type { HQSupplier, HQFileRef, Contact } from '../../types'
 import { BranchMultiSelect, BranchChips } from '../ui/BranchMultiSelect'
 import { FileLinkList } from '../ui/FileLinkList'
 import { OrgLogo } from '../ui/OrgLogo'
+import { useFetchLogo } from '../../hooks/useFetchLogo'
 import { useAuth } from '../../context/AuthContext'
 import { useContacts } from '../../hooks/useContacts'
 
@@ -163,7 +164,7 @@ function SupplierForm({ initial, onSave, onClose, allContacts, uid }: { initial?
   )
 }
 
-function SupplierCard({ supplier: s, isAdmin, onEdit, onTransfer, linkedContacts }: { supplier: HQSupplier; isAdmin: boolean; onEdit: (s: HQSupplier) => void; onTransfer?: (s: HQSupplier) => void; linkedContacts: Contact[] }) {
+function SupplierCard({ supplier: s, isAdmin, onEdit, onTransfer, onFetchLogo, linkedContacts }: { supplier: HQSupplier; isAdmin: boolean; onEdit: (s: HQSupplier) => void; onTransfer?: (s: HQSupplier) => void; onFetchLogo?: (s: HQSupplier) => void; linkedContacts: Contact[] }) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden hover:shadow-md transition-shadow">
       <div className="p-4 flex items-start gap-3">
@@ -230,6 +231,9 @@ function SupplierCard({ supplier: s, isAdmin, onEdit, onTransfer, linkedContacts
         {isAdmin && (
           <div className="mr-auto flex gap-1.5">
             <button onClick={() => onEdit(s)} className="text-xs px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">✏️</button>
+            {s.websiteUrl && onFetchLogo && (
+              <button onClick={() => onFetchLogo(s)} className="text-xs px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100" title="משוך לוגו מהאתר">🖼</button>
+            )}
             {onTransfer && (
               <button
                 onClick={() => onTransfer(s)}
@@ -253,6 +257,11 @@ export function SuppliersTab() {
   const { contacts } = useContacts()
   const { access, firebaseUser, isManager } = useAuth()
   const { toast } = useToast()
+  const { fetchLogo } = useFetchLogo()
+  const handleFetchLogo = async (s: HQSupplier) => {
+    const r = await fetchLogo('hq_suppliers', s.id)
+    toast(r.ok ? `הלוגו של "${s.name}" נשמר` : (r.error ?? 'לא נמצא לוגו'), r.ok ? 'success' : 'error')
+  }
   const isAdmin = access === 'admin' || access === 'hq'
 
   const [showForm, setShowForm] = useState(false)
@@ -342,6 +351,7 @@ export function SuppliersTab() {
                 isAdmin={isAdmin}
                 onEdit={(s) => { setEditing(s); setShowForm(true) }}
                 onTransfer={isManager ? setTransferConfirm : undefined}
+                onFetchLogo={handleFetchLogo}
                 linkedContacts={linked}
               />
             )
