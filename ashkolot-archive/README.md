@@ -106,79 +106,41 @@
 | **דפדפן** | כותרות אבטחה ב-Hosting: CSP קפדנית, איסור הטמעה במסגרת (frame), HSTS ו-noindex. App Check (reCAPTCHA Enterprise) אופציונלי וחוסם קריאות שלא מהאפליקציה. |
 | **קלט מהסקיל** | כרטיס התיוק נחשב קלט לא מהימן. ערכים לא מוכרים נזרקים עם אזהרה, ושום דבר לא נשמר לפני אישור בטופס. |
 
-הכללים נבדקים בבדיקות אוטומטיות מול אמולטור Firebase (`app/test/rules`, 18 תרחישים).
+הכללים נבדקים בבדיקות אוטומטיות מול אמולטור Firebase (`app/test/rules`, 22 תרחישים).
 
 ---
 
-## התקנה (פעם אחת, כ-30 דקות)
+## התקנה (פעם אחת, בלי שורת פקודה)
 
 ### 1. פרויקט Firebase
-1. ב-[console.firebase.google.com](https://console.firebase.google.com) צרו פרויקט חדש, למשל `ashkolot-archive`. מומלץ פרויקט נפרד מה-CRM.
-2. **Build ← Authentication ← Sign-in method:** הפעילו **Google**. אם הצוות משתמש בחשבונות Microsoft, הפעילו גם **Microsoft** (דורש רישום אפליקציה ב-Azure).
-3. **Build ← Firestore Database:** צרו מסד נתונים במצב Production, באזור `europe-west1` או קרוב.
-4. **Build ← Storage:** הפעילו. Storage דורש תוכנית **Blaze**. בהיקף של כמה מאות MB העלות זניחה (סנטים בחודש). מומלץ להגדיר התראת תקציב.
-5. **Project settings ← Your apps:** הוסיפו אפליקציית Web והעתיקו את הערכים לקובץ `app/.env.local` (לפי `app/.env.example`).
+- **יצירה:** https://console.firebase.google.com/ ← Create a project ← `ashkolot-archive`
+- **כניסה עם Google:** Authentication ← Sign-in method ← Google ← Enable
+- **Firestore:** Firestore Database ← Create database ← europe-west1 ← Production mode
+- **Storage:** Storage ← Get started. נדרשת תוכנית Blaze, העלות זניחה, ומומלץ להגדיר התראת תקציב.
+- **פרטי חיבור:** Project settings ← Your apps ← `</>`. שומרים את הערכים של `firebaseConfig`.
 
-### 2. פריסת כללי האבטחה והאתר
-מתוך תיקיית `ashkolot-archive`:
+### 2. כללי האבטחה (העתק-הדבק)
+- **Firestore:** Firestore ← Rules. מדביקים את כל התוכן של `firebase/firestore.rules` ולוחצים Publish.
+- **Storage:** Storage ← Rules. מדביקים את `firebase/storage.rules` ולוחצים Publish. כשמתבקשים לאשר גישה של Storage ל-Firestore, מאשרים.
 
-```bash
-cp .firebaserc.example .firebaserc
-```
+### 3. האתר ב-Netlify
+1. https://app.netlify.com/start ← GitHub ← הריפו הזה.
+2. **Base directory:** `ashkolot-archive/app`. שאר ההגדרות נקראות מ-`app/netlify.toml`.
+3. **Environment variables:** מוסיפים את ערכי `firebaseConfig`:
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_AUTH_DOMAIN`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_FIREBASE_STORAGE_BUCKET`
+   - `VITE_FIREBASE_APP_ID`
+4. **Deploy.**
+5. **הרשאת הדומיין:** ב-Firebase, Authentication ← Settings ← Authorized domains ← מוסיפים את כתובת האתר של Netlify.
 
-ערכו את `.firebaserc` והכניסו את מזהה הפרויקט. אחר כך:
+### 4. כניסה ראשונה וייבוא
+- **הגדרה ראשונית:** נכנסים לאתר עם חשבון ה-Google שלכם. כשהמערכת ריקה מופיע מסך "הגדרה ראשונית", ולחיצה אחת יוצרת את מבנה התיוק ומגדירה אתכם כמנהל/ת. האפשרות קיימת רק כשהארכיון ריק, אז כדאי לעשות זאת מיד אחרי הפריסה.
+- **ייבוא החומר הקיים:** ניהול ← ייבוא החומר הקיים ← בוחרים את התיקייה עם הקבצים. האתר מציג מה ייובא ולאן, ואחרי אישור מייבא עם המזהים (`AK-###`) והנימוקים מהקטלוג. הקבצים נשמרים כפי שהם. אפשר להריץ שוב: מה שכבר בארכיון מדולג.
+- **משתמשים:** ניהול ← משתמשים והרשאות.
 
-```bash
-cd app && npm install && npm run build && cd ..
-```
-
-```bash
-npx --prefix app firebase login
-```
-
-```bash
-npx --prefix app firebase deploy --only firestore,storage,hosting
-```
-
-בפריסה הראשונה, Firebase יבקש לאשר ש-Storage ניגש ל-Firestore. כללי הקבצים צריכים את הגישה הזו כדי לבדוק הרשאות, אז אשרו.
-
-### 3. מנהל/ת ראשון/ה ומבנה התיוק
-1. הורידו מפתח חשבון שירות: Project settings ← Service accounts ← Generate new private key. שמרו אותו **מחוץ לריפו**.
-2. הריצו:
-
-```bash
-export GOOGLE_APPLICATION_CREDENTIALS=~/keys/ashkolot-sa.json
-```
-
-```bash
-cd app && npm run setup -- --project <project-id> --admin your@email.org
-```
-
-3. היכנסו לאתר (`https://<project-id>.web.app`) והוסיפו את חברי הצוות ב**ניהול ← משתמשים והרשאות**.
-
-### 4. ייבוא החומר הקיים
-`seed/catalog.json` מכיל סיווג של **99 מסמכים** מתיקיית ה-Drive ומסיכומי המפגשים. הסיווג נעשה לפי **תוכן** הקבצים: עמוד שער, כותרות ותאריכים.
-- לכל מסמך: מזהה `AK-###`, כותרת מלאה, גוף מפרסם, מחבר/ת היכן שכתוב, ו**נימוק**.
-- 6 כפילויות אוחדו.
-- 12 רשומות נשארו "לאימות", עם הסבר מה בדיוק לבדוק.
-
-**הצעת התיוק ב-Drive:** הצעה שורה-שורה לכל 116 הקבצים נמצאת בגיליון "הצעת תיוק – לאישור (גרסה 2)", בתיקייה "ארכיון אשכולות – מתויק". כל קובץ רק **מועבר** לתיקייה שלו, בלי לשנות את השם ואת התוכן. כל שורה כוללת נימוק. **התיוק ב-Drive יבוצע רק אחרי אישור.**
-
-1. הורידו את תיקיית ה-Drive כ-zip ופרסו אותה לתיקייה מקומית. העתיקו לאותה תיקייה גם את 7 קובצי סיכומי המפגשים.
-2. הרצה יבשה, שבודקת התאמה ולא כותבת דבר:
-
-```bash
-npm run import-archive -- --project <project-id> --dir ~/Downloads/ashkolot --as your@email.org --dry-run
-```
-
-3. ייבוא בפועל:
-
-```bash
-npm run import-archive -- --project <project-id> --dir ~/Downloads/ashkolot --as your@email.org
-```
-
-אפשר להריץ את הייבוא שוב בבטחה. קבצים שכבר יובאו מזוהים לפי SHA-256 ומדולגים, וקישורים ומשפחות גרסאות מתחברים גם בין הרצות.
-4. באתר, חפשו **"לאימות"** ועברו על הרשומות המסומנות. לכל רשומה: עריכה ← תיקון ← שמירה.
+> **חלופה למי שמעדיף שורת פקודה:** `firebase deploy` וסקריפטי `npm run setup` / `npm run import-archive` עדיין קיימים ועובדים (ראו `app/scripts`).
 
 ### 5. הפצת הסקיל לצוות
 - **לפני שהאתר פעיל:** `skill/ashkolot-filing.zip`, שנבנה מהקטלוג הראשוני.
@@ -230,13 +192,13 @@ cd app && npm install
 npm test
 ```
 
-`npm test` מריץ 43 בדיקות לוגיקה, כולל בדיקה שכל רשומות הקטלוג תקינות ושלכל החלטה יש נימוק.
+`npm test` מריץ 46 בדיקות לוגיקה, כולל בדיקה שכל רשומות הקטלוג תקינות ושלכל החלטה יש נימוק.
 
 ```bash
 npm run test:rules
 ```
 
-`npm run test:rules` מריץ 18 בדיקות אבטחה מול אמולטור, כולל מונה המזהים וההפרדה בין שני האזורים. נדרש Java.
+`npm run test:rules` מריץ 22 בדיקות אבטחה מול אמולטור, כולל ייחודיות המזהים, ההגדרה הראשונית וההפרדה בין שני האזורים. נדרש Java.
 
 ```bash
 npm run emulators

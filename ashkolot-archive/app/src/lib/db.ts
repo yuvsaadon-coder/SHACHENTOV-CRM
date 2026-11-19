@@ -142,9 +142,12 @@ export async function createDocument(p: CreateParams): Promise<string> {
   const fields = storedFields(p.input)
   const counterRef = doc(db, 'config', 'counter')
   const commit = () => runTransaction(db, async (tx) => {
+    // המספר הפנוי הבא: מתחילים מהמונה ומדלגים על מספרים שכבר שוריינו (למשל בייבוא הקטלוג)
     const counter = await tx.get(counterRef)
-    const seq = (counter.data()?.next as number | undefined) ?? 1
+    let seq = (counter.data()?.next as number | undefined) ?? 1
+    for (let i = 0; i < 200 && (await tx.get(doc(db, 'seqs', String(seq)))).exists(); i++) seq++
     tx.set(counterRef, { next: seq + 1 })
+    tx.set(doc(db, 'seqs', String(seq)), { doc: id })
     tx.set(newRef, {
       seq,
       ...fields,
@@ -279,4 +282,82 @@ export async function upsertUser(u: AppUser, byEmail: string) {
 
 export function removeUser(email: string) {
   return deleteDoc(doc(db, 'users', email.toLowerCase()))
+}
+
+// ---------- הגדרה ראשונית וייבוא מתוך האתר ----------
+
+/** האם המערכת כבר הוגדרה (קיים מבנה תיוק) */
+export async function isSetUp(): Promise<boolean> {
+  return (await getDoc(doc(db, 'config', 'taxonomy'))).exists()
+}
+
+/**
+ * הגדרה ראשונית: מבנה התיוק, המונה, והמשתמש/ת הנוכחי/ת כמנהל/ת - בפעולה אחת.
+ * כללי האבטחה מתירים זאת רק כשהמערכת עוד ריקה, ולכן זה קורה פעם אחת בלבד.
+ */
+export async function firstRunSetup(email: string, tax: Taxonomy, counterStart: number) {
+  const me = email.toLowerCase()
+  const { keys: _k, ...rest } = tax as Taxonomy & { $comment?: string }
+  void _k
+  delete (rest as Record<string, unknown>).$comment
+  const batch = writeBatch(db)
+  batch.set(doc(db, 'config', 'taxonomy'), { ...rest, keys: computeKeys(tax), updatedBy: me, updatedAt: serverTimestamp() })
+  batch.set(doc(db, 'config', 'counter'), { next: counterStart })
+  batch.set(doc(db, 'users', me), { role: 'admin', active: true, name: '', updatedBy: me, updatedAt: serverTimestamp() })
+  await batch.commit()
+}
+
+export async function existingIds(ids: string[]): Promise<Set<string>> {
+  const found = new Set<string>()
+  await Promise.all(ids.map(async (id) => { if ((await getDoc(doc(db, 'documents', id))).exists()) found.add(id) }))
+  return found
+}
+
+export interface ImportParams {
+  id: string
+  seq: number
+  input: DocInput
+  familyId: string
+  isCurrent: boolean
+  file: File
+  rationale: string
+  byEmail: string
+}
+
+/** מייבא רשומת קטלוג אחת עם המזהה הקבוע שלה (AK-###). הקובץ נשמר בדיוק כפי שהוא. */
+export async function importEntry(p: ImportParams) {
+  const contentType = contentTypeFor(p.file.name)
+  if (!contentType) throw new Error(`סוג קובץ לא נתמך: ${p.file.name}`)
+  const name = safeFileName(p.file.name)
+  const path = `files/${p.id}/${name}`
+  const sha256 = await sha256Hex(p.file)
+  const task = uploadBytesResumable(ref(storage, path), p.file, {
+    contentType,
+    contentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(p.file.name)}`,
+    customMetadata: { uploadedBy: p.byEmail },
+  })
+  await new Promise<void>((resolve, reject) => task.on('state_changed', undefined, reject, () => resolve()))
+  if (task.snapshot.metadata.size !== p.file.size) throw new Error(`הקובץ שנשמר אינו זהה למקור: ${p.file.name}`)
+  const fields = storedFields(p.input)
+  const batch = writeBatch(db)
+  batch.set(doc(db, 'documents', p.id), {
+    seq: p.seq,
+    ...fields,
+    familyId: p.familyId,
+    isCurrent: p.isCurrent,
+    archived: false,
+    file: { path, name, size: p.file.size, contentType, sha256 },
+    originalName: p.file.name.slice(0, 300),
+    createdBy: p.byEmail,
+    createdAt: serverTimestamp(),
+    updatedBy: p.byEmail,
+    updatedAt: serverTimestamp(),
+    rev: 1,
+  })
+  batch.set(doc(db, 'seqs', String(p.seq)), { doc: p.id })
+  batch.set(doc(db, 'documents', p.id, 'history', '1'), {
+    rev: 1, by: p.byEmail, at: serverTimestamp(), action: 'create',
+    changes: { ...diffInputs({}, fields), importedFrom: { from: null, to: p.file.name }, rationale: { from: null, to: p.rationale.slice(0, 1000) } },
+  })
+  await batch.commit()
 }

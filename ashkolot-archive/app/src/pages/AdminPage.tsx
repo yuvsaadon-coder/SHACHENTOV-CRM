@@ -7,6 +7,7 @@ import { listUsers, loadRecentActivity, removeUser, saveTaxonomy, upsertUser } f
 import type { AppUser, HistoryEntry, Role } from '../lib/model.ts'
 import { toCsv } from '../lib/search.ts'
 import { buildSkillZip } from '../lib/skillgen.ts'
+import ImportPanel from '../components/ImportPanel.tsx'
 import { isValidKey, type TaxValue, type Taxonomy } from '../lib/taxonomy.ts'
 
 function downloadBlob(data: BlobPart, name: string, type: string) {
@@ -19,17 +20,18 @@ function downloadBlob(data: BlobPart, name: string, type: string) {
 }
 
 export default function AdminPage() {
-  const [tab, setTab] = useState<'users' | 'taxonomy' | 'tools' | 'activity'>('users')
+  const [tab, setTab] = useState<'users' | 'taxonomy' | 'import' | 'tools' | 'activity'>('users')
   return (
     <div>
       <h1>ניהול</h1>
       <div className="row" style={{ marginBottom: '1em' }}>
-        {([['users', 'משתמשים והרשאות'], ['taxonomy', 'מבנה התיוק'], ['tools', 'סקיל וייצוא'], ['activity', 'פעילות אחרונה']] as const).map(([k, l]) => (
+        {([['users', 'משתמשים והרשאות'], ['taxonomy', 'מבנה התיוק'], ['import', 'ייבוא החומר הקיים'], ['tools', 'סקיל וייצוא'], ['activity', 'פעילות אחרונה']] as const).map(([k, l]) => (
           <button key={k} className={tab === k ? 'primary' : ''} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
       {tab === 'users' && <Users />}
       {tab === 'taxonomy' && <TaxonomyEditor />}
+      {tab === 'import' && <ImportPanel />}
       {tab === 'tools' && <Tools />}
       {tab === 'activity' && <Activity />}
     </div>

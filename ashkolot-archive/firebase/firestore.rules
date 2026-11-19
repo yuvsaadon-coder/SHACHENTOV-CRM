@@ -28,12 +28,25 @@ service cloud.firestore {
     function isEditor() { return isActiveUser() && me().role in ['editor', 'admin']; }
     function isAdmin() { return isActiveUser() && me().role == 'admin'; }
 
-    function taxKeys() { return get(/databases/$(database)/documents/config/taxonomy).data.keys; }
+    function taxPath() { return /databases/$(database)/documents/config/taxonomy; }
+    function taxKeys() { return get(taxPath()).data.keys; }
+
+    // הגדרה ראשונית: רק כשהמערכת עוד ריקה (אין טקסונומיה), המשתמש/ת הראשון/ה יוצר/ת באותה פעולה
+    // את מבנה התיוק, את המונה ואת עצמו/ה כמנהל/ת. אחרי זה האפשרות נסגרת לתמיד.
+    function firstRun() {
+      return signedIn()
+        && !exists(taxPath())
+        && existsAfter(taxPath())
+        && existsAfter(userPath())
+        && getAfter(userPath()).data.role == 'admin'
+        && getAfter(userPath()).data.active == true;
+    }
 
     // ---------- טקסונומיה ----------
     match /config/taxonomy {
-      allow read: if isActiveUser();
-      allow create: if isAdmin() && validTaxonomy(request.resource.data);
+      // לפני ההגדרה הראשונית מותר לבדוק שהמסמך עוד לא קיים
+      allow read: if isActiveUser() || (signedIn() && resource == null);
+      allow create: if (isAdmin() || firstRun()) && validTaxonomy(request.resource.data);
       allow update: if isAdmin()
         && validTaxonomy(request.resource.data)
         && request.resource.data.version == resource.data.version + 1
@@ -62,22 +75,35 @@ service cloud.firestore {
         && b.publisher.hasAll(a.publisher);
     }
 
-    // ---------- מונה המזהים הקבועים (AK-###) ----------
-    // כל מסמך חדש מקבל את הערך הבא של המונה, באותה טרנזקציה שמקדמת אותו ב-1 בדיוק.
+    // ---------- מזהים קבועים (AK-###) ----------
+    // הייחודיות נשמרת ברשומת "שריון" לכל מספר: seqs/{n}. אפשר ליצור אותה פעם אחת בלבד,
+    // באותה פעולה שיוצרת את המסמך - כך אין שני מסמכים עם אותו מזהה, גם בייבוא וגם בהעלאות במקביל.
+    // המונה הוא רק רמז למספר הפנוי הבא, ורק עולה.
     match /config/counter {
       allow read: if isActiveUser();
-      allow create: if isAdmin() && request.resource.data.keys().hasOnly(['next']) && request.resource.data.next is int;
+      allow create: if (isAdmin() || firstRun()) && request.resource.data.keys().hasOnly(['next']) && request.resource.data.next is int;
       allow update: if isEditor()
         && request.resource.data.keys().hasOnly(['next'])
-        && request.resource.data.next == resource.data.next + 1;
+        && request.resource.data.next is int
+        && request.resource.data.next > resource.data.next;
       allow delete: if false;
     }
-    function counterPath() { return /databases/$(database)/documents/config/counter; }
+    function seqPath(n) { return /databases/$(database)/documents/seqs/$(string(n)); }
+
+    match /seqs/{n} {
+      allow read: if isActiveUser();
+      allow create: if isEditor()
+        && request.resource.data.keys().hasOnly(['doc'])
+        && request.resource.data.doc is string
+        && existsAfter(/databases/$(database)/documents/documents/$(request.resource.data.doc))
+        && string(getAfter(/databases/$(database)/documents/documents/$(request.resource.data.doc)).data.seq) == n;
+      allow update, delete: if false;
+    }
 
     // ---------- משתמשים ----------
     match /users/{userEmail} {
       allow read: if isAdmin() || (signedIn() && myEmail() == userEmail);
-      allow create, update: if isAdmin()
+      allow create, update: if (isAdmin() || (firstRun() && userEmail == myEmail()))
         && userEmail == userEmail.lower()
         && request.resource.data.keys().hasOnly(['role', 'active', 'name', 'updatedBy', 'updatedAt'])
         && request.resource.data.role in ['viewer', 'editor', 'admin']
@@ -170,8 +196,9 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time
         && request.resource.data.rev == 1
         && request.resource.data.archived == false
-        && request.resource.data.seq == get(counterPath()).data.next
-        && getAfter(counterPath()).data.next == request.resource.data.seq + 1
+        && !exists(seqPath(request.resource.data.seq))
+        && existsAfter(seqPath(request.resource.data.seq))
+        && getAfter(seqPath(request.resource.data.seq)).data.doc == docId
         && (request.resource.data.familyId == docId
             || exists(/databases/$(database)/documents/documents/$(request.resource.data.familyId)))
         && historyWritten(docId, 1);

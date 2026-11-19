@@ -40,11 +40,13 @@ function docFields(email: string, id: string, over: Record<string, unknown> = {}
   }
 }
 
-async function createAs(email: string, id: string, over: Record<string, unknown> = {}, withHistory = true, counterNext: number | null = 101) {
+let nextSeq = 1000
+async function createAs(email: string, id: string, over: Record<string, unknown> = {}, withHistory = true, claim: boolean | string = true) {
   const db = fs(email)
   const b = writeBatch(db)
-  if (counterNext !== null) b.set(doc(db, 'config', 'counter'), { next: counterNext })
-  b.set(doc(db, 'documents', id), docFields(email, id, over))
+  const seq = (over.seq as number | undefined) ?? nextSeq++
+  if (claim) b.set(doc(db, 'seqs', String(seq)), { doc: claim === true ? id : claim })
+  b.set(doc(db, 'documents', id), docFields(email, id, { ...over, seq }))
   if (withHistory) b.set(doc(db, 'documents', id, 'history', '1'), { rev: 1, by: email, at: serverTimestamp(), action: 'create', changes: {} })
   return b.commit()
 }
@@ -130,13 +132,19 @@ describe('documents', () => {
     await assertSucceeds(createAs('ed@x.org', 'x3', { folder: '02-2', publisher: 'oecd', status: 'reference' }))
   })
 
-  it('stable code must equal the counter, and the counter must advance by exactly 1', async () => {
-    await assertFails(createAs('ed@x.org', 'c1', { seq: 7 }))
-    await assertFails(createAs('ed@x.org', 'c2', {}, true, null))
-    await assertFails(createAs('ed@x.org', 'c3', {}, true, 102))
+  it('stable codes are unique: each number is reserved once, together with its document', async () => {
+    await assertFails(createAs('ed@x.org', 'c1', {}, true, false))
+    await assertFails(createAs('ed@x.org', 'c2', {}, true, 'someone-else'))
+    await assertSucceeds(createAs('ed@x.org', 'c3', { seq: 500 }))
+    await assertFails(createAs('ed@x.org', 'c4', { seq: 500 }))
+    await assertFails(setDoc(doc(fs('ed@x.org'), 'seqs', '501'), { doc: 'c3' }))
+    await assertFails(deleteDoc(doc(fs('admin@x.org'), 'seqs', '500')))
+  })
+
+  it('the counter only moves forward, and only editors move it', async () => {
     await assertFails(setDoc(doc(fs('ed@x.org'), 'config', 'counter'), { next: 50 }))
-    await assertFails(setDoc(doc(fs('view@x.org'), 'config', 'counter'), { next: 101 }))
-    await assertSucceeds(createAs('ed@x.org', 'c4'))
+    await assertFails(setDoc(doc(fs('view@x.org'), 'config', 'counter'), { next: 150 }))
+    await assertSucceeds(setDoc(doc(fs('ed@x.org'), 'config', 'counter'), { next: 150 }))
   })
 
   it('new version must point at an existing family', async () => {
@@ -196,6 +204,41 @@ describe('documents', () => {
     await seedDoc('d1')
     await assertFails(deleteDoc(doc(fs('ed@x.org'), 'documents', 'd1')))
     await assertSucceeds(deleteDoc(doc(fs('admin@x.org'), 'documents', 'd1')))
+  })
+})
+
+describe('first-run setup', () => {
+  const dbs = new Map<string, ReturnType<typeof fs>>()
+  const conn = (email: string) => { if (!dbs.has(email)) dbs.set(email, fs(email)); return dbs.get(email)! }
+  const setupBatch = (email: string) => {
+    const db = conn(email)
+    const b = writeBatch(db)
+    b.set(doc(db, 'config', 'taxonomy'), { ...tax, keys, updatedBy: email, updatedAt: serverTimestamp() })
+    b.set(doc(db, 'config', 'counter'), { next: 100 })
+    b.set(doc(db, 'users', email), { role: 'admin', active: true, name: '', updatedBy: email, updatedAt: serverTimestamp() })
+    return b
+  }
+  beforeEach(async () => {
+    dbs.clear()
+    await env.clearFirestore()
+  })
+
+  it('the first signed-in user can set up an empty archive, once', async () => {
+    await assertSucceeds(getDoc(doc(fs('owner@x.org'), 'config', 'taxonomy')))
+    await assertSucceeds(setupBatch('owner@x.org').commit())
+    await assertFails(setupBatch('late@x.org').commit())
+    await assertFails(getDoc(doc(fs('late@x.org'), 'config', 'taxonomy')))
+  })
+
+  it('cannot make yourself admin without creating the taxonomy in the same step', async () => {
+    const db = fs('sneaky@x.org')
+    await assertFails(setDoc(doc(db, 'users', 'sneaky@x.org'), { role: 'admin', active: true, name: '', updatedBy: 'sneaky@x.org', updatedAt: serverTimestamp() }))
+  })
+
+  it('cannot make someone else admin during setup', async () => {
+    const b = setupBatch('owner@x.org')
+    b.set(doc(conn('owner@x.org'), 'users', 'friend@x.org'), { role: 'admin', active: true, name: '', updatedBy: 'owner@x.org', updatedAt: serverTimestamp() })
+    await assertFails(b.commit())
   })
 })
 

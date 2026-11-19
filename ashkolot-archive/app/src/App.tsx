@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import { auth, devSignIn, isConfigured, logout, microsoftEnabled, signInGoogle, signInMicrosoft, useEmulators } from './lib/firebase.ts'
-import { loadMyUser, subscribeDocs, subscribeTaxonomy } from './lib/db.ts'
+import { firstRunSetup, isSetUp, loadMyUser, subscribeDocs, subscribeTaxonomy } from './lib/db.ts'
+import seedTaxonomy from '../../taxonomy/taxonomy.json'
+import seedCatalog from '../../seed/catalog.json'
 import { canEdit, type AppUser, type ArchiveDoc } from './lib/model.ts'
 import type { Taxonomy } from './lib/taxonomy.ts'
 import { AppCtx, errMsg, useRoute } from './context.ts'
@@ -16,6 +18,7 @@ type Phase =
   | { kind: 'loading' }
   | { kind: 'signed-out' }
   | { kind: 'no-access'; email: string }
+  | { kind: 'first-run'; email: string }
   | { kind: 'ready'; user: AppUser }
 
 export default function App() {
@@ -29,10 +32,11 @@ export default function App() {
       if (!u?.email) return setPhase({ kind: 'signed-out' })
       try {
         const me = await loadMyUser(u.email)
-        if (!me || !me.active) return setPhase({ kind: 'no-access', email: u.email })
-        setPhase({ kind: 'ready', user: me })
+        if (me && me.active) return setPhase({ kind: 'ready', user: me })
+        // מערכת שעוד לא הוגדרה: הכניסה הראשונה מציעה הגדרה ראשונית
+        if (!(await isSetUp().catch(() => true))) return setPhase({ kind: 'first-run', email: u.email })
+        setPhase({ kind: 'no-access', email: u.email })
       } catch (e) {
-        // אם אין מסמך משתמש, הכללים לא מתירים אפילו לקרוא אותו בחלק מהמקרים
         setPhase({ kind: 'no-access', email: u.email })
         console.warn(e)
       }
@@ -50,6 +54,34 @@ export default function App() {
     )
 
   if (phase.kind === 'loading') return <div className="center muted">טוען…</div>
+
+  if (phase.kind === 'first-run')
+    return (
+      <div className="center">
+        <div className="card login">
+          {LOGOS.ashkolot && <img src={LOGOS.ashkolot} alt="אשכולות העשור הבא" />}
+          <h1>הגדרה ראשונית</h1>
+          <p>הארכיון עדיין ריק. אם זה הפרויקט שלך, לחיצה על הכפתור תיצור את מבנה התיוק ותגדיר את <b dir="ltr">{phase.email}</b> כמנהל/ת.</p>
+          <p className="hint">האפשרות הזו קיימת רק פעם אחת, כשהמערכת ריקה. אחר כך מוסיפים משתמשים ממסך הניהול.</p>
+          {error && <div className="alert error">{error}</div>}
+          <button
+            className="primary"
+            onClick={async () => {
+              try {
+                await firstRunSetup(phase.email, seedTaxonomy as unknown as Taxonomy, seedCatalog.nextSeq)
+                const me = await loadMyUser(phase.email)
+                if (me) setPhase({ kind: 'ready', user: me })
+              } catch (e) {
+                setError(errMsg(e))
+              }
+            }}
+          >
+            הגדרת הארכיון ואני המנהל/ת
+          </button>
+          <button onClick={() => logout()}>יציאה</button>
+        </div>
+      </div>
+    )
 
   if (phase.kind === 'signed-out' || phase.kind === 'no-access')
     return (
