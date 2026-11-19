@@ -56,6 +56,15 @@ export function createFirestoreStore(): VotingStore {
       const snap = await getDocs(query(collection(db, C.archive), where('round', '==', round)))
       return snap.docs.map((d) => d.data() as VoteDoc)
     },
+    async importArchivedVotes(votes, reason) {
+      for (let i = 0; i < votes.length; i += 400) {
+        const batch = writeBatch(db)
+        for (const v of votes.slice(i, i + 400)) {
+          batch.set(doc(db, C.archive, `legacy_r${v.round}_${voteId(v.uid, v.branchId)}_${v.submittedAt}`), { ...v, archivedReason: reason, archivedAt: serverTimestamp() })
+        }
+        await batch.commit()
+      }
+    },
     async saveQuoteRecord(rec) {
       await setDoc(doc(db, C.quotes, rec.id), { ...rec, serverCreatedAt: serverTimestamp() })
     },

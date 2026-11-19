@@ -67,9 +67,11 @@ Owner decisions that the code must keep (do not change without asking):
    change of the basket coordinators voted for). Opening a round archives the current votes, never deletes them.
 
 Status / next steps (update this list when done):
-- [ ] Owner merges and publishes `firestore.rules`; first setup in "סל המזון" (branches & families, save catalog).
-- [ ] One-time import from the old Firebase project `shachentov-1316f` (quotes, supplier decisions, discounts,
-      rounds, open votes matched to CRM users by name).
+- [x] Owner merged and published `firestore.rules` (20.11.2026).
+- [ ] First setup in "סל המזון": branches & routine family counts (save each row).
+- [ ] Run the one-time import ("סבבים" tab → "ייבוא מהמערכת הקודמת", `data/legacyImport.ts`). Old project on
+      20.11.2026: 31 products, budgets 100/10/100/10, round 15 open with 0 votes, 8 archived votes of round 14,
+      no quotes/decisions saved.
 - [ ] Verify against the real CRM (real users/branches), then move coordinators to the portal **between rounds**.
 - [ ] Retire the old site and the separate Netlify voting site; then the `voting/` folder.
 - [ ] Order reports (SPEC §10, phase 4): supplier Excel files from the owner's formats in `voting/docs/order-formats/`.

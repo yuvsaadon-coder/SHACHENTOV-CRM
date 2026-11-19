@@ -40,6 +40,8 @@ export interface VotingStore {
   /** Moves every vote to voting_archivedVotes with a reason, then removes it (never just delete). */
   archiveAllVotes(reason: string, roundNum: number): Promise<void>
   loadArchivedVotes(round: number): Promise<VoteDoc[]>
+  /** Adds already-archived votes (one-time import from the old system). */
+  importArchivedVotes(votes: (VoteDoc & { round: number })[], reason: string): Promise<void>
   saveQuoteRecord(rec: QuoteRecord): Promise<void>
   subscribeQuoteRecords(cb: (recs: QuoteRecord[]) => void, onError?: OnErr): Unsub
   saveSupplierChoice(periodId: string, category: string, supplierName: string, decidedAt: number): Promise<void>
