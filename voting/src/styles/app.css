@@ -191,3 +191,24 @@ table.data tfoot td { border-block-start: var(--border); border-block-end: none;
   .quote-table td:first-child { display: block; font-size: 15px; }
   .quote-table select.input { max-width: none; flex: 1; }
 }
+
+/* ---------- price tracking ---------- */
+.stat-sub { font-size: 12px; font-weight: 500; opacity: .85; margin-block-start: 2px; }
+.chart { position: relative; }
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart .grid { stroke: var(--line-soft); stroke-width: 1; }
+.chart .axis { fill: var(--muted); font-size: 12px; font-family: var(--font); }
+.chart .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .dot { fill: var(--accent); stroke: var(--paper); stroke-width: 2; }
+.chart .hit { fill: transparent; cursor: pointer; outline: none; }
+.chart .hit:focus-visible { stroke: var(--accent); stroke-width: 2; }
+.chart .crosshair { stroke: var(--muted-2); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart .tooltip { position: absolute; transform: translate(-50%, calc(-100% - 12px)); background: var(--paper); border: var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 6px 10px; font-size: 13px; white-space: nowrap; pointer-events: none; }
+.price-table-wrap { max-height: 70vh; overflow: auto; }
+.price-table th, .price-table td { white-space: nowrap; }
+.price-table thead th { position: sticky; inset-block-start: 0; background: var(--paper); z-index: 1; }
+.price-table .sticky-col { position: sticky; inset-inline-start: 0; background: var(--paper); z-index: 2; }
+.price-table tfoot td { white-space: normal; min-width: 90px; vertical-align: top; }
+.txt-up { color: var(--over-fg); }
+.txt-down { color: var(--ok-fg); }
+.how-list { margin: 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 6px; }

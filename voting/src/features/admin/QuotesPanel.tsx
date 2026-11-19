@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import seedJson from '../../../seed/seed.json'
+import priceSeed from '../../../seed/price-history.json'
 import { he } from '../../i18n/he'
 import { money } from '../../lib/format'
 import { ACCEPT, readQuoteFile, UnsupportedFileError, type ReadFile } from '../../lib/quotes/extract'
 import { AiFailedError, AiUnavailableError, analyzeLocally, analyzeWithAi } from '../../lib/quotes/analyzeClient'
-import { applyProposals, buildProposals, finalPrice, pctChange } from '../../lib/quotes/plan'
+import { applyCheapestRule, applyProposals, buildProposals, finalPrice, offerKey, pctChange } from '../../lib/quotes/plan'
+import { buildHistory, upcomingPeriod, shiftPeriod, type SeedHistory } from '../../lib/prices/history'
+import { jerusalemYearMonth, periodLabel } from '../../lib/prices/label'
 import type { CatalogEntry, Proposal, ProposalAction, QuoteLine, VatMode } from '../../lib/quotes/types'
 import type { QuoteRecord } from '../../data/store'
 import { Card, Field, SectionHeader } from '../../ui/components'
@@ -12,12 +15,13 @@ import { useAdmin } from './context'
 
 const SUPPLIERS = (seedJson as unknown as { suppliers: { id: string; name: string }[] }).suppliers
 const OTHER = '__other'
+const PRICE_SEED = priceSeed as unknown as SeedHistory
 const LOW_CONFIDENCE = 0.6
 
 type Phase = { step: 'upload' } | { step: 'busy'; label: string } | { step: 'review' } | { step: 'done'; message: string }
 
 export function QuotesPanel() {
-  const { config, votes, store } = useAdmin()
+  const { config, votes, store, now } = useAdmin()
   const [supplierId, setSupplierId] = useState(SUPPLIERS[0]?.id ?? OTHER)
   const [otherName, setOtherName] = useState('')
   const [vatMode, setVatMode] = useState<VatMode>('auto')
@@ -32,12 +36,19 @@ export function QuotesPanel() {
   const [priceEdited, setPriceEdited] = useState<Set<string>>(new Set())
   const [history, setHistory] = useState<QuoteRecord[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
+  const upcoming = useMemo(() => { const { year, month } = jerusalemYearMonth(now); return upcomingPeriod(year, month) }, [now])
+  const [periodId, setPeriodId] = useState(upcoming)
 
   useEffect(() => store.subscribeQuoteRecords(setHistory, (e) => console.warn('quote history failed', e)), [store])
 
   const catalog: CatalogEntry[] = useMemo(() => config.products.map((p) => ({ id: p.id, name: p.name, price: Number(p.price) || 0 })), [config.products])
   const productById = useMemo(() => new Map(config.products.map((p) => [p.id, p])), [config.products])
   const supplierName = supplierId === OTHER ? otherName.trim() : SUPPLIERS.find((s) => s.id === supplierId)?.name ?? ''
+  const priceHistory = useMemo(() => buildHistory(PRICE_SEED, history, catalog), [history, catalog])
+  const periodOptions = useMemo(() => [...new Set([...priceHistory.periods, upcoming, shiftPeriod(upcoming, 1)])].sort().reverse(), [priceHistory.periods, upcoming])
+  const latestPeriod = priceHistory.periods.at(-1) ?? periodId
+  const catalogFollowsPeriod = periodId >= latestPeriod
+  const bestByKey = useMemo(() => Object.fromEntries(Object.entries(priceHistory.best[periodId] ?? {}).map(([k, o]) => [k, { price: o.price, supplier: o.supplier }])), [priceHistory, periodId])
   const hasOpenVotes = config.round?.open !== false && config.coordinators.some((c) => votes[c.id])
 
   const addFiles = (list: FileList | null) => {
@@ -49,7 +60,7 @@ export function QuotesPanel() {
 
   const showLines = (lines: QuoteLine[], how: 'ai' | 'local') => {
     setMethod(how)
-    setProposals(buildProposals(lines, catalog, vatMode))
+    setProposals(applyCheapestRule(buildProposals(lines, catalog, vatMode), bestByKey, catalogFollowsPeriod))
     setPriceEdited(new Set())
     setPhase({ step: 'review' })
   }
@@ -88,31 +99,40 @@ export function QuotesPanel() {
 
   // VAT choice can be changed during review; prices the admin typed by hand are kept.
   useEffect(() => {
-    setProposals((ps) => ps.map((p) => (priceEdited.has(p.key) ? p : { ...p, newPrice: finalPrice(p.line, vatMode) })))
+    setProposals((ps) => ps.map((p) => {
+      const newPrice = priceEdited.has(p.key) ? p.newPrice : finalPrice(p.line, vatMode)
+      const best = p.productId ? bestByKey[p.productId] : undefined
+      return { ...p, newPrice, cheaper: best && newPrice != null && best.price < newPrice - 1e-9 ? best : null }
+    }))
   }, [vatMode])
 
   const patch = (key: string, upd: Partial<Proposal>) => setProposals((ps) => ps.map((p) => (p.key === key ? { ...p, ...upd } : p)))
   const setAction = (p: Proposal, action: ProposalAction) => {
-    const productId = action === 'update' ? p.productId ?? p.line.matchId : p.productId
+    const productId = action === 'update' || action === 'record' ? p.productId ?? p.line.matchId : p.productId
     patch(p.key, { action, productId, oldPrice: productId ? productById.get(productId)?.price ?? null : null })
   }
 
-  const active = proposals.filter((p) => p.action !== 'ignore' && p.newPrice != null && (p.action === 'add' ? p.newName.trim() : p.productId))
+  const active = proposals.filter((p) => p.action !== 'ignore' && p.newPrice != null && (p.action === 'update' ? p.productId : p.action === 'add' ? p.newName.trim() : p.productId || p.newName.trim()))
   const nUpdate = active.filter((p) => p.action === 'update').length
   const nAdd = active.filter((p) => p.action === 'add').length
+  const nRecord = active.filter((p) => p.action === 'record').length
 
   const apply = async () => {
-    if (!active.length || !confirm(he.quotes.confirmApply(nUpdate, nAdd))) return
+    if (!active.length || !confirm(he.quotes.confirmApply(nUpdate, nAdd, nRecord))) return
     setPhase({ step: 'busy', label: he.quotes.applying })
     const stamp = Date.now()
     const sid = supplierId === OTHER ? undefined : supplierId
     try {
-      const res = applyProposals(config.products, active, { supplierId: sid, idPrefix: `q${stamp}` })
+      const res = applyProposals(config.products, active.filter((p) => p.action !== 'record'), { supplierId: sid, idPrefix: `q${stamp}` })
+      const offers = active.flatMap((p) => {
+        const key = offerKey(p, res.addedIds)
+        return key ? [{ key, name: p.action === 'add' ? p.newName.trim() : productById.get(p.productId ?? '')?.name ?? p.newName.trim(), productId: key.startsWith('name:') ? null : key, price: p.newPrice! }] : []
+      })
       await store.updateConfigField('products', res.products)
       const before = new Set(config.products.map((p) => p.id))
       await store.saveQuoteRecord({
         id: `q${stamp}`, createdAt: stamp, supplierId: supplierId === OTHER ? '' : supplierId, supplierName,
-        fileNames: readFiles.map((f) => f.name), method, vatMode, updated: res.updated, added: res.added,
+        fileNames: readFiles.map((f) => f.name), method, vatMode, updated: res.updated, added: res.added, periodId, offers,
         changes: [
           ...active.filter((p) => p.action === 'update' && p.productId).map((p) => ({
             productId: p.productId!, name: productById.get(p.productId!)?.name ?? '', action: 'update' as const, oldPrice: p.oldPrice, newPrice: p.newPrice!,
@@ -120,7 +140,7 @@ export function QuotesPanel() {
           ...res.products.filter((p) => !before.has(p.id)).map((p) => ({ productId: p.id, name: p.name, action: 'add' as const, oldPrice: null, newPrice: p.price })),
         ],
       })
-      setPhase({ step: 'done', message: he.quotes.applied(res.updated, res.added) })
+      setPhase({ step: 'done', message: he.quotes.applied(res.updated, res.added, offers.length) })
       setFiles([]); setProposals([])
     } catch (e) {
       alert(he.errorPrefix + (e instanceof Error ? e.message : String(e)))
@@ -152,8 +172,14 @@ export function QuotesPanel() {
             {supplierId === OTHER && (
               <Field label={he.quotes.otherSupplierName}><input className="input" value={otherName} onChange={(e) => setOtherName(e.target.value)} disabled={busy} /></Field>
             )}
+            <Field label={he.quotes.period}>
+              <select className="input" value={periodId} onChange={(e) => setPeriodId(e.target.value)} disabled={busy}>
+                {periodOptions.map((p) => <option key={p} value={p}>{he.quotes.periodOption(periodLabel(p))}</option>)}
+              </select>
+            </Field>
             <VatChoice value={vatMode} onChange={setVatMode} disabled={busy} />
           </div>
+          <p className="small muted" style={{ marginBlockStart: 0 }}>{he.quotes.periodHint}</p>
 
           <div
             className="dropzone" role="button" tabIndex={0} aria-label={he.quotes.dropHint}
@@ -198,13 +224,14 @@ export function QuotesPanel() {
       {phase.step === 'review' && (
         <Card title={he.quotes.reviewTitle} accent>
           {notices.map((n) => <div key={n} className="banner-warn small" role="status">{n}</div>)}
-          {hasOpenVotes && <div className="banner-warn small" role="status">{he.quotes.openRoundWarn}</div>}
+          {hasOpenVotes && catalogFollowsPeriod && <div className="banner-warn small" role="status">{he.quotes.openRoundWarn}</div>}
+          {!catalogFollowsPeriod && <div className="banner-warn small" role="status">{he.quotes.olderPeriod}</div>}
           {proposals.length === 0 ? (
             <p>{he.quotes.nothingFound}</p>
           ) : (
             <>
               <div className="toolbar">
-                <span className="cell-strong">{he.quotes.summary(nUpdate, nAdd, proposals.length - active.length)}</span>
+                <span className="cell-strong">{he.quotes.summary(nUpdate, nAdd, nRecord, proposals.length - active.length)}</span>
                 <span className="push-end" />
                 <VatChoice value={vatMode} onChange={setVatMode} compact />
               </div>
@@ -218,23 +245,25 @@ export function QuotesPanel() {
                   </thead>
                   <tbody>
                     {proposals.map((p) => {
-                      const pct = p.action === 'update' ? pctChange(p.oldPrice, p.newPrice) : null
+                      const pct = p.action === 'update' || p.action === 'record' ? pctChange(p.oldPrice, p.newPrice) : null
                       return (
                         <tr key={p.key} className={p.action === 'ignore' ? 'is-ignored' : ''}>
                           <td data-label={he.quotes.colInQuote}>
                             <div className="cell-strong">{p.line.name}</div>
                             {p.line.note && <div className="small muted">{p.line.note}</div>}
+                            {p.cheaper && <div className="small txt-warn" style={{ marginInlineStart: 0 }}>{he.quotes.cheaperExists(money(p.cheaper.price), p.cheaper.supplier)}</div>}
                             {p.line.confidence < LOW_CONFIDENCE && p.action !== 'ignore' && <div className="small txt-warn" style={{ marginInlineStart: 0 }}>{he.quotes.lowConfidence}</div>}
                           </td>
                           <td data-label={he.quotes.colAction}>
                             <select aria-label={`${he.quotes.colAction}: ${p.line.name}`} className="input" value={p.action} onChange={(e) => setAction(p, e.target.value as ProposalAction)}>
                               <option value="update">{he.quotes.actUpdate}</option>
                               <option value="add">{he.quotes.actAdd}</option>
+                              <option value="record">{he.quotes.actRecord}</option>
                               <option value="ignore">{he.quotes.actIgnore}</option>
                             </select>
                           </td>
                           <td data-label={he.quotes.colCatalog}>
-                            {p.action === 'update' && (
+                            {(p.action === 'update' || p.action === 'record') && (
                               <select aria-label={`${he.quotes.colCatalog}: ${p.line.name}`} className="input" value={p.productId ?? ''}
                                 onChange={(e) => { const id = e.target.value || null; patch(p.key, { productId: id, oldPrice: id ? productById.get(id)?.price ?? null : null }) }}>
                                 <option value="">{he.quotes.pickProduct}</option>
@@ -251,7 +280,7 @@ export function QuotesPanel() {
                               </div>
                             )}
                           </td>
-                          <td data-label={he.quotes.colOld}>{p.action === 'update' && p.oldPrice != null ? money(p.oldPrice) : he.dash}</td>
+                          <td data-label={he.quotes.colOld}>{p.action !== 'add' && p.action !== 'ignore' && p.oldPrice != null ? money(p.oldPrice) : he.dash}</td>
                           <td data-label={he.quotes.colNew}>
                             <input aria-label={`${he.quotes.colNew}: ${p.line.name}`} type="number" step="0.01" min="0" className="input input-num"
                               value={p.newPrice ?? ''} disabled={p.action === 'ignore'}

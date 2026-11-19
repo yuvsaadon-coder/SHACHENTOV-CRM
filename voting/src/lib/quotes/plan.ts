@@ -24,17 +24,41 @@ export function buildProposals(lines: QuoteLine[], catalog: CatalogEntry[], vatM
     const action = newPrice == null || dup ? 'ignore' : match ? 'update' : 'add'
     return {
       key: `${i}-${line.name}`, line, action, productId: match?.id ?? null, oldPrice: match?.price ?? null, newPrice,
-      newName: line.name, emoji: line.emoji || '🛒', cat: line.cat,
+      newName: line.name, emoji: line.emoji || '🛒', cat: line.cat, cheaper: null,
     }
   })
 }
 
-export interface ApplyResult { products: LegacyProduct[]; updated: number; added: number }
+/**
+ * Price-history rule (owner 19.11.2026): the catalog follows the CHEAPEST offer for the period.
+ * A line that is more expensive than an offer already received becomes "record only".
+ * When the quote is for an older period than the latest tracked one, catalog updates also default to "record".
+ */
+export function applyCheapestRule(
+  proposals: Proposal[], bestByKey: Record<string, { price: number; supplier: string }>, catalogFollowsPeriod: boolean,
+): Proposal[] {
+  return proposals.map((p) => {
+    const best = p.productId ? bestByKey[p.productId] : undefined
+    const cheaper = best && p.newPrice != null && best.price < p.newPrice - 1e-9 ? { price: best.price, supplier: best.supplier } : null
+    const demote = p.action === 'update' && (cheaper || !catalogFollowsPeriod)
+    return { ...p, cheaper, action: demote ? 'record' : p.action }
+  })
+}
+
+/** Key under which a line is kept in the price history. */
+export function offerKey(p: Proposal, addedIds: Record<string, string>): string | null {
+  if (p.action === 'add') return addedIds[p.key] ?? null
+  if (p.productId) return p.productId
+  return p.action === 'record' && p.newName.trim() ? `name:${p.newName.trim()}` : null
+}
+
+export interface ApplyResult { products: LegacyProduct[]; updated: number; added: number; addedIds: Record<string, string> }
 
 export function applyProposals(products: LegacyProduct[], proposals: Proposal[], opts: { supplierId?: string; idPrefix: string }): ApplyResult {
   const out = products.map((p) => ({ ...p }))
   const idx = new Map(out.map((p, i) => [p.id, i]))
   let updated = 0, added = 0
+  const addedIds: Record<string, string> = {}
   let order = out.reduce((m, p) => Math.max(m, Number(p.sortOrder ?? 0)), -1)
   proposals.forEach((pr, n) => {
     if (pr.newPrice == null) return
@@ -42,6 +66,7 @@ export function applyProposals(products: LegacyProduct[], proposals: Proposal[],
       const p = out[idx.get(pr.productId)!]!
       if (Math.abs(Number(p.price) - pr.newPrice) > 1e-9) { p.price = pr.newPrice; updated++ }
     } else if (pr.action === 'add' && pr.newName.trim()) {
+      addedIds[pr.key] = `${opts.idPrefix}-${n}`
       out.push({
         id: `${opts.idPrefix}-${n}`, name: pr.newName.trim(), price: pr.newPrice, max: 10, cat: pr.cat,
         emoji: pr.emoji || '🛒', excludedBranches: [], active: true, sortOrder: ++order,
@@ -50,7 +75,7 @@ export function applyProposals(products: LegacyProduct[], proposals: Proposal[],
       added++
     }
   })
-  return { products: out, updated, added }
+  return { products: out, updated, added, addedIds }
 }
 
 export function pctChange(oldPrice: number | null, newPrice: number | null): number | null {

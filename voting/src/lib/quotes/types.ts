@@ -29,7 +29,8 @@ export type QuoteSource =
 export type VatMode = 'auto' | 'included' | 'excluded'
 export const VAT_RATE = 0.18
 
-export type ProposalAction = 'update' | 'add' | 'ignore'
+/** record = keep the offer in the price history without touching the catalog (e.g. a cheaper offer exists) */
+export type ProposalAction = 'update' | 'add' | 'record' | 'ignore'
 
 export interface Proposal {
   key: string
@@ -42,4 +43,6 @@ export interface Proposal {
   newName: string
   emoji: string
   cat: 'dry' | 'fresh'
+  /** a cheaper offer already received for this product in the target period */
+  cheaper: { price: number; supplier: string } | null
 }

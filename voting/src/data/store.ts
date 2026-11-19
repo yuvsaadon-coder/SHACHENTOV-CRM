@@ -15,6 +15,10 @@ export interface QuoteRecord {
   updated: number
   added: number
   changes: { productId: string; name: string; action: 'update' | 'add'; oldPrice: number | null; newPrice: number }[]
+  /** half-year order this quote is for (price history) */
+  periodId?: string
+  /** every approved offer of the quote, incl. VAT, for the price history */
+  offers?: { key: string; name: string; productId: string | null; price: number }[]
 }
 
 export type ConfigField = 'products' | 'coordinators' | 'baskets' | 'round'

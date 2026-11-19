@@ -10,14 +10,15 @@ import { ComparePanel } from './ComparePanel'
 import { ExportPanel } from './ExportPanel'
 import { CatalogPanel } from './CatalogPanel'
 import { QuotesPanel } from './QuotesPanel'
+import { PricesPanel } from './PricesPanel'
 import { CoordsPanel } from './CoordsPanel'
 import { RoundsPanel } from './RoundsPanel'
 
-const TABS = ['status', 'results', 'optimal', 'compare', 'export', 'catalog', 'quotes', 'coords', 'rounds'] as const
+const TABS = ['status', 'results', 'optimal', 'compare', 'export', 'catalog', 'quotes', 'prices', 'coords', 'rounds'] as const
 type Tab = (typeof TABS)[number]
 const PANELS: Record<Tab, () => JSX.Element> = {
   status: StatusPanel, results: ResultsPanel, optimal: OptimalPanel, compare: ComparePanel,
-  export: ExportPanel, catalog: CatalogPanel, quotes: QuotesPanel, coords: CoordsPanel, rounds: RoundsPanel,
+  export: ExportPanel, catalog: CatalogPanel, quotes: QuotesPanel, prices: PricesPanel, coords: CoordsPanel, rounds: RoundsPanel,
 }
 
 function useNow(ms = 60_000): number {
