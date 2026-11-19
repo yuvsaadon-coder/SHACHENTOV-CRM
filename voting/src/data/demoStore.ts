@@ -1,12 +1,14 @@
 import type { LegacyConfig, LegacyVote } from './legacy'
 import type { ConfigField, ConfigValue, QuoteRecord, Store } from './store'
 import { decisionKey, type PeriodDecision } from '../lib/prices/history'
+import type { RoundMeta } from '../lib/rounds/recommend'
 
 const K_CONFIG = 'shachen-tov-demo-config'
 const K_VOTES = 'shachen-tov-demo-votes'
 const K_ARCHIVE = 'shachen-tov-demo-archived-votes'
 const K_QUOTES = 'shachen-tov-demo-price-quotes'
 const K_DECISIONS = 'shachen-tov-demo-price-decisions'
+const K_ROUNDS = 'shachen-tov-demo-rounds'
 
 /** Browser-only store for previews/E2E. Same semantics as the Firestore store. */
 export function createDemoStore(ls: Storage): Store {
@@ -57,6 +59,16 @@ export function createDemoStore(ls: Storage): Store {
       const all = read<Record<string, PeriodDecision>>(K_DECISIONS, {})
       const k = decisionKey(periodId, category)
       write(K_DECISIONS, { ...all, [k]: { ...(all[k] ?? { periodId, category, supplierName: '', decidedAt: 0 }), discount } })
+    },
+    async saveRoundMeta(meta) {
+      const all = read<Record<number, RoundMeta>>(K_ROUNDS, {})
+      write(K_ROUNDS, { ...all, [meta.num]: { ...all[meta.num], ...meta } })
+    },
+    subscribeRoundMetas(cb) {
+      return subscribe(() => cb(read<Record<number, RoundMeta>>(K_ROUNDS, {})))
+    },
+    async loadArchivedVotes(round) {
+      return read<(LegacyVote & { round?: number })[]>(K_ARCHIVE, []).filter((v) => v.round === round)
     },
     subscribeDecisions(cb) {
       return subscribe(() => cb(read<Record<string, PeriodDecision>>(K_DECISIONS, {})))

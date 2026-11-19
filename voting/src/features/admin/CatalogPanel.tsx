@@ -52,7 +52,7 @@ export function CatalogPanel() {
       <Card>
         <div className="table-wrap">
           <table className="data">
-            <thead><tr><th>{he.colIcon}</th><th>{he.colName}</th><th>{he.colCategory}</th><th>{he.priceShekel}</th><th>{he.colMax}</th><th /></tr></thead>
+            <thead><tr><th>{he.colIcon}</th><th>{he.colName}</th><th>{he.colCategory}</th><th>{he.priceShekel}</th><th>{he.colMax}</th><th>{he.catalogOffered}</th><th /></tr></thead>
             <tbody>
               {products.map((p) => {
                 const ed = editing === p.id
@@ -67,6 +67,12 @@ export function CatalogPanel() {
                     </td>
                     <td>{ed ? <input aria-label={he.priceShekel} type="number" step="0.01" min="0" className="input input-num" value={p.price} onChange={(e) => update(p.id, 'price', parseFloat(e.target.value) || 0)} /> : money(p.price)}</td>
                     <td>{ed ? <input aria-label={he.colMax} type="number" min="1" className="input input-num" value={p.max} onChange={(e) => update(p.id, 'max', parseInt(e.target.value, 10) || 1)} /> : p.max}</td>
+                    <td>
+                      <label className="offered-toggle">
+                        <input type="checkbox" checked={p.active !== false} onChange={(e) => update(p.id, 'active', e.target.checked)} aria-label={`${he.catalogOffered}: ${p.name}`} />
+                        <span className={p.active !== false ? 'txt-ok' : 'muted'}>{p.active !== false ? he.catalogOffered : he.catalogHidden}</span>
+                      </label>
+                    </td>
                     <td>
                       <div className="row-actions">
                         {ed

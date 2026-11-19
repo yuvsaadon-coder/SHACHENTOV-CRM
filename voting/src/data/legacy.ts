@@ -2,7 +2,7 @@
 // so the new site and the legacy site can run side by side on the same database until cut-over (CLAUDE.md workflow #3).
 // Phase 2 replaces this with the cycle model (SPEC §8).
 import seedJson from '../../seed/seed.json'
-import type { Basket, CycleSnapshot, Items, Product, Vote } from '../lib/algorithm'
+import type { Basket, CycleSnapshot, CycleType, Items, Product, Vote } from '../lib/algorithm'
 
 export interface LegacyProduct {
   id: string
@@ -16,7 +16,15 @@ export interface LegacyProduct {
 }
 export interface LegacyCoordinator { id: string; name: string; branch: string; weight: number }
 export interface LegacyBasket { id: string; name: string; budget: number; desc?: string }
-export interface RoundState { num: number; open: boolean; openedAt?: number }
+export interface RoundState {
+  num: number
+  open: boolean
+  openedAt?: number
+  /** set by the new-round wizard; rounds opened before it have none (treated as a half-year order) */
+  orderType?: CycleType
+  year?: number
+  periodId?: string
+}
 
 export interface LegacyConfig {
   products: LegacyProduct[]
@@ -41,7 +49,7 @@ export interface LegacyVote {
 }
 
 interface SeedShape {
-  branches: { id: string; name: string }[]
+  branches: { id: string; name: string; votesIn?: 'always' | 'holidays' }[]
   products: LegacyProduct[]
   coordinators: { id: string; name: string; branchId: string; weight: number; active?: boolean }[]
   basketTemplate: { id: string; name: string; budget: number }[]
@@ -65,6 +73,20 @@ export function defaultConfig(): LegacyConfig {
 }
 
 const branchIdByName = new Map(seed.branches.map((b) => [b.name, b.id]))
+
+/** All voting branches (7 always + 3 that vote only in holiday orders). */
+export const BRANCHES = seed.branches.map((b) => ({ id: b.id, name: b.name, votesIn: b.votesIn ?? 'always' }))
+const holidayOnly = new Set(BRANCHES.filter((b) => b.votesIn === 'holidays').map((b) => b.name))
+
+/** Coordinators who vote in the current round: holiday-only branches take part only in holiday orders. */
+export function participants(cfg: LegacyConfig): LegacyCoordinator[] {
+  const t = cfg.round?.orderType
+  const holiday = t === 'pesach' || t === 'rosh_hashana'
+  return cfg.coordinators.filter((c) => holiday || !holidayOnly.has(c.branch))
+}
+
+/** Products offered in the survey (a product hidden by the admin, e.g. not in the chosen supplier's quote, is not). */
+export const isOffered = (p: LegacyProduct): boolean => p.active !== false
 export const branchIdOf = (name: string): string => branchIdByName.get(name) ?? name
 
 const GROUP_SLOT: Record<string, Pick<Basket, 'group' | 'slot'>> = {
@@ -88,8 +110,8 @@ export function toAlgoProduct(p: LegacyProduct, freshExcluded: string[]): Produc
 export function toCycleSnapshot(cfg: LegacyConfig): CycleSnapshot {
   const fresh = cfg.freshExcluded ?? LEGACY_FRESH_EXCLUDED
   return {
-    products: cfg.products.map((p) => toAlgoProduct(p, fresh)),
-    coordinators: cfg.coordinators.map((c) => ({ id: c.id, name: c.name, branchId: branchIdOf(c.branch), weight: c.weight })),
+    products: cfg.products.filter(isOffered).map((p) => toAlgoProduct(p, fresh)),
+    coordinators: participants(cfg).map((c) => ({ id: c.id, name: c.name, branchId: branchIdOf(c.branch), weight: c.weight })),
     baskets: cfg.baskets
       .filter((b) => GROUP_SLOT[b.id])
       .map((b) => ({ id: b.id, name: b.name, budget: b.budget, ...GROUP_SLOT[b.id]! })),
@@ -110,7 +132,7 @@ export function toAlgoVotes(votes: Record<string, LegacyVote>): Record<string, V
 export function visibleProducts(cfg: LegacyConfig, coord: LegacyCoordinator): LegacyProduct[] {
   const fresh = cfg.freshExcluded ?? LEGACY_FRESH_EXCLUDED
   const bid = branchIdOf(coord.branch)
-  return cfg.products.filter((p) => !toAlgoProduct(p, fresh).excludedBranches!.includes(bid))
+  return cfg.products.filter((p) => isOffered(p) && !toAlgoProduct(p, fresh).excludedBranches!.includes(bid))
 }
 
 export function roundOf(cfg: LegacyConfig): RoundState {

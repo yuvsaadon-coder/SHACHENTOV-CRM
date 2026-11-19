@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { he } from '../../i18n/he'
 import { useConfig, useStore, useVotes } from '../../data/hooks'
-import type { LegacyCoordinator } from '../../data/legacy'
+import { participants, type LegacyCoordinator } from '../../data/legacy'
 import { CoordinatorPicker } from './CoordinatorPicker'
 import { VoteStepper } from './VoteStepper'
 
@@ -14,7 +14,7 @@ export function VoteApp() {
   return (
     <div className="shell-narrow">
       {!coord
-        ? <CoordinatorPicker coordinators={config.coordinators} onPick={setCoord} />
+        ? <CoordinatorPicker coordinators={participants(config)} onPick={setCoord} />
         : <VoteStepper key={coord.id} store={store} config={config} coordinator={coord} existingVote={votes[coord.id]} onLogout={() => setCoord(null)} />}
     </div>
   )

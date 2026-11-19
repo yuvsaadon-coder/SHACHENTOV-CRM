@@ -357,6 +357,7 @@ function SupplierChoice({ periodId, category, records, decisions, weights, provi
   const { config, store } = useAdmin()
   const [result, setResult] = useState<{ ok: string; warn: string | null } | null>(null)
   const [busy, setBusy] = useState(false)
+  const [hideMissing, setHideMissing] = useState(true)
   const relevant = useMemo(() => config.products.filter((p) => (p.supplier ?? 'dry') === category && p.active !== false).map((p) => p.id), [config.products, category])
   const quotes = useMemo(() => groupBySupplier(records, periodId, category), [records, periodId, category])
   const cmp = useMemo(() => compareSuppliers(quotes, { relevant, weights }), [quotes, relevant, weights])
@@ -373,13 +374,13 @@ function SupplierChoice({ periodId, category, records, decisions, weights, provi
     setBusy(true)
     try {
       const stamp = Date.now()
-      const res = applySupplierChoice(config.products, quote, { idPrefix: `s${stamp}`, supplierId: category })
+      const res = applySupplierChoice(config.products, quote, { idPrefix: `s${stamp}`, supplierId: category, hideNotOffered: hideMissing })
       await store.updateConfigField('products', res.products)
       await store.saveSupplierChoice(periodId, category, supplier, stamp)
       const missing = res.notOffered.map(nameOf)
       setResult({
         ok: he.quotes.chooseDone(supplier, res.updated, res.added),
-        warn: missing.length ? he.quotes.notOffered(missing.slice(0, 10).join(', ') + (missing.length > 10 ? he.prices.andMore(missing.length - 10) : '')) : null,
+        warn: missing.length ? (hideMissing ? he.quotes.notOfferedHidden : he.quotes.notOffered)(missing.slice(0, 10).join(', ') + (missing.length > 10 ? he.prices.andMore(missing.length - 10) : '')) : null,
       })
     } catch (e) {
       alert(he.errorPrefix + (e instanceof Error ? e.message : String(e)))
@@ -425,6 +426,7 @@ function SupplierChoice({ periodId, category, records, decisions, weights, provi
         </table>
       </div>
       <p className="small muted">{cmp.basis === 'weighted' ? he.quotes.basisWeighted : he.quotes.basisEqual}</p>
+      <label className="offered-toggle small"><input type="checkbox" checked={hideMissing} onChange={(e) => setHideMissing(e.target.checked)} /> {he.hideNotOffered}</label>
       {!decided && provisional && <p className="small txt-warn" style={{ marginInlineStart: 0 }}>{he.quotes.provisional}</p>}
     </Card>
   )

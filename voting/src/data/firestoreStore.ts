@@ -1,11 +1,12 @@
 import { initializeApp } from 'firebase/app'
 import {
   collection, connectFirestoreEmulator, doc, getDocs, initializeFirestore, limit, onSnapshot, orderBy, query,
-  serverTimestamp, setDoc, writeBatch,
+  serverTimestamp, setDoc, where, writeBatch,
 } from 'firebase/firestore'
 import type { LegacyConfig, LegacyVote } from './legacy'
 import type { ConfigField, ConfigValue, QuoteRecord, Store } from './store'
 import { decisionKey, type PeriodDecision } from '../lib/prices/history'
+import type { RoundMeta } from '../lib/rounds/recommend'
 
 export function createFirestoreStore(): Store {
   const env = import.meta.env
@@ -66,6 +67,20 @@ export function createFirestoreStore(): Store {
     },
     async saveDiscount(periodId, category, discount) {
       await setDoc(doc(db, 'priceDecisions', decisionKey(periodId, category)), { periodId, category, discount }, { merge: true })
+    },
+    async saveRoundMeta(meta) {
+      await setDoc(doc(db, 'rounds', String(meta.num)), { ...meta }, { merge: true })
+    },
+    subscribeRoundMetas(cb, onError) {
+      return onSnapshot(collection(db, 'rounds'), (snap) => {
+        const out: Record<number, RoundMeta> = {}
+        snap.forEach((d) => { const m = d.data() as RoundMeta; out[m.num] = m })
+        cb(out)
+      }, (e) => onError?.(e))
+    },
+    async loadArchivedVotes(round) {
+      const snap = await getDocs(query(collection(db, 'archivedVotes'), where('round', '==', round)))
+      return snap.docs.map((d) => d.data() as LegacyVote)
     },
     subscribeDecisions(cb, onError) {
       return onSnapshot(collection(db, 'priceDecisions'), (snap) => {

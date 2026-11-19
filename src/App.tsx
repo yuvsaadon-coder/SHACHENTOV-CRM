@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useInitialPassword } from './hooks/useInitialPassword'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -31,6 +32,10 @@ import { HQKnowledgeShell } from './pages/HQKnowledgeShell'
 import { HQChatPage } from './pages/HQChatPage'
 import { Spinner } from './components/ui/Spinner'
 import { ToastProvider } from './context/ToastContext'
+
+// Basket survey module (voting): loaded only when opened
+const VotingAdminGate = lazy(() => import('./voting/VotingAdmin').then((m) => ({ default: m.VotingAdminGate })))
+const VotingPortal = lazy(() => import('./voting/VotingPortal').then((m) => ({ default: m.VotingPortal })))
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { firebaseUser, appUser, access, loading } = useAuth()
@@ -89,6 +94,7 @@ export default function App() {
             <Route path="knowledge" element={<PortalKnowledge />} />
             <Route path="chat" element={<PortalChat />} />
             <Route path="volunteers" element={<PortalVolunteers />} />
+            <Route path="basket" element={<Suspense fallback={<Spinner size="lg" />}><VotingPortal /></Suspense>} />
           </Route>
 
           {/* HQ — with sidebar */}
@@ -118,6 +124,7 @@ export default function App() {
             <Route path="admin/knowledge" element={<KnowledgeAdminPage />} />
             <Route path="admin/report-questions" element={<ReportQuestionsAdminPage />} />
             <Route path="admin/users" element={<UsersAdminPage />} />
+            <Route path="voting" element={<Suspense fallback={<Spinner size="lg" />}><VotingAdminGate /></Suspense>} />
             <Route path="account" element={<AccountPage />} />
           </Route>
 

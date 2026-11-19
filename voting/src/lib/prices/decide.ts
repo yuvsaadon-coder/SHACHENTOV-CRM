@@ -11,7 +11,9 @@ export interface ChoiceResult {
   notOffered: string[]
 }
 
-export function applySupplierChoice(products: LegacyProduct[], quote: SupplierQuote, opts: { idPrefix: string; supplierId?: string }): ChoiceResult {
+export function applySupplierChoice(
+  products: LegacyProduct[], quote: SupplierQuote, opts: { idPrefix: string; supplierId?: string; hideNotOffered?: boolean },
+): ChoiceResult {
   const out = products.map((p) => ({ ...p }))
   const byId = new Map(out.map((p) => [p.id, p]))
   const byName = new Map(out.map((p) => [normalizeName(p.name), p]))
@@ -25,6 +27,7 @@ export function applySupplierChoice(products: LegacyProduct[], quote: SupplierQu
     if (target) {
       quoted.add(target.id)
       if (Math.abs(Number(target.price) - rounded) > 1e-9) { target.price = rounded; updated++ }
+      if (opts.hideNotOffered && target.active === false) target.active = true // the supplier offers it again
     } else if (meta && !meta.productId) {
       const p: LegacyProduct = {
         id: `${opts.idPrefix}-${n++}`, name: meta.name, price: rounded, max: 10, cat: meta.cat ?? 'dry', emoji: meta.emoji || '🛒',
@@ -36,5 +39,6 @@ export function applySupplierChoice(products: LegacyProduct[], quote: SupplierQu
   // only products of the same supplier category count as "not offered" (dry quote vs fresh products are unrelated)
   const scope = opts.supplierId ? (p: LegacyProduct) => (p.supplier ?? 'dry') === opts.supplierId : () => true
   const notOffered = products.filter((p) => scope(p) && p.active !== false && !quoted.has(p.id)).map((p) => p.id)
+  if (opts.hideNotOffered) for (const id of notOffered) byId.get(id)!.active = false
   return { products: out, updated, added, notOffered }
 }

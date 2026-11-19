@@ -4,6 +4,7 @@ import { money } from '../../lib/format'
 import type { Items } from '../../lib/algorithm'
 import { visibleProducts, roundOf, type LegacyConfig, type LegacyCoordinator, type LegacyVote } from '../../data/legacy'
 import { useLocalDraft } from '../../data/hooks'
+import { roundLabel } from '../admin/RoundsPanel'
 import type { Store } from '../../data/store'
 import { basketStatus, basketTotal, clampQty, cleanItems, isBasketValid, isUnlocked } from './basket'
 
@@ -84,7 +85,7 @@ export function VoteStepper({ store, config, coordinator, existingVote, onLogout
       <header className="stepper-header">
         <div className="stepper-header-row">
           <div style={{ flex: 1 }}>
-            <div className="stepper-kicker">{he.roundHeader}</div>
+            <div className="stepper-kicker">{he.roundHeader}{roundLabel(round) ? ` · ${roundLabel(round)}` : ''}</div>
             <div className="stepper-name">{coordinator.name}</div>
             <div className="stepper-branch">{he.branchLabel(coordinator.branch)}</div>
           </div>
