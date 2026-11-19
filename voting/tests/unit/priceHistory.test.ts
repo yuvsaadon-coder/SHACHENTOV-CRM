@@ -136,3 +136,15 @@ test('choosing a supplier updates catalog prices, adds its new products, and lis
   // choosing the same supplier again does not add the product twice
   expect(applySupplierChoice(res.products, quote!, { idPrefix: 's2', supplierId: 'dry' }).added).toBe(0)
 })
+
+test('choosing a supplier can hide products it did not quote, and shows them again when a later choice offers them', () => {
+  const products = (catalogSeed as unknown as { products: LegacyProduct[] }).products
+  const [q1] = groupBySupplier([{ id: 'q1', createdAt: 1, supplierName: 'A', supplierId: 'dry', periodId: '2027-H1', offers: [offer('pasta', 2.7)] }], '2027-H1')
+  const r1 = applySupplierChoice(products, q1!, { idPrefix: 's1', supplierId: 'dry', hideNotOffered: true })
+  expect(r1.products.find((p) => p.id === 'rice')!.active).toBe(false)
+  expect(r1.products.find((p) => p.id === 'pasta')!.active).not.toBe(false)
+  expect(r1.products.find((p) => p.id === 'eggs')!.active).not.toBe(false)   // other category untouched
+  const [q2] = groupBySupplier([{ id: 'q2', createdAt: 2, supplierName: 'B', supplierId: 'dry', periodId: '2027-H2', offers: [offer('pasta', 2.8), offer('rice', 6)] }], '2027-H2')
+  const r2 = applySupplierChoice(r1.products, q2!, { idPrefix: 's2', supplierId: 'dry', hideNotOffered: true })
+  expect(r2.products.find((p) => p.id === 'rice')!.active).toBe(true)
+})

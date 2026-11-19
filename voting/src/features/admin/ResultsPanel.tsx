@@ -5,6 +5,7 @@ import { downloadCsv } from '../../lib/csv'
 import type { BasketAggregate, ProductStat, Winner } from '../../lib/algorithm'
 import { BudgetBar, Card, SectionHeader } from '../../ui/components'
 import { useAdmin } from './context'
+import { participants } from '../../data/legacy'
 
 export function WinnersTable({ winners, showPickers = true }: { winners: Winner[]; showPickers?: boolean }) {
   const total = winners.reduce((s, w) => s + w.cost, 0)
@@ -157,7 +158,7 @@ export function ResultsPanel() {
 
 export function OptimalPanel() {
   const { config, votes, results } = useAdmin()
-  const totalVotes = config.coordinators.filter((c) => votes[c.id]).length
+  const totalVotes = participants(config).filter((c) => votes[c.id]).length
   const main = results.pooled.main
   const ext = results.pooled.ext
 

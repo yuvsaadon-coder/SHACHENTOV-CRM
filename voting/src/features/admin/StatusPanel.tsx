@@ -1,12 +1,12 @@
 import { he, relTime } from '../../i18n/he'
 import { fmt1 } from '../../lib/format'
-import type { LegacyCoordinator } from '../../data/legacy'
+import { participants, type LegacyCoordinator } from '../../data/legacy'
 import { Card, SectionHeader, Stat } from '../../ui/components'
 import { useAdmin } from './context'
 
 export function StatusPanel() {
   const { config, votes } = useAdmin()
-  const { coordinators } = config
+  const coordinators = participants(config)
   const submitted = coordinators.filter((c) => votes[c.id])
   const pending = coordinators.filter((c) => !votes[c.id])
   const totalWeight = coordinators.reduce((s, c) => s + c.weight, 0)

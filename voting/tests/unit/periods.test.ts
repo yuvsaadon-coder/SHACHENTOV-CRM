@@ -28,3 +28,23 @@ test('holidays stay one distribution whatever the frequency', () => {
   }
   expect(branchDistributionPlan({ cycleType: 'rosh_hashana', frequencyWeeks: 2, avgBaskets: 85 }).counts).toEqual({ a: 43, b: 42, a_ext: 43, b_ext: 42 })
 })
+
+test('per-branch view: weight split equally within a branch; weighted view keeps individual weights', async () => {
+  const { computeCycleResults, computeBranchBaskets } = await import('../../src/lib/algorithm')
+  const products = [
+    { id: 'pasta', name: 'פסטה', price: 2, max: 10, cat: 'dry' },
+    { id: 'rice', name: 'אורז', price: 2, max: 10, cat: 'dry' },
+  ]
+  // same branch, unequal weights: A (1.0) wants pasta x4, B (0.5) wants rice x4, budget fits only one
+  const cycle = {
+    products,
+    coordinators: [{ id: 'A', branchId: 'x', weight: 1 }, { id: 'B', branchId: 'x', weight: 0.5 }],
+    baskets: [{ id: 'a', budget: 8, group: 'main', slot: 'A' as const }],
+  }
+  const votes = { A: { baskets: { a: { pasta: 4 } }, submittedAt: 1 }, B: { baskets: { a: { rice: 4 } }, submittedAt: 2 } }
+  const r = computeCycleResults({ cycle, votes })
+  expect(r.baskets.a!.winners.map((w) => w.pid)).toEqual(['pasta'])        // weighted: A outweighs B
+  const br = computeBranchBaskets({ cycle, results: r }).x!.baskets.a!
+  expect(br.ties).toHaveLength(1)                                           // per branch: equal say -> a tie
+  expect(br.voterWeight).toBe(1.5)                                          // branch total weight unchanged
+})

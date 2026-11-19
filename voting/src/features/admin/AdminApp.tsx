@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { he } from '../../i18n/he'
 import { computeCycleResults } from '../../lib/algorithm'
 import { useConfig, useStore, useVotes } from '../../data/hooks'
-import { toAlgoVotes, toCycleSnapshot } from '../../data/legacy'
+import { participants, toAlgoVotes, toCycleSnapshot } from '../../data/legacy'
+import { roundLabel } from './RoundsPanel'
 import { AdminContext, type AdminData } from './context'
 import { StatusPanel } from './StatusPanel'
 import { OptimalPanel, ResultsPanel } from './ResultsPanel'
@@ -37,12 +38,15 @@ export function AdminApp() {
   const data = useMemo<AdminData | null>(() => {
     if (!store || !config) return null
     const snapshot = toCycleSnapshot(config)
-    const results = computeCycleResults({ cycle: snapshot, votes: toAlgoVotes(votes) })
+    const ids = new Set(snapshot.coordinators.map((c) => c.id))
+    const results = computeCycleResults({ cycle: snapshot, votes: toAlgoVotes(Object.fromEntries(Object.entries(votes).filter(([id]) => ids.has(id)))) })
     return { store, config, votes, snapshot, results, now }
   }, [store, config, votes, now])
 
   if (!data) return <div className="center-msg">{he.loadingConfig}</div>
-  const submitted = data.config.coordinators.filter((c) => votes[c.id]).length
+  const voters = participants(data.config)
+  const submitted = voters.filter((c) => votes[c.id]).length
+  const label = roundLabel(data.config.round ?? {})
   const Panel = PANELS[tab]
   return (
     <AdminContext.Provider value={data}>
@@ -51,7 +55,7 @@ export function AdminApp() {
           <div className="kicker">{he.orgShort}</div>
           <h1>{he.adminTitle}</h1>
         </div>
-        <div className="count">{he.votedCount(submitted, data.config.coordinators.length)}</div>
+        <div className="count">{label && <>{label} · </>}{he.votedCount(submitted, voters.length)}</div>
         <a href="/" className="btn btn-small btn-ghost-light">{he.toSurvey}</a>
       </header>
       <nav className="tabs" role="tablist" aria-label={he.adminTitle}>

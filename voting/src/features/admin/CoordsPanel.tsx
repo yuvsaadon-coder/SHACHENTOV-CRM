@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { he } from '../../i18n/he'
 import { fmt1 } from '../../lib/format'
-import type { LegacyCoordinator } from '../../data/legacy'
+import { BRANCHES, type LegacyCoordinator } from '../../data/legacy'
 import { Card, Field, SectionHeader } from '../../ui/components'
 import { useAdmin } from './context'
 
@@ -13,7 +13,8 @@ export function CoordsPanel() {
   const [draft, setDraft] = useState<LegacyCoordinator>({ id: '', name: '', branch: '', weight: 1 })
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
-  const branches = [...new Set(config.coordinators.map((c) => c.branch))]
+  const branches = [...new Set([...BRANCHES.map((b) => b.name), ...config.coordinators.map((c) => c.branch)])]
+  const holidayOnly = new Set(BRANCHES.filter((b) => b.votesIn === 'holidays').map((b) => b.name))
 
   const startEdit = (c: LegacyCoordinator) => { setEditing(c.id); setDraft({ ...c }); setAdding(false) }
   const saveEdit = () => { setCoords((cs) => cs.map((c) => (c.id === editing ? { ...draft, name: draft.name.trim() } : c))); setEditing(null); setDirty(true) }
@@ -39,7 +40,7 @@ export function CoordsPanel() {
   }
   const branchSelect = (value: string, onChange: (v: string) => void) => (
     <select aria-label={he.branch} className="input" value={value} onChange={(e) => onChange(e.target.value)}>
-      {branches.map((b) => <option key={b} value={b}>{b}</option>)}
+      {branches.map((b) => <option key={b} value={b}>{holidayOnly.has(b) ? he.holidayOnlyBranch(b) : b}</option>)}
     </select>
   )
   const weightSelect = (value: number, onChange: (v: number) => void) => (

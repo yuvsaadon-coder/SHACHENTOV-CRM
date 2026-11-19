@@ -61,12 +61,19 @@ export function computeBranchBaskets({ cycle, results, options = {} }: {
   const priceOf: PriceMap = new Map(products.map((p) => [p.id, p.price]))
   const out: Record<string, BranchResult> = {}
   const branches = [...new Set(Object.keys(results.aligned).map((cid) => coordById.get(cid)!.branchId))].sort()
+  // Owner decision 19.11.2026: in the per-branch view a branch's weight is split EQUALLY between its coordinators
+  // (each gets the branch's average weight). Individual weights only matter in the weighted (unified) order.
+  const branchWeight = new Map<string, number>()
+  for (const br of branches) {
+    const ws = coordinators.filter((c) => c.branchId === br).map((c) => c.weight)
+    branchWeight.set(br, ws.reduce((a, w) => a + w, 0) / (ws.length || 1))
+  }
   for (const br of branches) {
     const res: BranchResult = { baskets: {} }
     for (const b of baskets) {
       const voters = Object.keys(results.aligned)
         .filter((cid) => coordById.get(cid)!.branchId === br && results.aligned[cid]![b.id])
-        .map((cid) => ({ id: cid, weight: coordById.get(cid)!.weight, branchId: br, items: results.aligned[cid]![b.id]! }))
+        .map((cid) => ({ id: cid, weight: branchWeight.get(br)!, branchId: br, items: results.aligned[cid]![b.id]! }))
       if (!voters.length) continue
       res.baskets[b.id] = aggregateBasket({ budget: b.budget, products, voters, priceOf, allowPartialFit: !!options.allowPartialFit })
     }

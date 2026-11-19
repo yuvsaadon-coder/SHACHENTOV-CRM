@@ -212,3 +212,5 @@ table.data tfoot td { border-block-start: var(--border); border-block-end: none;
 .txt-up { color: var(--over-fg); }
 .txt-down { color: var(--ok-fg); }
 .how-list { margin: 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 6px; }
+.wizard-sub { font-size: 16px; font-weight: 800; margin: 20px 0 8px; }
+.offered-toggle { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; cursor: pointer; }

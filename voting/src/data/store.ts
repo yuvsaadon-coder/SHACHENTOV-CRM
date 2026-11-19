@@ -3,6 +3,7 @@
 //  - Demo (browser localStorage) otherwise, so previews and E2E tests run without any backend.
 import type { LegacyConfig, LegacyVote, RoundState } from './legacy'
 import type { Discount, PeriodDecision } from '../lib/prices/history'
+import type { RoundMeta } from '../lib/rounds/recommend'
 
 /** History entry for an applied supplier quote (no files are stored; Spark plan has no Storage). */
 export interface QuoteRecord {
@@ -40,6 +41,11 @@ export interface Store {
   /** Which supplier a half-year order goes to (one document per period; each field written on its own). */
   saveSupplierChoice(periodId: string, category: string, supplierName: string, decidedAt: number): Promise<void>
   saveDiscount(periodId: string, category: string, discount: Discount | null): Promise<void>
+  /** Round history (one document per round): order type, budgets, price snapshot at opening. */
+  saveRoundMeta(meta: RoundMeta): Promise<void>
+  subscribeRoundMetas(cb: (m: Record<number, RoundMeta>) => void, onError?: (e: Error) => void): () => void
+  /** Votes archived when a round was closed/reset (for the budget recommendation). */
+  loadArchivedVotes(round: number): Promise<LegacyVote[]>
   /** keyed by decisionKey(periodId, category) */
   subscribeDecisions(cb: (d: Record<string, PeriodDecision>) => void, onError?: (e: Error) => void): () => void
 }

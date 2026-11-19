@@ -37,3 +37,15 @@ test('a legacy live config (no excludedBranches, Hebrew branch names) maps to th
   const r = computeCycleResults({ cycle: snap, votes })
   expect(r.issues.some((i) => i.type === 'ineligible_product')).toBe(true) // yoh (בקעה) cannot pick veg
 })
+
+test('holiday-only branches vote only in holiday orders; hidden products are not in the survey or the results', async () => {
+  const { participants } = await import('../../src/data/legacy')
+  const cfg = defaultConfig()
+  cfg.coordinators.push({ id: 'bs', name: 'רכזת בית שמש', branch: 'בית שמש', weight: 1 })
+  expect(participants({ ...cfg, round: { num: 15, open: true, orderType: 'half_year_1' } }).some((c) => c.id === 'bs')).toBe(false)
+  expect(participants({ ...cfg, round: { num: 15, open: true } }).some((c) => c.id === 'bs')).toBe(false)
+  expect(participants({ ...cfg, round: { num: 15, open: true, orderType: 'pesach' } }).some((c) => c.id === 'bs')).toBe(true)
+  cfg.products = cfg.products.map((p) => (p.id === 'coffee' ? { ...p, active: false } : p))
+  expect(visibleProducts(cfg, cfg.coordinators[0]!).some((p) => p.id === 'coffee')).toBe(false)
+  expect(toCycleSnapshot(cfg).products.some((p) => p.id === 'coffee')).toBe(false)
+})

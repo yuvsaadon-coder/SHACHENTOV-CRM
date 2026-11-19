@@ -4,11 +4,12 @@ import { downloadCsv } from '../../lib/csv'
 import type { Items } from '../../lib/algorithm'
 import { Card, SectionHeader } from '../../ui/components'
 import { useAdmin } from './context'
+import { participants } from '../../data/legacy'
 
 export function ComparePanel() {
   const { config, votes } = useAdmin()
   const [basket, setBasket] = useState(config.baskets[0]?.id ?? 'a')
-  const submitted = config.coordinators.filter((c) => votes[c.id])
+  const submitted = participants(config).filter((c) => votes[c.id])
   const qtyOf = (cid: string, pid: string) => ((votes[cid] as unknown as Record<string, Items | undefined>)[basket] ?? {})[pid] ?? 0
   const rowsProducts = config.products.filter((p) => submitted.some((c) => qtyOf(c.id, p.id)))
   const basketName = config.baskets.find((b) => b.id === basket)?.name ?? basket
