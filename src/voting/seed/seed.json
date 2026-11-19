@@ -1,0 +1,812 @@
+{
+ "_comment": "Seed derived from legacy data.js on 2026-11-18. IDs of products/coordinators are kept from the legacy file. Branch IDs are new ASCII slugs. Verify names/weights with the owner before first production cycle. | v2: suppliers, orderBranches (14, from the Pesach 2026 files), holiday-only voting branches (no coordinators yet), veg price 17 (holiday 30), eggs 11.8/17.7, chicken-w 19.9*1.85*1.18 (VAT assumed, OQ-22), challah supplier Bermann.",
+ "branches": [
+  {
+   "id": "baka",
+   "name": "בקעה",
+   "votesIn": "always"
+  },
+  {
+   "id": "gilo",
+   "name": "גילה",
+   "votesIn": "always"
+  },
+  {
+   "id": "neve-yaakov",
+   "name": "נווה יעקב",
+   "votesIn": "always"
+  },
+  {
+   "id": "nachlaot",
+   "name": "נחלאות",
+   "votesIn": "always"
+  },
+  {
+   "id": "katamon",
+   "name": "קטמון",
+   "votesIn": "always"
+  },
+  {
+   "id": "ramot",
+   "name": "רמות",
+   "votesIn": "always"
+  },
+  {
+   "id": "kiryat-menachem",
+   "name": "קרית מנחם",
+   "votesIn": "always"
+  },
+  {
+   "id": "beit-shemesh",
+   "name": "בית שמש",
+   "votesIn": "holidays"
+  },
+  {
+   "id": "tel-aviv",
+   "name": "תל אביב",
+   "votesIn": "holidays"
+  },
+  {
+   "id": "kadima",
+   "name": "קדימה",
+   "votesIn": "holidays"
+  }
+ ],
+ "products": [
+  {
+   "id": "pasta",
+   "name": "פסטה",
+   "price": 2.6,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🍝",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 0,
+   "supplier": "dry"
+  },
+  {
+   "id": "rice",
+   "name": "אורז",
+   "price": 6.61,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🍚",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 1,
+   "supplier": "dry"
+  },
+  {
+   "id": "grape",
+   "name": "מיץ ענבים",
+   "price": 6.2,
+   "max": 1,
+   "cat": "dry",
+   "emoji": "🍇",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 2,
+   "supplier": "dry"
+  },
+  {
+   "id": "paste",
+   "name": "רסק עגבניות",
+   "price": 5.9,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🥫",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 3,
+   "supplier": "dry"
+  },
+  {
+   "id": "pickles",
+   "name": "מלפפונים חמוצים",
+   "price": 5.19,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🥒",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 4,
+   "supplier": "dry"
+  },
+  {
+   "id": "beans-r",
+   "name": "שעועית ברוטב",
+   "price": 6.49,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🫘",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 5,
+   "supplier": "dry"
+  },
+  {
+   "id": "oil",
+   "name": "שמן",
+   "price": 7.32,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🫒",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 6,
+   "supplier": "dry"
+  },
+  {
+   "id": "tuna",
+   "name": "טונה",
+   "price": 3.3,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🐟",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 7,
+   "supplier": "dry"
+  },
+  {
+   "id": "couscous",
+   "name": "קוסקוס",
+   "price": 3.54,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🌾",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 8,
+   "supplier": "dry"
+  },
+  {
+   "id": "ptitim",
+   "name": "פתיתים",
+   "price": 3.54,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "⚪",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 9,
+   "supplier": "dry"
+  },
+  {
+   "id": "olives",
+   "name": "זיתים",
+   "price": 7.79,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🫒",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 10,
+   "supplier": "dry"
+  },
+  {
+   "id": "corn",
+   "name": "תירס",
+   "price": 4.72,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🌽",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 11,
+   "supplier": "dry"
+  },
+  {
+   "id": "tahini",
+   "name": "טחינה",
+   "price": 9.32,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🥜",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 12,
+   "supplier": "dry"
+  },
+  {
+   "id": "buckwheat",
+   "name": "כוסמת",
+   "price": 4.72,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🌾",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 13,
+   "supplier": "dry"
+  },
+  {
+   "id": "beans-w",
+   "name": "שעועית לבנה",
+   "price": 5.9,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🫘",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 14,
+   "supplier": "dry"
+  },
+  {
+   "id": "grits",
+   "name": "גריסים",
+   "price": 3.19,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🌾",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 15,
+   "supplier": "dry"
+  },
+  {
+   "id": "bulgur",
+   "name": "בורגול",
+   "price": 3.19,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🌾",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 16,
+   "supplier": "dry"
+  },
+  {
+   "id": "peas",
+   "name": "אפונה",
+   "price": 3.89,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🟢",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 17,
+   "supplier": "dry"
+  },
+  {
+   "id": "wheat",
+   "name": "חיטה",
+   "price": 3.19,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🌾",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 18,
+   "supplier": "dry"
+  },
+  {
+   "id": "chickpeas",
+   "name": "חומוס",
+   "price": 5.31,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🟡",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 19,
+   "supplier": "dry"
+  },
+  {
+   "id": "fruit-can",
+   "name": "אננס/אפרסק 400 גר'",
+   "price": 7.08,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🍑",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 20,
+   "supplier": "dry"
+  },
+  {
+   "id": "mushrooms",
+   "name": "פטריות",
+   "price": 4.25,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🍄",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 21,
+   "supplier": "dry"
+  },
+  {
+   "id": "choco",
+   "name": "ממרח שוקולד",
+   "price": 6.96,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🍫",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 22,
+   "supplier": "dry"
+  },
+  {
+   "id": "coffee",
+   "name": "קפה",
+   "price": 8.14,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "☕",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 23,
+   "supplier": "dry"
+  },
+  {
+   "id": "sugar",
+   "name": "סוכר",
+   "price": 4.13,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🧂",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 24,
+   "supplier": "dry"
+  },
+  {
+   "id": "flour",
+   "name": "קמח",
+   "price": 3.42,
+   "max": 10,
+   "cat": "dry",
+   "emoji": "🌾",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 25,
+   "supplier": "dry"
+  },
+  {
+   "id": "veg",
+   "name": "ירקות",
+   "price": 17,
+   "max": 10,
+   "cat": "fresh",
+   "emoji": "🥬",
+   "excludedBranches": [
+    "baka",
+    "katamon"
+   ],
+   "active": true,
+   "sortOrder": 26,
+   "holidayPrice": 30,
+   "supplier": "vegetables"
+  },
+  {
+   "id": "challah",
+   "name": "חלה",
+   "price": 4.8,
+   "max": 10,
+   "cat": "fresh",
+   "emoji": "🥖",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 27,
+   "supplier": "bermann"
+  },
+  {
+   "id": "eggs",
+   "name": "ביצים",
+   "price": 11.8,
+   "max": 10,
+   "cat": "fresh",
+   "emoji": "🥚",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 28,
+   "supplier": "eggs",
+   "priceVariants": {
+    "attr": "eggPack",
+    "prices": {
+     "12": 11.8,
+     "18": 17.7
+    }
+   }
+  },
+  {
+   "id": "chicken-w",
+   "name": "עוף שלם",
+   "price": 43.44,
+   "max": 10,
+   "cat": "fresh",
+   "emoji": "🍗",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 29,
+   "supplier": "poultry"
+  },
+  {
+   "id": "chicken-g",
+   "name": "עוף טחון",
+   "price": 20,
+   "max": 10,
+   "cat": "fresh",
+   "emoji": "🍖",
+   "excludedBranches": [],
+   "active": true,
+   "sortOrder": 30,
+   "supplier": "poultry"
+  }
+ ],
+ "coordinators": [
+  {
+   "id": "yoh",
+   "name": "יוחאי אבוטבול",
+   "branchId": "baka",
+   "weight": 1,
+   "active": true
+  },
+  {
+   "id": "lea",
+   "name": "לאה ליבנת",
+   "branchId": "gilo",
+   "weight": 1,
+   "active": true
+  },
+  {
+   "id": "nao",
+   "name": "נעמי",
+   "branchId": "neve-yaakov",
+   "weight": 1,
+   "active": true
+  },
+  {
+   "id": "oz",
+   "name": "עוז בינר",
+   "branchId": "nachlaot",
+   "weight": 0.5,
+   "active": true
+  },
+  {
+   "id": "has",
+   "name": "הדס",
+   "branchId": "nachlaot",
+   "weight": 0.5,
+   "active": true
+  },
+  {
+   "id": "tzi",
+   "name": "ציפי",
+   "branchId": "katamon",
+   "weight": 0.5,
+   "active": true
+  },
+  {
+   "id": "est",
+   "name": "אסתי בראור",
+   "branchId": "katamon",
+   "weight": 0.5,
+   "active": true
+  },
+  {
+   "id": "avi",
+   "name": "אביטל עזיז",
+   "branchId": "katamon",
+   "weight": 0.5,
+   "active": true
+  },
+  {
+   "id": "kar",
+   "name": "כרמל קרופפלד",
+   "branchId": "katamon",
+   "weight": 0.5,
+   "active": true
+  },
+  {
+   "id": "yai",
+   "name": "יאיר יעקבי",
+   "branchId": "ramot",
+   "weight": 1,
+   "active": true
+  },
+  {
+   "id": "yeh",
+   "name": "יהודית",
+   "branchId": "kiryat-menachem",
+   "weight": 0.5,
+   "active": true
+  },
+  {
+   "id": "ben",
+   "name": "בני",
+   "branchId": "kiryat-menachem",
+   "weight": 0.5,
+   "active": true
+  },
+  {
+   "id": "dov",
+   "name": "דב",
+   "branchId": "kiryat-menachem",
+   "weight": 0.5,
+   "active": true
+  },
+  {
+   "id": "eli",
+   "name": "אלישי",
+   "branchId": "kiryat-menachem",
+   "weight": 0.5,
+   "active": true
+  }
+ ],
+ "basketTemplate": [
+  {
+   "id": "a",
+   "name": "סל א'",
+   "budget": 80,
+   "group": "main",
+   "slot": "A",
+   "legacyDesc": "הסל הבסיסי"
+  },
+  {
+   "id": "a_ext",
+   "name": "הרחבה לסל א'",
+   "budget": 20,
+   "group": "ext",
+   "slot": "A",
+   "legacyDesc": "תוספת לסל הבסיסי"
+  },
+  {
+   "id": "b",
+   "name": "סל ב'",
+   "budget": 80,
+   "group": "main",
+   "slot": "B",
+   "legacyDesc": "הסל המורחב"
+  },
+  {
+   "id": "b_ext",
+   "name": "הרחבה לסל ב'",
+   "budget": 20,
+   "group": "ext",
+   "slot": "B",
+   "legacyDesc": "תוספת לסל המורחב"
+  }
+ ],
+ "suppliers": [
+  {
+   "id": "dry",
+   "name": "ספק יבשים",
+   "kind": "dry",
+   "showPrices": true
+  },
+  {
+   "id": "eggs",
+   "name": "ספק ביצים",
+   "kind": "eggs",
+   "showPrices": false
+  },
+  {
+   "id": "poultry",
+   "name": "ספק עופות",
+   "kind": "poultry",
+   "showPrices": false
+  },
+  {
+   "id": "vegetables",
+   "name": "ירקות תכלית",
+   "kind": "vegetables",
+   "showPrices": false
+  },
+  {
+   "id": "bermann",
+   "name": "ברמן (חלות)",
+   "kind": "bakery",
+   "showPrices": false
+  }
+ ],
+ "orderBranches": [
+  {
+   "id": "baka",
+   "name": "בקעה",
+   "votingBranchId": "baka",
+   "active": true,
+   "suppliers": [
+    "dry",
+    "bermann",
+    "eggs",
+    "poultry",
+    "vegetables"
+   ],
+   "attrs": {
+    "eggPack": 18
+   }
+  },
+  {
+   "id": "gilo",
+   "name": "גילה",
+   "votingBranchId": "gilo",
+   "active": true,
+   "suppliers": [
+    "dry",
+    "bermann",
+    "eggs",
+    "poultry"
+   ],
+   "attrs": {
+    "eggPack": 18
+   }
+  },
+  {
+   "id": "neve-yaakov",
+   "name": "נווה יעקב",
+   "votingBranchId": "neve-yaakov",
+   "active": true,
+   "suppliers": [
+    "dry",
+    "bermann",
+    "eggs",
+    "poultry",
+    "vegetables"
+   ],
+   "attrs": {
+    "eggPack": 18
+   }
+  },
+  {
+   "id": "nachlaot",
+   "name": "נחלאות",
+   "votingBranchId": "nachlaot",
+   "active": true,
+   "suppliers": [
+    "dry",
+    "bermann",
+    "eggs",
+    "poultry",
+    "vegetables"
+   ],
+   "attrs": {
+    "eggPack": 18
+   }
+  },
+  {
+   "id": "katamon",
+   "name": "קטמון (כולל הרב שחר, קידום נוער, רמת אשכול)",
+   "votingBranchId": "katamon",
+   "active": true,
+   "suppliers": [
+    "dry",
+    "bermann",
+    "eggs",
+    "poultry"
+   ],
+   "attrs": {
+    "eggPack": 18
+   }
+  },
+  {
+   "id": "kiryat-menachem",
+   "name": "קרית מנחם",
+   "votingBranchId": "kiryat-menachem",
+   "active": true,
+   "suppliers": [
+    "dry",
+    "bermann",
+    "eggs",
+    "poultry"
+   ],
+   "attrs": {
+    "eggPack": 18
+   }
+  },
+  {
+   "id": "ramot",
+   "name": "רמות",
+   "votingBranchId": "ramot",
+   "active": true,
+   "suppliers": [
+    "dry",
+    "bermann",
+    "eggs",
+    "poultry",
+    "vegetables"
+   ],
+   "attrs": {
+    "eggPack": 12
+   }
+  },
+  {
+   "id": "maale-adumim",
+   "name": "מעלה אדומים-מרב",
+   "votingBranchId": null,
+   "active": true,
+   "suppliers": [
+    "dry",
+    "bermann",
+    "eggs"
+   ],
+   "attrs": {
+    "eggPack": 12
+   }
+  },
+  {
+   "id": "tel-aviv",
+   "name": "תל אביב",
+   "votingBranchId": "tel-aviv",
+   "active": true,
+   "suppliers": [
+    "dry",
+    "bermann"
+   ],
+   "attrs": {
+    "eggPack": 18
+   }
+  },
+  {
+   "id": "kadima",
+   "name": "קדימה",
+   "votingBranchId": "kadima",
+   "active": true,
+   "suppliers": [
+    "dry",
+    "bermann"
+   ],
+   "attrs": {
+    "eggPack": 18
+   }
+  },
+  {
+   "id": "beit-shemesh",
+   "name": "בית שמש",
+   "votingBranchId": "beit-shemesh",
+   "active": true,
+   "suppliers": [
+    "dry",
+    "bermann"
+   ],
+   "attrs": {
+    "eggPack": 18
+   }
+  },
+  {
+   "id": "nachlaot-rav-shimon",
+   "name": "נחלאות רב שמעון",
+   "votingBranchId": null,
+   "active": true,
+   "suppliers": [
+    "dry",
+    "bermann",
+    "eggs"
+   ],
+   "attrs": {
+    "eggPack": 12
+   }
+  },
+  {
+   "id": "shlomi-katamon",
+   "name": "שלומי קטמון",
+   "votingBranchId": null,
+   "active": true,
+   "suppliers": [
+    "dry",
+    "bermann",
+    "eggs"
+   ],
+   "attrs": {
+    "eggPack": 12
+   }
+  },
+  {
+   "id": "savta-rivka",
+   "name": "סבתא רבקא",
+   "votingBranchId": null,
+   "active": true,
+   "suppliers": [
+    "dry",
+    "bermann",
+    "eggs"
+   ],
+   "attrs": {
+    "eggPack": 12
+   }
+  }
+ ]
+}
