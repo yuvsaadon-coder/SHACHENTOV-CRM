@@ -3,11 +3,9 @@ import { HQKnowledgePage } from './HQKnowledgePage'
 import { FinanceTab } from '../components/hq-knowledge/FinanceTab'
 import { OfficialTab } from '../components/hq-knowledge/OfficialTab'
 import { DriveLinksTab } from '../components/hq-knowledge/DriveLinksTab'
-import { PartnersTab } from '../components/hq-knowledge/PartnersTab'
-import { SuppliersTab } from '../components/hq-knowledge/SuppliersTab'
 import { ErrorBoundary } from '../components/ui/ErrorBoundary'
 
-type TabId = 'general' | 'finance' | 'official' | 'drive' | 'partners' | 'suppliers'
+type TabId = 'general' | 'finance' | 'official' | 'drive'
 
 interface Tab {
   id: TabId
@@ -20,8 +18,6 @@ const TABS: Tab[] = [
   { id: 'finance', label: 'דוחות כספיים', icon: '💰' },
   { id: 'official', label: 'טפסים רשמיים', icon: '📋' },
   { id: 'drive', label: 'מסמכי דרייב', icon: '📁' },
-  { id: 'partners', label: 'שותפים ופלטפורמות', icon: '🤝' },
-  { id: 'suppliers', label: 'ספקים', icon: '🏪' },
 ]
 
 export function HQKnowledgeShell() {
@@ -90,30 +86,6 @@ export function HQKnowledgeShell() {
               </div>
             </div>
             <DriveLinksTab />
-          </div>
-        )}
-        {activeTab === 'partners' && (
-          <div>
-            <div className="flex items-center gap-2 mb-5">
-              <span className="text-2xl">🤝</span>
-              <div>
-                <h1 className="text-2xl font-bold" style={{ color: '#141348' }}>שותפים ופלטפורמות</h1>
-                <p className="text-sm text-gray-500 mt-0.5">מערכות סליקה, פלטפורמות התנדבות ושותפויות</p>
-              </div>
-            </div>
-            <PartnersTab />
-          </div>
-        )}
-        {activeTab === 'suppliers' && (
-          <div>
-            <div className="flex items-center gap-2 mb-5">
-              <span className="text-2xl">🏪</span>
-              <div>
-                <h1 className="text-2xl font-bold" style={{ color: '#141348' }}>ספקים</h1>
-                <p className="text-sm text-gray-500 mt-0.5">ספקים ונותני שירות של העמותה</p>
-              </div>
-            </div>
-            <SuppliersTab />
           </div>
         )}
         </ErrorBoundary>

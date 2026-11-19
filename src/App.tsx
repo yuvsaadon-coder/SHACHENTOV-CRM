@@ -18,6 +18,7 @@ import { PortalReport } from './pages/portal/PortalReport'
 import { PortalKnowledge } from './pages/portal/PortalKnowledge'
 import { PortalChat } from './pages/portal/PortalChat'
 import { PortalVolunteers } from './pages/portal/PortalVolunteers'
+import { PortalBranch } from './pages/portal/PortalBranch'
 import { VolunteerPage } from './pages/VolunteerPage'
 import { BranchesAdminPage } from './pages/admin/BranchesAdminPage'
 import { KnowledgeAdminPage } from './pages/admin/KnowledgeAdminPage'
@@ -28,6 +29,7 @@ import { BranchesPage } from './pages/BranchesPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { KnowledgeLibraryPage } from './pages/KnowledgeLibraryPage'
 import { HQKnowledgeShell } from './pages/HQKnowledgeShell'
+import { PartnersSuppliersShell } from './pages/PartnersSuppliersShell'
 import { HQChatPage } from './pages/HQChatPage'
 import { Spinner } from './components/ui/Spinner'
 import { ToastProvider } from './context/ToastContext'
@@ -89,6 +91,7 @@ export default function App() {
             <Route path="knowledge" element={<PortalKnowledge />} />
             <Route path="chat" element={<PortalChat />} />
             <Route path="volunteers" element={<PortalVolunteers />} />
+            <Route path="branch" element={<PortalBranch />} />
           </Route>
 
           {/* HQ — with sidebar */}
@@ -112,6 +115,7 @@ export default function App() {
             <Route path="reports" element={<ReportsPage />} />
             <Route path="knowledge" element={<KnowledgeLibraryPage />} />
             <Route path="hq-knowledge" element={<HQKnowledgeShell />} />
+            <Route path="partners-suppliers" element={<PartnersSuppliersShell />} />
             <Route path="hq-chat" element={<HQChatPage />} />
             <Route path="admin/hierarchy" element={<HierarchySetupPage />} />
             <Route path="admin/branches" element={<BranchesAdminPage />} />

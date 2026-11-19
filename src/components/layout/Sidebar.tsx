@@ -30,6 +30,7 @@ const navGroups: NavGroup[] = [
     title: 'מאגר ידע',
     items: [
       { to: '/hq-knowledge', label: 'מאגר ידע מטה', icon: '🗃️', adminOnly: false },
+      { to: '/partners-suppliers', label: 'שותפים וספקים', icon: '🤝', adminOnly: false },
       { to: '/knowledge', label: 'ספריית ידע', icon: '📚', adminOnly: false },
       { to: '/hq-chat', label: "צ'אטבוט מטה", icon: '🤖', adminOnly: false },
       { to: '/admin/knowledge', label: 'ניהול ספרייה', icon: '📖', adminOnly: true },

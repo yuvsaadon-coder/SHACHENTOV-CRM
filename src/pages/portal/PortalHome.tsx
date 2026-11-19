@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import { useQuarterlyReports } from '../../hooks/useQuarterlyReports'
 import { useAllReportQuestions } from '../../hooks/useReportQuestions'
-import { useBranchSuppliers } from '../../hooks/useBranchSuppliers'
 import type { PortalOutletContext } from './CoordinatorPortal'
 import type { QuarterlyReport } from '../../types'
 import { QUARTER_LABELS } from '../../types'
@@ -72,7 +71,6 @@ export function PortalHome() {
   const { branch } = useOutletContext<PortalOutletContext>()
   const { reports } = useQuarterlyReports(branch.id)
   const { labelByKey } = useAllReportQuestions()
-  const { suppliers, partners, loading: supLoading, error: supError } = useBranchSuppliers(branch.id)
 
   return (
     <div className="p-4 space-y-5 max-w-lg mx-auto">
@@ -94,6 +92,13 @@ export function PortalHome() {
         >
           <span className="text-3xl">📋</span>
           <span className="text-sm font-medium" style={{ color: '#141348' }}>מלא דיווח רבעוני</span>
+        </Link>
+        <Link
+          to="/portal/branch"
+          className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col items-center gap-2 hover:shadow-md transition-shadow text-center"
+        >
+          <span className="text-3xl">🏬</span>
+          <span className="text-sm font-medium" style={{ color: '#141348' }}>הסניף שלי</span>
         </Link>
         <Link
           to="/portal/knowledge"
@@ -125,43 +130,6 @@ export function PortalHome() {
           <span className="text-3xl">💸</span>
           <span className="text-sm font-medium" style={{ color: '#141348' }}>טופס בקשה להחזר הוצאות</span>
         </a>
-      </div>
-
-      {/* Suppliers & partners of this branch */}
-      <div>
-        <h2 className="font-bold mb-3" style={{ color: '#141348' }}>הספקים והשותפים של הסניף</h2>
-        {supLoading ? (
-          <div className="text-sm text-gray-400 text-center py-3">טוען...</div>
-        ) : supError ? (
-          <div className="bg-white rounded-xl p-4 text-center text-sm text-gray-400 border border-gray-100">לא ניתן לטעון את הספקים כרגע</div>
-        ) : suppliers.length === 0 && partners.length === 0 ? (
-          <div className="bg-white rounded-xl p-4 text-center text-sm text-gray-400 border border-gray-100">עדיין לא שויכו ספקים לסניף</div>
-        ) : (
-          <div className="space-y-2">
-            {suppliers.map((s) => (
-              <div key={s.id} className="bg-white rounded-xl border border-gray-100 px-4 py-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <span>🚚</span>
-                  <span className="font-medium" style={{ color: '#141348' }}>{s.name}</span>
-                </div>
-                {s.categories.length > 0 && <div className="text-xs text-gray-400 mt-0.5">{s.categories.join(', ')}</div>}
-                <div className="flex flex-wrap gap-3 mt-1.5 text-xs">
-                  {s.contactName && <span className="text-gray-500">👤 {s.contactName}</span>}
-                  {s.phone && <a href={`tel:${s.phone}`} className="text-[#189A9F]" dir="ltr">📞 {s.phone}</a>}
-                  {s.email && <a href={`mailto:${s.email}`} className="text-[#189A9F]" dir="ltr">✉️ {s.email}</a>}
-                  {s.websiteUrl && <a href={s.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-[#189A9F]">🌐 אתר</a>}
-                </div>
-              </div>
-            ))}
-            {partners.map((p) => (
-              <div key={p.id} className="bg-white rounded-xl border border-gray-100 px-4 py-3 text-sm flex items-center gap-2">
-                <span>🤝</span>
-                <span className="font-medium" style={{ color: '#141348' }}>{p.name}</span>
-                {p.websiteUrl && <a href={p.websiteUrl} target="_blank" rel="noopener noreferrer" className="mr-auto text-xs text-[#189A9F]">🌐 אתר</a>}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* My reports */}

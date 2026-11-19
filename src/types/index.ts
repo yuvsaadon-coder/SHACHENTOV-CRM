@@ -528,6 +528,8 @@ export interface HQPartner {
   branchIds?: string[]
   supplierCategories?: string[]
   files?: HQFileRef[]
+  /** Logo stored in Firebase Storage (see netlify/functions/fetch-logo). */
+  logoUrl?: string
   active: boolean
   createdBy: string
   updatedBy?: string
@@ -566,6 +568,8 @@ export interface HQSupplier {
   partnerStatus?: PartnerStatus
   statusHistory?: PartnerStatusChange[]
   files?: HQFileRef[]
+  /** Logo stored in Firebase Storage (see netlify/functions/fetch-logo). */
+  logoUrl?: string
   active: boolean
   createdBy: string
   updatedBy?: string

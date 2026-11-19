@@ -4,6 +4,7 @@ import { transferPartnerToSupplier } from '../../lib/hqTransfer'
 import { useToast } from '../../context/ToastContext'
 import { BranchMultiSelect, BranchChips } from '../ui/BranchMultiSelect'
 import { FileLinkList } from '../ui/FileLinkList'
+import { OrgLogo } from '../ui/OrgLogo'
 import {
   PARTNER_TYPE_LABELS, PARTNER_STATUS_LABELS, PARTNER_CAT_LABELS,
   PAYMENT_METHOD_LABELS, RECEIPT_GEN_LABELS, PARTNER_USED_FOR_LABELS,
@@ -41,8 +42,8 @@ interface FormState {
   files: HQFileRef[]
 }
 
-function emptyForm(): FormState {
-  return { name: '', partnerType: 'partner', categories: [], status: 'potential', websiteUrl: '', adminUrl: '', notes: '', paymentMethods: [], receiptGeneration: '', usedFor: [], branchIds: [], files: [] }
+function emptyForm(defaultType: PartnerType = 'partner'): FormState {
+  return { name: '', partnerType: defaultType, categories: [], status: 'potential', websiteUrl: '', adminUrl: '', notes: '', paymentMethods: [], receiptGeneration: '', usedFor: [], branchIds: [], files: [] }
 }
 
 function toggleArr<T>(arr: T[], val: T): T[] {
@@ -65,7 +66,7 @@ function CheckboxGroup<T extends string>({ label, options, value, onChange }: { 
   )
 }
 
-function PartnerForm({ initial, onSave, onClose, uid }: { initial?: HQPartner; onSave: (form: FormState, prevStatus?: PartnerStatus) => Promise<void>; onClose: () => void; uid: string }) {
+function PartnerForm({ initial, onSave, onClose, uid, types, defaultType }: { initial?: HQPartner; onSave: (form: FormState, prevStatus?: PartnerStatus) => Promise<void>; onClose: () => void; uid: string; types: PartnerType[]; defaultType: PartnerType }) {
   const [form, setForm] = useState<FormState>(
     initial
       ? {
@@ -82,7 +83,7 @@ function PartnerForm({ initial, onSave, onClose, uid }: { initial?: HQPartner; o
           branchIds: initial.branchIds ?? [],
           files: initial.files ?? [],
         }
-      : emptyForm()
+      : emptyForm(defaultType)
   )
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
@@ -115,7 +116,7 @@ function PartnerForm({ initial, onSave, onClose, uid }: { initial?: HQPartner; o
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-gray-700">סוג</label>
             <select className="border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.partnerType} onChange={(e) => setForm((f) => ({ ...f, partnerType: e.target.value as PartnerType }))}>
-              {PARTNER_TYPES.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              {PARTNER_TYPES.filter(([k]) => types.includes(k) || k === form.partnerType).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1">
@@ -179,9 +180,7 @@ function PartnerCard({ partner: p, isAdmin, onEdit, onTransfer }: { partner: HQP
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden hover:shadow-md transition-shadow">
       <div className="p-4 flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold text-white text-sm" style={{ backgroundColor: '#141348' }}>
-          {p.name.slice(0, 2)}
-        </div>
+        <OrgLogo name={p.name} logoUrl={p.logoUrl} websiteUrl={p.websiteUrl} size={44} />
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-sm leading-snug" style={{ color: '#141348' }}>{p.name}</div>
           <div className="flex flex-wrap items-center gap-1.5 mt-1">
@@ -249,7 +248,10 @@ function PartnerCard({ partner: p, isAdmin, onEdit, onTransfer }: { partner: HQP
   )
 }
 
-export function PartnersTab() {
+const ALL_PARTNER_TYPES: PartnerType[] = ['payment', 'volunteering', 'partner']
+
+/** `types` limits the tab to some kinds: partners only, or the payment and volunteering platforms. */
+export function PartnersTab({ types = ALL_PARTNER_TYPES, defaultType = 'partner', emptyText = 'אין שותפים' }: { types?: PartnerType[]; defaultType?: PartnerType; emptyText?: string } = {}) {
   const { partners, loading } = useHQPartners()
   const addPartner = useAddHQPartner()
   const updatePartner = useUpdateHQPartner()
@@ -300,6 +302,7 @@ export function PartnersTab() {
   }
 
   const filtered = partners.filter((p) => {
+    if (!types.includes(p.partnerType)) return false
     if (typeFilter !== 'all' && p.partnerType !== typeFilter) return false
     if (statusFilter !== 'all' && p.status !== statusFilter) return false
     if (search && !p.name.includes(search)) return false
@@ -321,10 +324,12 @@ export function PartnersTab() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select className="border border-gray-200 rounded-lg px-3 py-2 text-sm" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+        {types.length > 1 && (
+          <select className="border border-gray-200 rounded-lg px-3 py-2 text-sm" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
           <option value="all">כל הסוגים</option>
-          {PARTNER_TYPES.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          {PARTNER_TYPES.filter(([k]) => types.includes(k)).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
+        )}
         <select className="border border-gray-200 rounded-lg px-3 py-2 text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="all">כל הסטטוסים</option>
           {PARTNER_STATUSES.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -343,7 +348,7 @@ export function PartnersTab() {
       {loading ? (
         <div className="text-sm text-gray-400 py-8 text-center">טוען...</div>
       ) : filtered.length === 0 ? (
-        <div className="text-sm text-gray-400 py-8 text-center">אין שותפים</div>
+        <div className="text-sm text-gray-400 py-8 text-center">{emptyText}</div>
       ) : (
         Object.entries(grouped).map(([type, items]) => (
           <div key={type}>
@@ -389,6 +394,8 @@ export function PartnersTab() {
       {showForm && (
         <PartnerForm
           uid={firebaseUser?.uid ?? ''}
+          types={types}
+          defaultType={defaultType}
           initial={editing ?? undefined}
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditing(null) }}

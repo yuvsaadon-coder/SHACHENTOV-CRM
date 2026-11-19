@@ -10,6 +10,7 @@ export type PortalOutletContext = { branch: Branch }
 const NAV_ITEMS = [
   { to: '/portal/home',       label: 'בית',    icon: '🏠' },
   { to: '/portal/volunteers', label: 'שיבוץ',  icon: '📅' },
+  { to: '/portal/branch',     label: 'הסניף',  icon: '🏬' },
   { to: '/portal/report',     label: 'דיווח',  icon: '📋' },
   { to: '/portal/knowledge',  label: 'ידע',    icon: '📚' },
   { to: '/portal/chat',       label: "צ'אט",   icon: '🤖' },
@@ -115,13 +116,13 @@ export function CoordinatorPortal() {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex-1 flex flex-col items-center gap-0.5 py-1.5 transition-colors ${
+              `flex-1 min-w-0 flex flex-col items-center gap-0.5 py-1.5 transition-colors ${
                 isActive ? 'text-[#189A9F]' : 'text-gray-500'
               }`
             }
           >
             <span className="text-lg leading-none">{item.icon}</span>
-            <span className="text-[10px]">{item.label}</span>
+            <span className="text-[10px] leading-tight">{item.label}</span>
           </NavLink>
         ))}
       </nav>

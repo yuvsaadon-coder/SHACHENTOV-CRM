@@ -13,6 +13,7 @@ const NAV_CARDS: NavCard[] = [
   { to: '/tasks',         icon: '✅', label: 'משימות'         },
   { to: '/orgchart',      icon: '🌳', label: 'מבנה ארגוני'   },
   { to: '/hq-knowledge',  icon: '🗃️', label: 'מאגר ידע'      },
+  { to: '/partners-suppliers', icon: '🤝', label: 'שותפים וספקים' },
   { to: '/hq-chat',       icon: '🤖', label: "צ'אטבוט"        },
   { to: '/reports',       icon: '📈', label: 'דיווחים'        },
   { to: '/branches',      icon: '🏪', label: 'סניפים'         },

@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext'
 import type { HQSupplier, HQFileRef, Contact } from '../../types'
 import { BranchMultiSelect, BranchChips } from '../ui/BranchMultiSelect'
 import { FileLinkList } from '../ui/FileLinkList'
+import { OrgLogo } from '../ui/OrgLogo'
 import { useAuth } from '../../context/AuthContext'
 import { useContacts } from '../../hooks/useContacts'
 
@@ -166,9 +167,7 @@ function SupplierCard({ supplier: s, isAdmin, onEdit, onTransfer, linkedContacts
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col overflow-hidden hover:shadow-md transition-shadow">
       <div className="p-4 flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold text-white text-sm bg-indigo-700">
-          {s.name.slice(0, 2)}
-        </div>
+        <OrgLogo name={s.name} logoUrl={s.logoUrl} websiteUrl={s.websiteUrl} size={44} />
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-sm leading-snug" style={{ color: '#141348' }}>{s.name}</div>
           <div className="flex items-center gap-1.5 mt-1">

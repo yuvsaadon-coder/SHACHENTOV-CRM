@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 
+export interface BranchContact { name: string; phone?: string; email?: string; role?: string; organization?: string }
 export interface BranchSupplier {
   id: string; name: string; categories: string[]
-  contactName?: string; phone?: string; email?: string; websiteUrl?: string; status?: string
+  contactName?: string; phone?: string; email?: string; websiteUrl?: string; logoUrl?: string; status?: string
+  contacts: BranchContact[]
 }
-export interface BranchPartner { id: string; name: string; partnerType?: string; websiteUrl?: string; status?: string }
+export interface BranchPartner { id: string; name: string; partnerType?: string; websiteUrl?: string; logoUrl?: string; status?: string; contacts: BranchContact[] }
 
 /** Suppliers and partners of a branch, via the server (coordinators cannot read HQ collections directly). */
 export function useBranchSuppliers(branchId: string) {
