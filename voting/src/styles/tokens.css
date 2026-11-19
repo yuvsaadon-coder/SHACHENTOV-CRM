@@ -1,0 +1,20 @@
+/* Design tokens (SPEC §12.2, taken from the legacy site) */
+:root {
+  --bg: #FAF6EC;
+  --accent: #1B5E3F;
+  --ink: #1a1a1a;
+  --paper: #ffffff;
+  --muted: #6b5d4d;
+  --muted-2: #776655;      /* darker than legacy #998877 to pass WCAG AA on cream */
+  --line-soft: #e8dfc8;
+  --sand: #F5EFE0;
+  --ok-bg: #E8F5E9;  --ok-fg: #1B5E3F;
+  --warn-bg: #FFF4D6; --warn-fg: #7A5900;
+  --over-bg: #FFE5E2; --over-fg: #B01A0F;
+  --font: 'Heebo', system-ui, sans-serif;
+  --border: 2px solid var(--ink);
+  --shadow: 4px 4px 0 var(--ink);
+  --shadow-sm: 3px 3px 0 var(--ink);
+  --radius: 4px;
+  --tap: 44px;
+}

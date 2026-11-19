@@ -1,0 +1,209 @@
+// =====================================================================
+//  Shachen Tov — Firestore security rules  (DRAFT v0.1, 2026-11-18)
+//
+//  STATUS: NOT TESTED. Written without access to the Firebase Emulator.
+//  Do NOT deploy until every case in SPEC.md §9.5 passes with
+//  @firebase/rules-unit-testing against the emulator.
+//
+//  Model (SPEC.md §8, §9):
+//   - Admins sign in with Google; their e-mail must exist as /admins/{email}.
+//   - Coordinators sign in anonymously and "claim" a coordinator identity by
+//     presenting the personal code (stored in /coordinatorSecrets, never readable
+//     by clients). The claim is /claims/{uid}.
+//   - Coordinators can read only the public part of a non-draft cycle, and read/
+//     write only their own vote, only while the cycle is open and before closesAt.
+//   - Everything sensitive about a cycle (weights, overrides, final decision) lives in
+//     /cycles/{id}/private/state, readable by admins only.
+//   - Rules cannot check budgets/max quantities (cannot iterate map values). The results
+//     pipeline re-validates every vote against the cycle snapshot (SPEC.md §7.1).
+// =====================================================================
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isGoogleUser() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+
+    function isAnonymousUser() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+
+    // Any admin (viewer, editor, owner)
+    function isAdmin() {
+      return isGoogleUser()
+        && request.auth.token.get('email_verified', false) == true
+        && exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
+    }
+
+    function adminRole() {
+      return get(/databases/$(database)/documents/admins/$(request.auth.token.email)).data.role;
+    }
+
+    function isEditor() {
+      return isAdmin() && adminRole() in ['owner', 'editor'];
+    }
+
+    function isOwner() {
+      return isAdmin() && adminRole() == 'owner';
+    }
+
+    function claimPath() {
+      return /databases/$(database)/documents/claims/$(request.auth.uid);
+    }
+
+    function hasClaim() {
+      return isAnonymousUser() && exists(claimPath());
+    }
+
+    function claimedCoordinator() {
+      return get(claimPath()).data.coordinatorId;
+    }
+
+    function coordinatorIsActive(coordId) {
+      return get(/databases/$(database)/documents/coordinators/$(coordId)).data.active == true;
+    }
+
+    function cyclePath(cycleId) {
+      return /databases/$(database)/documents/cycles/$(cycleId);
+    }
+
+    // May the signed-in coordinator write THIS vote document right now?
+    function canWriteVote(cycleId, coordId) {
+      let cycle = get(cyclePath(cycleId)).data;
+      let data  = request.resource.data;
+      return hasClaim()
+        && claimedCoordinator() == coordId
+        && coordinatorIsActive(coordId)
+        && cycle.status == 'open'
+        && request.time < cycle.closesAt            // closesAt is mandatory to open a cycle
+        && data.keys().hasOnly(['coordinatorId', 'status', 'baskets', 'submittedAt', 'updatedAt', 'revision'])
+        && data.keys().hasAll(['coordinatorId', 'status', 'baskets', 'updatedAt', 'revision'])
+        && data.coordinatorId == coordId
+        && data.status in ['draft', 'submitted']
+        && (data.status == 'draft' || data.submittedAt == request.time)
+        && data.updatedAt == request.time            // client must write serverTimestamp()
+        && data.baskets is map
+        && data.baskets.keys().hasOnly(cycle.basketIds);
+    }
+
+    // ---------------------------------------------------------------
+    // Admin management  (first owner is created by hand in the console)
+    // ---------------------------------------------------------------
+    match /admins/{email} {
+      allow read:  if isAdmin();
+      allow write: if isOwner();
+    }
+
+    // ---------------------------------------------------------------
+    // Master data (admins only; coordinators read the cycle snapshot instead)
+    // ---------------------------------------------------------------
+    match /branches/{id} {
+      allow read:  if isAdmin();
+      allow write: if isEditor();
+    }
+
+    match /products/{id} {
+      allow read:  if isAdmin();
+      allow write: if isEditor();
+    }
+
+    match /reportTemplates/{id} {
+      allow read:  if isAdmin();
+      allow write: if isEditor();
+    }
+
+    match /coordinators/{id} {
+      allow read:  if isAdmin() || (hasClaim() && claimedCoordinator() == id);
+      allow write: if isEditor();
+    }
+
+    // Personal codes. Clients never read these; rules read them through get().
+    match /coordinatorSecrets/{id} {
+      allow read, write: if isEditor();
+    }
+
+    // ---------------------------------------------------------------
+    // Claims: an anonymous user proves knowledge of the personal code once.
+    // ---------------------------------------------------------------
+    match /claims/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isEditor());
+      allow create: if isAnonymousUser()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['coordinatorId', 'code', 'createdAt'])
+        && request.resource.data.keys().hasAll(['coordinatorId', 'code'])
+        && request.resource.data.coordinatorId is string
+        && request.resource.data.code is string
+        && request.resource.data.code ==
+             get(/databases/$(database)/documents/coordinatorSecrets/$(request.resource.data.coordinatorId)).data.code;
+      allow update: if false;
+      allow delete: if isEditor();           // used to rotate / revoke a coordinator's access
+    }
+
+    // ---------------------------------------------------------------
+    // Pointer to the currently open cycle, so coordinators need no queries
+    // ---------------------------------------------------------------
+    match /meta/{doc} {
+      allow read:  if isAdmin() || hasClaim();
+      allow write: if isEditor();
+    }
+
+    // ---------------------------------------------------------------
+    // Cycles
+    // ---------------------------------------------------------------
+    match /cycles/{cycleId} {
+      // Public part: type, label, status, dates, baskets, product snapshot. No weights, no results.
+      allow read:  if isAdmin()
+                   || (hasClaim() && resource.data.status in ['open', 'closed', 'finalized']);
+      allow write: if isEditor();
+
+      // Admin-only state: coordinator snapshot with weights, overrides, tieBreaks,
+      // multipliers, params, finalDecision, finalResult.
+      match /private/{doc} {
+        allow read:  if isAdmin();
+        allow write: if isEditor();
+      }
+
+      match /votes/{coordId} {
+        allow read:   if isAdmin() || (hasClaim() && claimedCoordinator() == coordId);
+        allow create: if canWriteVote(cycleId, coordId)
+                      && request.resource.data.revision == 1;
+        allow update: if canWriteVote(cycleId, coordId)
+                      && request.resource.data.revision == resource.data.revision + 1;
+        allow delete: if isEditor();
+      }
+
+      match /archivedVotes/{id} {
+        allow read:   if isAdmin();
+        allow create: if isEditor();
+        allow update, delete: if false;
+      }
+
+      match /reports/{id} {
+        allow read:   if isAdmin();
+        allow create: if isEditor();
+        allow update, delete: if false;
+      }
+    }
+
+    // ---------------------------------------------------------------
+    // Audit log: append-only
+    // ---------------------------------------------------------------
+    match /auditLog/{id} {
+      allow read:   if isAdmin();
+      allow create: if isEditor()
+                    && request.resource.data.actorEmail == request.auth.token.email
+                    && request.resource.data.at == request.time;
+      allow update, delete: if false;
+    }
+
+    // Anything not matched above is denied by default.
+  }
+}
