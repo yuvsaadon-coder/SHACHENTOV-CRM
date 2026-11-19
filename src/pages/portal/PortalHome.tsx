@@ -114,6 +114,13 @@ export function PortalHome() {
           <span className="text-3xl">🤖</span>
           <span className="text-sm font-medium" style={{ color: '#141348' }}>צ'אטבוט AI</span>
         </Link>
+        <Link
+          to="/portal/guide"
+          className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col items-center gap-2 hover:shadow-md transition-shadow text-center"
+        >
+          <span className="text-3xl">📘</span>
+          <span className="text-sm font-medium" style={{ color: '#141348' }}>מדריך למשתמש</span>
+        </Link>
         <button
           onClick={() => document.getElementById('my-reports')?.scrollIntoView({ behavior: 'smooth' })}
           className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col items-center gap-2 hover:shadow-md transition-shadow text-center"

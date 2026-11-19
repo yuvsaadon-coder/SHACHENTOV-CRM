@@ -40,6 +40,7 @@ const navGroups: NavGroup[] = [
     title: 'מערכת',
     items: [
       { to: '/admin/users', label: 'אנשים ומשתמשים', icon: '👤', adminOnly: false, hqOnly: true },
+      { to: '/guide', label: 'מדריך למשתמש', icon: '📘', adminOnly: false },
       { to: '/account', label: 'הגדרות חשבון', icon: '⚙️', adminOnly: false },
     ],
   },

@@ -100,6 +100,7 @@ export function CoordinatorPortal() {
               החלף סניף
             </button>
           )}
+          <NavLink to="/portal/guide" className="text-xs text-white/70 hover:text-white">מדריך</NavLink>
           <button onClick={handleLogout} className="text-xs text-white/60 hover:text-white">יציאה</button>
         </div>
       </header>

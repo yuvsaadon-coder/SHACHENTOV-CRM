@@ -25,6 +25,8 @@ import { KnowledgeAdminPage } from './pages/admin/KnowledgeAdminPage'
 import { ReportQuestionsAdminPage } from './pages/admin/ReportQuestionsAdminPage'
 import { UsersAdminPage } from './pages/admin/UsersAdminPage'
 import { AccountPage } from './pages/AccountPage'
+import { GuidePage } from './pages/GuidePage'
+import { PortalGuide } from './pages/portal/PortalGuide'
 import { BranchesPage } from './pages/BranchesPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { KnowledgeLibraryPage } from './pages/KnowledgeLibraryPage'
@@ -92,6 +94,7 @@ export default function App() {
             <Route path="chat" element={<PortalChat />} />
             <Route path="volunteers" element={<PortalVolunteers />} />
             <Route path="branch" element={<PortalBranch />} />
+            <Route path="guide" element={<PortalGuide />} />
           </Route>
 
           {/* HQ — with sidebar */}
@@ -123,6 +126,7 @@ export default function App() {
             <Route path="admin/report-questions" element={<ReportQuestionsAdminPage />} />
             <Route path="admin/users" element={<UsersAdminPage />} />
             <Route path="account" element={<AccountPage />} />
+            <Route path="guide" element={<GuidePage />} />
           </Route>
 
           <Route path="*" element={<SmartRedirect />} />
