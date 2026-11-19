@@ -1,9 +1,10 @@
 import type { LegacyConfig, LegacyVote } from './legacy'
-import type { ConfigField, ConfigValue, Store } from './store'
+import type { ConfigField, ConfigValue, QuoteRecord, Store } from './store'
 
 const K_CONFIG = 'shachen-tov-demo-config'
 const K_VOTES = 'shachen-tov-demo-votes'
 const K_ARCHIVE = 'shachen-tov-demo-archived-votes'
+const K_QUOTES = 'shachen-tov-demo-price-quotes'
 
 /** Browser-only store for previews/E2E. Same semantics as the Firestore store. */
 export function createDemoStore(ls: Storage): Store {
@@ -38,6 +39,12 @@ export function createDemoStore(ls: Storage): Store {
       for (const v of Object.values(votes)) archive.push({ ...v, round: roundNum, archivedReason: reason, archivedAt: now })
       ls.setItem(K_ARCHIVE, JSON.stringify(archive))
       write(K_VOTES, {})
+    },
+    async saveQuoteRecord(rec) {
+      write(K_QUOTES, [rec, ...read<QuoteRecord[]>(K_QUOTES, [])].slice(0, 30))
+    },
+    subscribeQuoteRecords(cb) {
+      return subscribe(() => cb(read<QuoteRecord[]>(K_QUOTES, [])))
     },
   }
 }

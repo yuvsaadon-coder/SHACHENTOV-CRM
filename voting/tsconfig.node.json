@@ -10,5 +10,5 @@
     "types": ["node"],
     "noEmit": true
   },
-  "include": ["vite.config.ts"]
+  "include": ["vite.config.ts", "netlify/functions", "src/lib/quotes/analyzeServer.ts", "src/lib/quotes/types.ts"]
 }

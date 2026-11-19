@@ -5,3 +5,11 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# The quote analysis calls Claude; ask for the longest synchronous time the plan allows.
+[functions."analyze-quote"]
+  timeout = 26

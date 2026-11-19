@@ -164,3 +164,30 @@ table.data tfoot td { border-block-start: var(--border); border-block-end: none;
   .basket-body { padding: 12px; }
   .baskets { padding: 14px; }
 }
+
+/* ---------- supplier quotes ---------- */
+.quote-form { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; margin-block-end: 16px; }
+.vat-choice { border: 1.5px solid var(--line-soft); border-radius: var(--radius); padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.vat-choice legend { font-size: 12px; font-weight: 700; color: var(--muted); padding: 0 4px; }
+.vat-choice label { display: flex; align-items: center; gap: 6px; min-height: 32px; cursor: pointer; font-size: 14px; }
+.dropzone { border: 2px dashed var(--ink); border-radius: 6px; background: var(--bg); padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; text-align: center; }
+.dropzone:hover, .dropzone:focus-visible { background: var(--ok-bg); }
+.file-list { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.file-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 8px; border: 1px solid var(--line-soft); border-radius: var(--radius); background: var(--paper); font-size: 14px; }
+.quote-table td { vertical-align: top; }
+.quote-table select.input { max-width: 220px; }
+.quote-table tr.is-ignored td { opacity: .55; }
+.new-product { display: flex; gap: 4px; flex-wrap: wrap; }
+.new-product .input:not(.input-emoji) { min-width: 140px; flex: 1; }
+.notice-block { margin: 0 0 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.banner-warn.small { padding: 8px 12px; }
+@media (max-width: 700px) {
+  .quote-table thead { display: none; }
+  .quote-table, .quote-table tbody, .quote-table tr, .quote-table td { display: block; width: 100%; }
+  .quote-table tr { border: 1.5px solid var(--ink); border-radius: 6px; padding: 8px 10px; margin-block-end: 10px; background: var(--paper); }
+  .quote-table td { border: none; padding: 4px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .quote-table td::before { content: attr(data-label); font-size: 12px; font-weight: 700; color: var(--muted); min-width: 80px; }
+  .quote-table td:first-child::before { display: none; }
+  .quote-table td:first-child { display: block; font-size: 15px; }
+  .quote-table select.input { max-width: none; flex: 1; }
+}

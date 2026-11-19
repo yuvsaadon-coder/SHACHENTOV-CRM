@@ -19,9 +19,13 @@
     "emulators": "firebase emulators:start --only auth,firestore"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.10.0",
+    "exceljs": "^4.4.0",
     "firebase": "^13.4.0",
+    "pdfjs-dist": "^6.5.438",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

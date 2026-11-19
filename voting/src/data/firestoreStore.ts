@@ -1,10 +1,10 @@
 import { initializeApp } from 'firebase/app'
 import {
-  collection, connectFirestoreEmulator, doc, getDocs, initializeFirestore, onSnapshot, serverTimestamp, setDoc,
-  writeBatch,
+  collection, connectFirestoreEmulator, doc, getDocs, initializeFirestore, limit, onSnapshot, orderBy, query,
+  serverTimestamp, setDoc, writeBatch,
 } from 'firebase/firestore'
 import type { LegacyConfig, LegacyVote } from './legacy'
-import type { ConfigField, ConfigValue, Store } from './store'
+import type { ConfigField, ConfigValue, QuoteRecord, Store } from './store'
 
 export function createFirestoreStore(): Store {
   const env = import.meta.env
@@ -52,6 +52,13 @@ export function createFirestoreStore(): Store {
         batch.delete(d.ref)
       })
       await batch.commit()
+    },
+    async saveQuoteRecord(rec) {
+      await setDoc(doc(db, 'priceQuotes', rec.id), { ...rec, serverCreatedAt: serverTimestamp() })
+    },
+    subscribeQuoteRecords(cb, onError) {
+      const q = query(collection(db, 'priceQuotes'), orderBy('createdAt', 'desc'), limit(30))
+      return onSnapshot(q, (snap) => cb(snap.docs.map((d) => d.data() as QuoteRecord)), (e) => onError?.(e))
     },
   }
 }
