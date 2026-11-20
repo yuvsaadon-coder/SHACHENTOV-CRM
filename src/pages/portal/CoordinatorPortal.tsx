@@ -9,7 +9,6 @@ export type PortalOutletContext = { branch: Branch }
 
 const NAV_ITEMS = [
   { to: '/portal/home',       label: 'בית',    icon: '🏠' },
-  { to: '/portal/volunteers', label: 'שיבוץ',  icon: '📅' },
   { to: '/portal/branch',     label: 'הסניף',  icon: '🏬' },
   { to: '/portal/report',     label: 'דיווח',  icon: '📋' },
   { to: '/portal/basket',     label: 'סל',     icon: '🧺' },

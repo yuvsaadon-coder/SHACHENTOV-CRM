@@ -97,7 +97,8 @@ export default function App() {
             <Route path="report" element={<PortalReport />} />
             <Route path="knowledge" element={<PortalKnowledge />} />
             <Route path="chat" element={<PortalChat />} />
-            <Route path="volunteers" element={<PortalVolunteers />} />
+            {/* Volunteer scheduling is not ready for coordinators yet: kept, but not linked from anywhere. */}
+            <Route path="hidden-volunteers" element={<PortalVolunteers />} />
             <Route path="branch" element={<PortalBranch />} />
             <Route path="guide" element={<PortalGuide />} />
             <Route path="basket" element={<Suspense fallback={<Spinner size="lg" />}><VotingPortal /></Suspense>} />

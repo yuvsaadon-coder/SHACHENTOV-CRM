@@ -13,8 +13,8 @@ import { useAuth } from '../context/AuthContext'
 import { Spinner } from '../components/ui/Spinner'
 import type { Branch, QuarterlyReport, RoleHolder, RoleLevel } from '../types'
 import { DIST_FREQ_OPTIONS, QUARTER_LABELS } from '../types'
+import { DAYS } from '../lib/branchOps'
 
-const DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת', 'משתנה']
 
 const TYPE_LABELS: Record<Branch['type'], string> = {
   food: 'סלי מזון',
