@@ -26,8 +26,8 @@ function appRoutes(): Set<string> {
 const sections: { guide: string; s: GuideSection }[] = ALL_GUIDES.flatMap((g) => g.sections.map((s) => ({ guide: g.id, s })))
 
 describe('guides', () => {
-  it('has the three guides', () => {
-    expect(ALL_GUIDES.map((g) => g.id)).toEqual(['hq', 'admin', 'coordinator'])
+  it('has the HQ and coordinator guides only', () => {
+    expect(ALL_GUIDES.map((g) => g.id)).toEqual(['hq', 'coordinator'])
   })
 
   it('every section has a title, a summary and at least one step or paragraph', () => {
@@ -47,13 +47,21 @@ describe('guides', () => {
   it('every in-app link points to a route that exists in App.tsx', () => {
     const routes = appRoutes()
     for (const { guide, s } of sections) {
-      if (!s.link) continue
-      expect(routes.has(s.link.to), `${guide}/${s.id} -> ${s.link.to}`).toBe(true)
+      for (const l of [...(s.link ? [s.link] : []), ...(s.links ?? [])]) {
+        expect(routes.has(l.to), `${guide}/${s.id} -> ${l.to}`).toBe(true)
+      }
     }
   })
 
-  it('admin sections are all marked managers-only', () => {
-    const admin = ALL_GUIDES.find((g) => g.id === 'admin')!
-    expect(admin.sections.every((s) => s.managersOnly)).toBe(true)
+  it('has no system-manager or login/dashboard instructions in the HQ guide', () => {
+    const hq = ALL_GUIDES.find((g) => g.id === 'hq')!
+    const ids = hq.sections.map((s) => s.id)
+    expect(ids).not.toContain('hq-start')
+    expect(ids).not.toContain('hq-overview')
+    expect(ids).toContain('hq-organization')
+    for (const gone of ['hq-roles', 'hq-contacts', 'hq-branches']) expect(ids).not.toContain(gone)
+    const text = hq.sections.map((s) => [s.title, s.summary, ...(s.paragraphs ?? []), ...(s.steps ?? []), ...(s.tips ?? [])].join(' ')).join(' ')
+    expect(text).not.toContain('מנהל מערכת')
+    expect(text).not.toContain('מנהלי מערכת')
   })
 })

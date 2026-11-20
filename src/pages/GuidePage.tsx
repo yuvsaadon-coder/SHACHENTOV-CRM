@@ -1,5 +1,5 @@
 import { GuideView } from '../components/guide/GuideView'
-import { HQ_GUIDE, ADMIN_GUIDE } from '../content/guides'
+import { HQ_GUIDE } from '../content/guides'
 
 export function GuidePage() {
   return (
@@ -11,7 +11,7 @@ export function GuidePage() {
           <p className="text-sm text-gray-500 mt-0.5">מה יש במערכת, מה כל מסך עושה, והנחיות שלב אחר שלב</p>
         </div>
       </div>
-      <GuideView guides={[HQ_GUIDE, ADMIN_GUIDE]} />
+      <GuideView guides={[HQ_GUIDE]} />
     </div>
   )
 }

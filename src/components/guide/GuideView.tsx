@@ -6,6 +6,10 @@ function sectionText(s: GuideSection): string {
   return [s.title, s.summary, ...(s.paragraphs ?? []), ...(s.steps ?? []), ...(s.tips ?? [])].join(' ')
 }
 
+export function sectionLinks(s: GuideSection): { to: string; label: string }[] {
+  return [...(s.link ? [s.link] : []), ...(s.links ?? [])]
+}
+
 function SectionCard({ section, open, onToggle }: { section: GuideSection; open: boolean; onToggle: () => void }) {
   return (
     <div id={`guide-${section.id}`} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden scroll-mt-24">
@@ -19,9 +23,6 @@ function SectionCard({ section, open, onToggle }: { section: GuideSection; open:
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-sm" style={{ color: '#141348' }}>{section.title}</span>
-            {section.managersOnly && (
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">למנהלי מערכת בלבד</span>
-            )}
           </div>
           <div className="text-xs text-gray-500 mt-0.5">{section.summary}</div>
         </div>
@@ -42,15 +43,18 @@ function SectionCard({ section, open, onToggle }: { section: GuideSection; open:
             <div key={i} className="text-xs bg-teal-50 border border-teal-100 text-teal-900 rounded-lg px-3 py-2">💡 {t}</div>
           ))}
 
-          {section.link && (
-            <div>
-              <Link
-                to={section.link.to}
-                className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg text-white hover:opacity-90 transition-opacity"
-                style={{ backgroundColor: '#189A9F' }}
-              >
-                {section.link.label} ←
-              </Link>
+          {sectionLinks(section).length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {sectionLinks(section).map((l) => (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg text-white hover:opacity-90 transition-opacity"
+                  style={{ backgroundColor: '#189A9F' }}
+                >
+                  {l.label} ←
+                </Link>
+              ))}
             </div>
           )}
         </div>
@@ -102,11 +106,11 @@ export function GuideView({ guides }: { guides: Guide[] }) {
       {visible.map(({ guide, sections }) => (
         <div key={guide.id} className="flex flex-col gap-3">
           <div
-            className={`rounded-2xl px-5 py-4 ${guide.id === 'admin' ? 'bg-orange-50 border border-orange-200' : 'text-white'}`}
-            style={guide.id === 'admin' ? undefined : { background: 'linear-gradient(135deg, #141348 0%, #189A9F 100%)' }}
+            className="rounded-2xl px-5 py-4 text-white"
+            style={{ background: 'linear-gradient(135deg, #141348 0%, #189A9F 100%)' }}
           >
-            <h2 className={`text-lg font-bold ${guide.id === 'admin' ? 'text-orange-900' : ''}`}>{guide.title}</h2>
-            <p className={`text-sm mt-1 leading-relaxed ${guide.id === 'admin' ? 'text-orange-800' : 'text-white/80'}`}>{guide.intro}</p>
+            <h2 className="text-lg font-bold">{guide.title}</h2>
+            <p className="text-sm mt-1 leading-relaxed text-white/80">{guide.intro}</p>
           </div>
 
           {!q && (
